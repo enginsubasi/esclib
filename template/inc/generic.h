@@ -2,7 +2,7 @@ ${filecomment}
 #ifndef ${include_guard_symbol}
 #define ${include_guard_symbol}
 
-#include <stdlib.h>
+#include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
 

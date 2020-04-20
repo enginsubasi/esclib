@@ -1,7 +1,7 @@
 #ifndef CRC16_H_
 #define CRC16_H_
 
-#include <stdlib.h>
+#include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
 
