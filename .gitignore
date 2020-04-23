@@ -50,3 +50,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+test/EMAF_Test/EMAF_Test.cbp
+test/EMAF_Test/EMAF_Test.depend
+test/EMAF_Test/EMAF_Test.layout
