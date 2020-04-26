@@ -38,7 +38,7 @@ int8_t Emaf_Init ( Emaf_t* driver, double alpha, double outputInit )
     {
         driver->alpha = alpha;
         driver->alphan = 1 - alpha;
-        driver->output = 0;
+        driver->output = outputInit;
 
         retVal = TRUE;
     }
