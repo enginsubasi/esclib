@@ -26,7 +26,7 @@ typedef struct
     uint32_t index;
     double sumOfArray;
     double output;
-} Maf_t;
+} maf_t;
 
 /* ENUMS */
 
@@ -34,8 +34,8 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t Maf_Init ( Maf_t* driver, uint32_t length, double outputInit );
-void Maf_Iteration ( Maf_t* driver, double newData );
-double Maf_GetOutput ( Maf_t* driver );
+int8_t mafInit ( maf_t* driver, uint32_t length, double outputInit );
+void mafIteration ( maf_t* driver, double newData );
+double mafGetOutput ( maf_t* driver );
 
 #endif /* MAF_H_ */

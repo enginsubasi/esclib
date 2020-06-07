@@ -6,19 +6,20 @@
   * @e-mail:    enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 1.0.0
+  * @version:   v 2.0.0
   * @cdate:     26/04/2020
-  * @mdate:     26/04/2020
+  * @mdate:     07/06/2020
   * @history:   26/04/2020 Created
+  *             07/06/2020 Naming style changed
   *
   * @about:     Moving average filter.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         Maf_Init               : Initialize maf structure.
-  *         Maf_Iteration          : Adds new data to filter.
-  *         Maf_GetOutput          : Gets current filter output.
+  *         mafInit               : Initialize maf structure.
+  *         mafIteration          : Adds new data to filter.
+  *         mafGetOutput          : Gets current filter output.
   *
   * @notes:
   *
@@ -30,7 +31,7 @@
 /*
  * @about: Initialize maf structure.
  */
-int8_t Maf_Init ( Maf_t* driver, uint32_t length, double outputInit )
+int8_t mafInit ( maf_t* driver, uint32_t length, double outputInit )
 {
     int8_t retVal = FALSE;
     uint32_t i = 0;
@@ -60,7 +61,7 @@ int8_t Maf_Init ( Maf_t* driver, uint32_t length, double outputInit )
 /*
  * @about: Adds new data to filter.
  */
-void Maf_Iteration ( Maf_t* driver, double newData )
+void mafIteration ( maf_t* driver, double newData )
 {
     // Add new data to buffer array and sum. of buffer array.
     driver->sumOfArray -= driver->buffer[ driver->index ];
@@ -82,7 +83,7 @@ void Maf_Iteration ( Maf_t* driver, double newData )
 /*
  * @about: Gets current filter output.
  */
-double Maf_GetOutput ( Maf_t* driver )
+double mafGetOutput ( maf_t* driver )
 {
     return ( driver->output );
 }

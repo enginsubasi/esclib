@@ -10,19 +10,19 @@ int main ( void )
     double tempVal1 = 0;
     double tempVal2 = 0;
 
-    Emaf_t test1;
-    Emaf_t test2;
+    emaf_t test1;
+    emaf_t test2;
 
-    Emaf_Init ( &test1, 0.5, 0 );
-    Emaf_Init ( &test2, 0.1, 0 );
+    emafInit ( &test1, 0.5, 0 );
+    emafInit ( &test2, 0.1, 0 );
 
     for ( i = 0; i < 15; ++i )
     {
-        Emaf_Iteration ( &test1, testArray[ i ] );
-        Emaf_Iteration ( &test2, testArray[ i ] );
+        emafIteration ( &test1, testArray[ i ] );
+        emafIteration ( &test2, testArray[ i ] );
 
-        tempVal1 = Emaf_GetOutput ( &test1 );
-        tempVal2 = Emaf_GetOutput ( &test2 );
+        tempVal1 = emafGetOutput ( &test1 );
+        tempVal2 = emafGetOutput ( &test2 );
 
         printf ( "%d-\t%.3f\t%.3f\t%.3f\r\n", i, testArray[ i ], tempVal1, tempVal2 );
     }

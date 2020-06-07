@@ -22,7 +22,7 @@ typedef struct
     double alpha;
     double alphan;
     double output;
-} Emaf_t;
+} emaf_t;
 
 /* ENUMS */
 
@@ -30,8 +30,8 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t Emaf_Init ( Emaf_t* driver, double alpha, double outputInit );
-void Emaf_Iteration ( Emaf_t* driver, double newData );
-double Emaf_GetOutput ( Emaf_t* driver );
+int8_t emafInit ( emaf_t* driver, double alpha, double outputInit );
+void emafIteration ( emaf_t* driver, double newData );
+double emafGetOutput ( emaf_t* driver );
 
 #endif /* EMAF_H_ */

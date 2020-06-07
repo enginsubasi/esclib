@@ -10,19 +10,19 @@ int main ( void )
     double tempVal1 = 0;
     double tempVal2 = 0;
 
-    Maf_t test1;
-    Maf_t test2;
+    maf_t test1;
+    maf_t test2;
 
-    Maf_Init ( &test1, 5, 0 );
-    Maf_Init ( &test2, 20, 0 );
+    mafInit ( &test1, 5, 0 );
+    mafInit ( &test2, 20, 0 );
 
     for ( i = 0; i < 15; ++i )
     {
-        Maf_Iteration ( &test1, testArray[ i ] );
-        Maf_Iteration ( &test2, testArray[ i ] );
+        mafIteration ( &test1, testArray[ i ] );
+        mafIteration ( &test2, testArray[ i ] );
 
-        tempVal1 = Maf_GetOutput ( &test1 );
-        tempVal2 = Maf_GetOutput ( &test2 );
+        tempVal1 = mafGetOutput ( &test1 );
+        tempVal2 = mafGetOutput ( &test2 );
 
         printf ( "%d-\t%.3f\t%.3f\t%.3f\r\n", i, testArray[ i ], tempVal1, tempVal2 );
     }

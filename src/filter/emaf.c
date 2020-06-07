@@ -6,19 +6,20 @@
   * @e-mail:    enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 1.0.0
+  * @version:   v 2.0.0
   * @cdate:     22/04/2020
-  * @mdate:     22/04/2020
+  * @mdate:     07/06/2020
   * @history:   22/04/2020 Created
+  *             07/06/2020 Naming style changed
   *
   * @about:     Exponential moving average filter.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         Emaf_Init               : Initialize emaf structure.
-  *         Emaf_Iteration          : Adds new data to filter.
-  *         Emaf_GetOutput          : Gets current filter output.
+  *         emafInit               : Initialize emaf structure.
+  *         emafIteration          : Adds new data to filter.
+  *         emafGetOutput          : Gets current filter output.
   *
   * @notes:
   *
@@ -30,7 +31,7 @@
 /*
  * @about: Initialize emaf structure.
  */
-int8_t Emaf_Init ( Emaf_t* driver, double alpha, double outputInit )
+int8_t emafInit ( emaf_t* driver, double alpha, double outputInit )
 {
     int8_t retVal = FALSE;
 
@@ -53,7 +54,7 @@ int8_t Emaf_Init ( Emaf_t* driver, double alpha, double outputInit )
 /*
  * @about: Adds new data to filter.
  */
-void Emaf_Iteration ( Emaf_t* driver, double newData )
+void emafIteration ( emaf_t* driver, double newData )
 {
     driver->output = ( ( newData * driver->alpha ) + ( driver->output * driver->alphan ) );
 }
@@ -61,7 +62,7 @@ void Emaf_Iteration ( Emaf_t* driver, double newData )
 /*
  * @about: Gets current filter output.
  */
-double Emaf_GetOutput ( Emaf_t* driver )
+double emafGetOutput ( emaf_t* driver )
 {
     return ( driver->output );
 }
