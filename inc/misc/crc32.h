@@ -15,7 +15,6 @@
 
 /* FUNCTION PROTOTYPES */
 
-uint16_t crc16 ( uint8_t* array, uint32_t size );
-uint16_t crc16Alt ( uint8_t* array, uint32_t size );
+uint32_t crc32 ( uint8_t* array, uint32_t size );
 
 #endif /* CRC16_H_ */
