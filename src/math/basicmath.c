@@ -75,6 +75,35 @@ double findMin ( double* array, uint32_t length )
 /*
  * @about:
  */
+void findMinMax ( double* array, uint32_t length, double* min, double* max )
+{
+    uint32_t i = 0;
+    double tempMin = 0;
+    double tempMax = 0;
+    
+    tempMin = array[ 0 ];
+    tempMax = array[ 0 ];
+    
+    for ( i = 1; i < length; ++i )
+    {
+        if ( tempMin > array[ i ] )
+        {
+            tempMin = array[ i ];
+        }
+        
+        if ( tempMax < array[ i ] )
+        {
+            tempMax = array[ i ];
+        }
+    }
+    
+    *min = tempMin;
+    *max = tempMax;
+}
+
+/*
+ * @about:
+ */
 double calculateSum ( double* array, uint32_t length )
 {
     uint32_t i = 0;
@@ -106,3 +135,37 @@ double calculateMean ( double* array, uint32_t length )
     
     return ( average );
 }
+
+/*
+ * @about:
+ */
+double calculateMedian ( double* array, uint32_t length )
+{
+    return ( array[ ( length / 2 ) ] );
+}
+
+/*
+ * @about:
+ */
+double calculateMode ( double* array, uint32_t length )
+{
+    
+}
+
+/*
+ * @about:
+ */
+double calculateRange ( double* array, uint32_t length )
+{
+    double tempMin = 0;
+    double tempMax = 0;
+    uint32_t tempLength = 0;
+    
+    tempLength = length;
+    
+    findMinMax ( array, tempLength, &tempMin, &tempMax );
+    
+    return ( tempMax - tempMin );
+}
+
+
