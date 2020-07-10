@@ -27,6 +27,6 @@ double findMax ( double* array, uint32_t length );
 double findMin ( double* array, uint32_t length );
 
 double calculateSum ( double* array, uint32_t length );
-double calculateAverage ( double* array, uint32_t length );
+double calculateMean ( double* array, uint32_t length );
 
 #endif /* BASICMATH_H_ */

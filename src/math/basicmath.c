@@ -9,7 +9,8 @@
   * @version:   v 0.0.1
   * @cdate:     03/06/2020
   * @mdate:     03/06/2020
-  * @history:   03/06/2020 Created
+  * @history:   03/06/2020 Created.
+  *             10/07/2020 Average named mean.
   *
   * @about:     Basic mathematic function library file.
   * @device:    Generic
@@ -20,7 +21,7 @@
   *         findMax         : Find minimum number of array elements.
   *
   *         calculateSum    : Calculates sum of array.
-  *         calculateAverage: Calculates average value of array.
+  *         calculateMean   : Calculates average/mean value of array.
   *
   * @notes:
   *
@@ -90,7 +91,7 @@ double calculateSum ( double* array, uint32_t length )
 /*
  * @about:
  */
-double calculateAverage ( double* array, uint32_t length )
+double calculateMean ( double* array, uint32_t length )
 {
     uint32_t i = 0;
     double sum = 0;
