@@ -78,6 +78,10 @@ void mafIteration ( maf_t* driver, double newData )
     {
         driver->index = 0;
     }
+    else
+    {
+        /* Intentionally blank */
+    }
 }
 
 /*

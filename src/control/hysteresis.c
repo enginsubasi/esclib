@@ -2,8 +2,8 @@
   ******************************************************************************
   *
   * @file:      hysteresis.c
-  * @author:    Name Surname
-  * @e-mail:    mail@mail.com
+  * @author:    Engin Subaşı
+  * @e-mail:    enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 0.0.1
@@ -11,13 +11,14 @@
   * @mdate:     16/07/2020
   * @history:   16/07/2020 Created
   *
-  * @about:     Generic template file.
+  * @about:     Hysteresis control.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         foo1            : Brief
-  *         foo2            : Brief
+  *         hysteresisInit              : Initialize hysteresis structure.
+  *         hysteresisControl           : Process new input data.
+  *         hysteresisGetOutput         : Gets current control data. The output value is boolean.
   *
   * @notes:
   *
@@ -26,12 +27,41 @@
 
 #include "hysteresis.h"
 
-int8_t hysteresisInit ( hysteresis_t* driver )
+/*
+ * @about:
+ */
+int8_t hysteresisInit ( hysteresis_t* driver, double upValue, double downValue )
 {
-    
+    driver->output = FALSE;
+    driver->up = upValue;
+    driver->dw = downValue;
 }
 
-uint8_t hysteresisControl ( hysteresis_t* driver, double input )
+/*
+ * @about:
+ */
+void hysteresisControl ( hysteresis_t* driver, double input )
 {
-    uint8_t controlValue = FALSE;
+    if ( input > double->up )
+    {
+        driver->output = TRUE;
+    }
+    else if ( input < double->dw )
+    {
+        driver->output = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
 }
+
+/*
+ * @about:
+ */
+uint8_t hysteresisGetOutput ( hysteresis_t* driver )
+{
+    return ( driver->output );
+}
+
+

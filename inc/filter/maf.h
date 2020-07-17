@@ -9,13 +9,8 @@
 
 #define MAX_FILTER_LENGTH       32UL
 
-#ifndef TRUE
-    #define TRUE 1
-#endif
-
-#ifndef FALSE
-    #define FALSE 0
-#endif
+#define TRUE    1
+#define FALSE   0
 
 /* STRUCTURES */
 
