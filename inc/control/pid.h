@@ -14,10 +14,24 @@
 
 typedef struct
 {
+    double error;
+    double lastError;
+    
     double output;
+    
     double kp;
     double ki;
     double kd;
+    
+    double iMax;
+    double iMin;
+    
+    double partP;
+    double partI;
+    double partD;
+    
+    double pidMax;
+    double pidMin;
 } pid_t;
 
 /* ENUMS */
@@ -26,8 +40,8 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t pidInit ( hysteresis_t* driver, double upValue, double downValue );
-void pidControl ( hysteresis_t* driver, double input );
-uint8_t pidGetOutput ( hysteresis_t* driver );
+int8_t pidInit ( pid_t* driver, double upValue, double downValue );
+void pidControl ( pid_t* driver, double input );
+uint8_t pidGetOutput ( pid_t* driver );
 
 #endif /* HYSTERESIS_H_ */

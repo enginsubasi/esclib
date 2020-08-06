@@ -30,34 +30,65 @@
 /*
  * @about:
  */
-int8_t pidInit ( pid_t* driver, double upValue, double downValue )
+int8_t pidInit ( pid_t* driver, double kp, double ki, double kd )
 {
     driver->output = FALSE;
-    driver->up = upValue;
-    driver->dw = downValue;
+    driver->kp = kp;
+    driver->ki = ki;
+    driver->kd = kd;
 }
 
 /*
  * @about:
  */
 void pidControl ( pid_t* driver, double error )
-{
+{    
+    driver->error = error;
     
+    // Calculate proportional part
+    driver->partP = driver->error * driver->kp;
+
+    // Calculate integral part
+    driver->partI += driver->error;
     
-    
-    
-    if ( input > double->up )
+    // Control integral range
+    if ( driver->partI > driver->iMax )
     {
-        driver->output = TRUE;
+        driver->partI = driver->iMax;
     }
-    else if ( input < double->dw )
+    else if ( driver->partI < driver->iMin )
     {
-        driver->output = FALSE;
+        driver->partI = driver->iMin;
     }
     else
     {
         /* Intentionally blank. */
     }
+    
+    // Calculate derivative part
+    driver->partD = ( driver->error - driver->lastError );
+    
+    // Calculate PID output value
+    driver->output = ( driver->kp * partP ) +
+                        ( driver->ki * partI ) +
+                        ( driver->kd * partD );
+    
+    // Control PID range    
+    if ( driver->output > driver->pidMax )
+    {
+        driver->output = driver->pidMax;
+    }
+    else if ( driver->output < driver->pidMin )
+    {
+        driver->output = driver->pidMin;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+    
+    // Save current error for next iteration over lastError
+    driver->lastError = driver->error;
 }
 
 /*
