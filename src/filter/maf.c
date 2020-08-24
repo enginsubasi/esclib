@@ -11,6 +11,7 @@
   * @mdate:     07/06/2020
   * @history:   26/04/2020 Created
   *             07/06/2020 Naming style changed
+  *             24/08/2020 Data type changed from double to float.
   *
   * @about:     Moving average filter.
   * @device:    Generic
@@ -31,7 +32,7 @@
 /*
  * @about: Initialize maf structure.
  */
-int8_t mafInit ( maf_t* driver, uint32_t length, double outputInit )
+int8_t mafInit ( maf_t* driver, uint32_t length, float outputInit )
 {
     int8_t retVal = FALSE;
     uint32_t i = 0;
@@ -61,7 +62,7 @@ int8_t mafInit ( maf_t* driver, uint32_t length, double outputInit )
 /*
  * @about: Adds new data to filter.
  */
-void mafIteration ( maf_t* driver, double newData )
+void mafIteration ( maf_t* driver, float newData )
 {
     // Add new data to buffer array and sum. of buffer array.
     driver->sumOfArray -= driver->buffer[ driver->index ];
@@ -87,7 +88,7 @@ void mafIteration ( maf_t* driver, double newData )
 /*
  * @about: Gets current filter output.
  */
-double mafGetOutput ( maf_t* driver )
+float mafGetOutput ( maf_t* driver )
 {
     return ( driver->output );
 }

@@ -15,8 +15,8 @@
 typedef struct
 {
     uint8_t output;
-    double up;
-    double dw;
+    float up;
+    float dw;
 } hysteresis_t;
 
 /* ENUMS */
@@ -25,8 +25,8 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t hysteresisInit ( hysteresis_t* driver, double upValue, double downValue );
-void hysteresisControl ( hysteresis_t* driver, double input );
+void hysteresisInit ( hysteresis_t* driver, float upValue, float downValue );
+void hysteresisControl ( hysteresis_t* driver, float input );
 uint8_t hysteresisGetOutput ( hysteresis_t* driver );
 
 #endif /* HYSTERESIS_H_ */

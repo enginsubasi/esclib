@@ -11,6 +11,7 @@
   * @mdate:     03/06/2020
   * @history:   03/06/2020 Created.
   *             10/07/2020 Average named mean.
+  *             24/08/2020 Data type changed from double to float.
   *
   * @about:     Basic mathematic function library file.
   * @device:    Generic
@@ -19,9 +20,12 @@
   *     FUNCTIONS:
   *         findMax         : Find maximum number of array elements.
   *         findMax         : Find minimum number of array elements.
+  *         findMinMax      : Find max. and min. numbers of array elements.
   *
   *         calculateSum    : Calculates sum of array.
   *         calculateMean   : Calculates average/mean value of array.
+  *         calculateMedian : Calculates median value of array.
+  *         calculateRange  : Calculates range of array.
   *
   * @notes:
   *
@@ -33,10 +37,10 @@
 /*
  * @about:
  */
-double findMax ( double* array, uint32_t length )
+float findMax ( float* array, uint32_t length )
 {
     uint32_t i = 0;
-    double tempMax = 0;
+    float tempMax = 0;
     
     tempMax = array[ 0 ];
     
@@ -54,10 +58,10 @@ double findMax ( double* array, uint32_t length )
 /*
  * @about:
  */
-double findMin ( double* array, uint32_t length )
+float findMin ( float* array, uint32_t length )
 {
     uint32_t i = 0;
-    double tempMin = 0;
+    float tempMin = 0;
     
     tempMin = array[ 0 ];
     
@@ -75,11 +79,11 @@ double findMin ( double* array, uint32_t length )
 /*
  * @about:
  */
-void findMinMax ( double* array, uint32_t length, double* min, double* max )
+void findMinMax ( float* array, uint32_t length, float* min, float* max )
 {
     uint32_t i = 0;
-    double tempMin = 0;
-    double tempMax = 0;
+    float tempMin = 0;
+    float tempMax = 0;
     
     tempMin = array[ 0 ];
     tempMax = array[ 0 ];
@@ -104,10 +108,10 @@ void findMinMax ( double* array, uint32_t length, double* min, double* max )
 /*
  * @about:
  */
-double calculateSum ( double* array, uint32_t length )
+float calculateSum ( float* array, uint32_t length )
 {
     uint32_t i = 0;
-    double sum = 0;
+    float sum = 0;
     
     for ( i = 0; i < length; ++i )
     {
@@ -120,11 +124,11 @@ double calculateSum ( double* array, uint32_t length )
 /*
  * @about:
  */
-double calculateMean ( double* array, uint32_t length )
+float calculateMean ( float* array, uint32_t length )
 {
     uint32_t i = 0;
-    double sum = 0;
-    double average = 0;
+    float sum = 0;
+    float average = 0;
     
     for ( i = 0; i < length; ++i )
     {
@@ -139,7 +143,7 @@ double calculateMean ( double* array, uint32_t length )
 /*
  * @about:
  */
-double calculateMedian ( double* array, uint32_t length )
+float calculateMedian ( float* array, uint32_t length )
 {
     return ( array[ ( length / 2 ) ] );
 }
@@ -147,18 +151,10 @@ double calculateMedian ( double* array, uint32_t length )
 /*
  * @about:
  */
-double calculateMode ( double* array, uint32_t length )
+float calculateRange ( float* array, uint32_t length )
 {
-    
-}
-
-/*
- * @about:
- */
-double calculateRange ( double* array, uint32_t length )
-{
-    double tempMin = 0;
-    double tempMax = 0;
+    float tempMin = 0;
+    float tempMax = 0;
     uint32_t tempLength = 0;
     
     tempLength = length;

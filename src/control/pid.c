@@ -9,7 +9,8 @@
   * @version:   v 0.0.1
   * @cdate:     23/07/2020
   * @mdate:     23/07/2020
-  * @history:   23/07/2020 Created
+  * @history:   23/07/2020 Created.
+  *             24/08/2020 Data type changed from double to float.
   *
   * @about:     PID control.
   * @device:    Generic
@@ -28,29 +29,50 @@
 #include "pid.h"
 
 /*
- * @about:
+ * @about: Initialize pid structure.
  */
-int8_t pidInit ( pid_t* driver, double kp, double ki, double kd )
+void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit, float iPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
 {
-    driver->output = FALSE;
+    driver->output = pidOutputMinLimit;
+
+    // Coefficients.
+    driver->kp = kp;
+    driver->ki = ki;
+    driver->kd = kd;
+
+    // Limits of integral part.
+    driver->iMax = iPartMaxLimit;
+    driver->iMin = iPartMinLimit;
+
+    // Limits of PID output value.
+    driver->pidMax = pidOutputMaxLimit;
+    driver->pidMin = pidOutputMinLimit;
+}
+
+/*
+ * @about: Changes PID coefficients.
+ */
+void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd )
+{
+    // Coefficients.
     driver->kp = kp;
     driver->ki = ki;
     driver->kd = kd;
 }
 
 /*
- * @about:
+ * @about: Control iteration.
  */
-void pidControl ( pid_t* driver, double error )
-{    
+void pidControl ( pidc_t* driver, float error )
+{
     driver->error = error;
-    
+
     // Calculate proportional part
     driver->partP = driver->error * driver->kp;
 
     // Calculate integral part
     driver->partI += driver->error;
-    
+
     // Control integral range
     if ( driver->partI > driver->iMax )
     {
@@ -64,16 +86,16 @@ void pidControl ( pid_t* driver, double error )
     {
         /* Intentionally blank. */
     }
-    
+
     // Calculate derivative part
     driver->partD = ( driver->error - driver->lastError );
-    
+
     // Calculate PID output value
-    driver->output = ( driver->kp * partP ) +
-                        ( driver->ki * partI ) +
-                        ( driver->kd * partD );
-    
-    // Control PID range    
+    driver->output = ( driver->kp * driver->partP ) +
+                        ( driver->ki * driver->partI ) +
+                        ( driver->kd * driver->partD );
+
+    // Control PID range
     if ( driver->output > driver->pidMax )
     {
         driver->output = driver->pidMax;
@@ -86,7 +108,7 @@ void pidControl ( pid_t* driver, double error )
     {
         /* Intentionally blank. */
     }
-    
+
     // Save current error for next iteration over lastError
     driver->lastError = driver->error;
 }
@@ -94,7 +116,7 @@ void pidControl ( pid_t* driver, double error )
 /*
  * @about:
  */
-uint8_t pidGetOutput ( pid_t* driver )
+float pidGetOutput ( pidc_t* driver )
 {
     return ( driver->output );
 }

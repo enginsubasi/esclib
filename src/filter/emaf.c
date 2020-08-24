@@ -11,6 +11,7 @@
   * @mdate:     07/06/2020
   * @history:   22/04/2020 Created
   *             07/06/2020 Naming style changed
+  *             24/08/2020 Data type changed from double to float.
   *
   * @about:     Exponential moving average filter.
   * @device:    Generic
@@ -31,7 +32,7 @@
 /*
  * @about: Initialize emaf structure.
  */
-int8_t emafInit ( emaf_t* driver, double alpha, double outputInit )
+int8_t emafInit ( emaf_t* driver, float alpha, float outputInit )
 {
     int8_t retVal = FALSE;
 
@@ -54,7 +55,7 @@ int8_t emafInit ( emaf_t* driver, double alpha, double outputInit )
 /*
  * @about: Adds new data to filter.
  */
-void emafIteration ( emaf_t* driver, double newData )
+void emafIteration ( emaf_t* driver, float newData )
 {
     driver->output = ( ( newData * driver->alpha ) + ( driver->output * driver->alphan ) );
 }
@@ -62,7 +63,7 @@ void emafIteration ( emaf_t* driver, double newData )
 /*
  * @about: Gets current filter output.
  */
-double emafGetOutput ( emaf_t* driver )
+float emafGetOutput ( emaf_t* driver )
 {
     return ( driver->output );
 }

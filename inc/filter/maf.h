@@ -16,11 +16,11 @@
 
 typedef struct
 {
-    double buffer[ MAX_FILTER_LENGTH ];
+    float buffer[ MAX_FILTER_LENGTH ];
     uint32_t length;
     uint32_t index;
-    double sumOfArray;
-    double output;
+    float sumOfArray;
+    float output;
 } maf_t;
 
 /* ENUMS */
@@ -29,8 +29,8 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t mafInit ( maf_t* driver, uint32_t length, double outputInit );
-void mafIteration ( maf_t* driver, double newData );
-double mafGetOutput ( maf_t* driver );
+int8_t mafInit ( maf_t* driver, uint32_t length, float outputInit );
+void mafIteration ( maf_t* driver, float newData );
+float mafGetOutput ( maf_t* driver );
 
 #endif /* MAF_H_ */

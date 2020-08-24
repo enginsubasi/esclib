@@ -9,7 +9,9 @@
   * @version:   v 0.0.1
   * @cdate:     16/07/2020
   * @mdate:     16/07/2020
-  * @history:   16/07/2020 Created
+  * @history:   16/07/2020 Created.
+  *             24/08/2020 Data type changed from double to float.
+  *             24/08/2020 Naming changes. Comments added.
   *
   * @about:     Hysteresis control.
   * @device:    Generic
@@ -28,9 +30,9 @@
 #include "hysteresis.h"
 
 /*
- * @about:
+ * @about: Initialize hysteresis structure.
  */
-int8_t hysteresisInit ( hysteresis_t* driver, double upValue, double downValue )
+void hysteresisInit ( hysteresis_t* driver, float upValue, float downValue )
 {
     driver->output = FALSE;
     driver->up = upValue;
@@ -38,15 +40,15 @@ int8_t hysteresisInit ( hysteresis_t* driver, double upValue, double downValue )
 }
 
 /*
- * @about:
+ * @about: Control iteration.
  */
-void hysteresisControl ( hysteresis_t* driver, double input )
+void hysteresisControl ( hysteresis_t* driver, float input )
 {
-    if ( input > double->up )
+    if ( input > driver->up )
     {
         driver->output = TRUE;
     }
-    else if ( input < double->dw )
+    else if ( input < driver->dw )
     {
         driver->output = FALSE;
     }
@@ -57,7 +59,7 @@ void hysteresisControl ( hysteresis_t* driver, double input )
 }
 
 /*
- * @about:
+ * @about: Gets current control output.
  */
 uint8_t hysteresisGetOutput ( hysteresis_t* driver )
 {

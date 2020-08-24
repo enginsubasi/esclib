@@ -18,10 +18,13 @@
 
 /* FUNCTION PROTOTYPES */
 
-double findMax ( double* array, uint32_t length );
-double findMin ( double* array, uint32_t length );
+float findMax ( float* array, uint32_t length );
+float findMin ( float* array, uint32_t length );
+void findMinMax ( float* array, uint32_t length, float* min, float* max );
 
-double calculateSum ( double* array, uint32_t length );
-double calculateMean ( double* array, uint32_t length );
+float calculateSum ( float* array, uint32_t length );
+float calculateMean ( float* array, uint32_t length );
+float calculateMedian ( float* array, uint32_t length );
+float calculateRange ( float* array, uint32_t length );
 
 #endif /* BASICMATH_H_ */
