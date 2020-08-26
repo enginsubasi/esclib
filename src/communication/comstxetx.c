@@ -1,0 +1,133 @@
+/**
+  ******************************************************************************
+  *
+  * @file:      comstxetx.c
+  * @author:    Engin Subaşı
+  * @e-mail:    enginsubasi@gmail.com
+  * @address:   github.com/enginsubasi
+  *
+  * @version:   v 0.0.1
+  * @cdate:     26/08/2020
+  * @mdate:     26/08/2020
+  * @history:   26/08/2020 Created.
+  *
+  * @about:     Basic STX, ETX communication framework.
+  * @device:    Generic
+  *
+  * @content:
+  *     FUNCTIONS:
+  *         comstxetxInit                   : Initialize comstxetx structure.
+  *         comstxetxReceive                : 
+  *         comstxetxEvaluate               : 
+  *         comstxetxTimeoutCounter         :
+  *
+  * @notes:
+  *
+  ******************************************************************************
+  */
+  
+#include "comstxetx.h"
+
+/*
+ * @about: Initialize comstxetx structure.
+ */
+void comstxetxInit ( com_stxetx_t* driver, void (*packetProcess) ( uint8_t* buffer, uint32_t index ), uint8_t stx, uint8_t etx, uint32_t rxTimeout, uint32_t rxMaxLength )
+{
+    uint32_t i = 0;
+    
+    // Function assignment.
+    driver->packetProcess = packetProcess;
+    
+    // Parameter settings.
+    driver->stx = stx;
+    driver->etx = etx;
+    
+    driver->rxTimeoutCounter = 0;
+    driver->rxTimeout = rxTimeout;
+    driver->rxMaxLength = rxMaxLength;
+    
+    // Initialize to zero and FALSE
+    driver->rxIndex = 0;
+    driver->rxReadyToEvaluate = FALSE;
+    
+    // Fill with zero
+    for ( i = 0; i < RX_BUFFER_LENGTH; ++i )
+    {
+        driver->rxBuffer[ i ] = 0;
+    }
+    
+    for ( i = 0; i < TX_BUFFER_LENGTH; ++i )
+    {
+        driver->txBuffer[ i ] = 0;
+    }
+}
+
+/*
+ * @about: Run when new data taken. Run at rx interrupt or run at timer interrupt with control new data flag.
+ */
+void comstxetxReceive ( com_stxetx_t* driver, uint8_t data )
+{
+    if ( driver->rxReadyToEvaluate == FALSE )
+    {
+        if ( driver->rxIndex == 0 )
+        {
+            if ( data == driver->stx )
+            {
+                driver->rxBuffer[ driver->rxIndex ] = data;
+                ++driver->rxIndex;
+            }
+        }
+        else
+        {
+            if ( data == driver->etx )
+            {
+                driver->rxReadyToEvaluate = TRUE;
+            }
+            else
+            {
+                driver->rxBuffer[ driver->rxIndex ] = data;
+                ++driver->rxIndex;
+                
+                if ( driver->rxIndex > driver->rxMaxLength )
+                {
+                    // Terminate all received bytes.
+                    driver->rxIndex = 0;
+                }
+            }
+        }
+    }
+}
+
+/*
+ * @about: Run at the loop or timer interrupt to evaluate received data frame.
+ */
+void comstxetxEvaluate ( com_stxetx_t* driver )
+{
+    if ( driver->rxReadyToEvaluate = TRUE )
+    {
+        driver->packetProcess ( driver->rxBuffer, driver->rxIndex );
+        
+        driver->rxIndex = 0;
+        driver->rxReadyToEvaluate = FALSE;
+    }
+}
+
+/*
+ * @about: Run at constant timer interrupt.
+ */
+void comstxetxTimeoutCounter ( com_stxetx_t* driver )
+{
+    if ( ( driver->rxIndex != 0 ) && ( drive->rxReadyToEvaluate == FALSE ) )
+    {
+        if ( driver->rxTimeoutCounter > driver->rxTimeout )
+        {
+            // Terminate all received bytes.
+            driver->rxIndex = 0;
+            driver->rxTimeoutCounter = 0;
+        }
+        else
+        {
+            ++driver->rxTimeoutCounter;
+        }
+    }
+}
