@@ -19,7 +19,7 @@
   *     FUNCTIONS:
   *         pidInit                     : Initialize hysteresis structure.
   *         pidControl                  : Process new input data.
-  *         pidGetOutput                : Gets current control data. The output value is boolean.
+  *         pidGetOutput                : Gets current control data. The output value is float.
   *
   * @notes:
   *
