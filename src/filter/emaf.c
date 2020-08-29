@@ -8,7 +8,6 @@
   *
   * @version:   v 2.0.0
   * @cdate:     22/04/2020
-  * @mdate:     07/06/2020
   * @history:   22/04/2020 Created
   *             07/06/2020 Naming style changed
   *             24/08/2020 Data type changed from double to float.

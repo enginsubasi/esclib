@@ -8,7 +8,6 @@
   *
   * @version:   v 0.0.1
   * @cdate:     03/06/2020
-  * @mdate:     03/06/2020
   * @history:   03/06/2020 Created.
   *             10/07/2020 Average named mean.
   *             24/08/2020 Data type changed from double to float.

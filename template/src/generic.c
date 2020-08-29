@@ -8,7 +8,6 @@
   *
   * @version:   v 0.0.1
   * @cdate:     20/02/2020
-  * @mdate:     20/02/2020
   * @history:   20/02/2020 Created
   *
   * @about:     Generic template file.

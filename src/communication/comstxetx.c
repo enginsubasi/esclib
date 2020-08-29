@@ -8,7 +8,6 @@
   *
   * @version:   v 0.0.1
   * @cdate:     26/08/2020
-  * @mdate:     26/08/2020
   * @history:   26/08/2020 Created.
   *
   * @about:     Basic STX, ETX communication framework.

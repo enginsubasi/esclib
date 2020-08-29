@@ -8,6 +8,8 @@ ${filecomment}
 
 /* DEFINITIONS */
 
+/* TYPEDEFS */
+
 /* STRUCTURES */
 
 /* ENUMS */

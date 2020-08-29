@@ -8,7 +8,6 @@
   *
   * @version:   v 0.0.1
   * @cdate:     16/07/2020
-  * @mdate:     16/07/2020
   * @history:   16/07/2020 Created.
   *             24/08/2020 Data type changed from double to float.
   *             24/08/2020 Naming changes. Comments added.

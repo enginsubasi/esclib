@@ -7,6 +7,8 @@
 
 /* DEFINITIONS */
 
+/* TYPEDEFS */
+
 /* STRUCTURES */
 
 /* ENUMS */

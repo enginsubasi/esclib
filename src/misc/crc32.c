@@ -8,7 +8,6 @@
   *
   * @version:   v 1.0.0
   * @cdate:     10/07/2020
-  * @mdate:     10/07/2020
   * @history:   10/07/2020 Created.
   *
   * @about:     CRC Calculation functions.
