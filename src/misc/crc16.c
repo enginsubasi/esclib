@@ -10,6 +10,7 @@
   * @cdate:     25/02/2020
   * @history:   25/02/2020 Created.
   *             10/07/2020 Naming changed.
+  *             13/09/2020 Bug fix.
   *
   * @about:     CRC16 Calculation functions.
   * @device:    Generic
@@ -31,8 +32,7 @@
  */
 uint16_t crc16 ( uint8_t* array, uint32_t size )
 {
-    static const uint16_t CRCTable[ ] = 
-    {
+    static const uint16_t CRCTable[ ] = {
            0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,
            0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1, 0xC481, 0x0440,
            0xCC01, 0x0CC0, 0x0D80, 0xCD41, 0x0F00, 0xCFC1, 0xCE81, 0x0E40,
@@ -64,17 +64,18 @@ uint16_t crc16 ( uint8_t* array, uint32_t size )
            0x8801, 0x48C0, 0x4980, 0x8941, 0x4B00, 0x8BC1, 0x8A81, 0x4A40,
            0x4E00, 0x8EC1, 0x8F81, 0x4F40, 0x8D01, 0x4DC0, 0x4C80, 0x8C41,
            0x4400, 0x84C1, 0x8581, 0x4540, 0x8701, 0x47C0, 0x4680, 0x8641,
-           0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040 
-    };
+           0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040 };
 
-    uint32_t i          = 0;
+    uint8_t tempVal     = 0;
     uint16_t crc        = 0xFFFF;
-    
-    /* Loop until size. */
+    uint32_t i          = 0;
+
     for ( i = 0 ; i < size ; ++i )
     {
+        tempVal = array[ i ] ^ crc;
+
         crc >>= 8;
-        crc ^= CRCTable[ ( array[ i ] ^ crc ) & 0xFF ];
+        crc ^= CRCTable[ tempVal ];
     }
 
     return ( crc );
@@ -85,26 +86,13 @@ uint16_t crc16 ( uint8_t* array, uint32_t size )
  */
 uint16_t crc16Alt ( uint8_t* array, uint32_t size )
 {
-    uint32_t i          = 0;          // Array index counter.
-    uint8_t j           = 0;           // Bit shift counter.
-    uint16_t crc        = 0xFFFF;   // CRC of array.
+    uint32_t i      = 0;        // Array index counter.
+    uint16_t crc    = 0xFFFF;   // CRC of array.
 
     /* Loop until size. */
-    for ( i = 0 ; i < size ; ++i )
+    for ( i = 0; i < size; i += 2 )
     {
         crc = crc ^ ( ( uint16_t ) array[ i ] );
-
-        for ( j = 0 ; j < 8 ; ++j )
-        {
-            if ( crc & 0x0001 )
-            {
-                crc = ( crc >> 1 ) ^ 0xA001;
-            }
-            else
-            {
-                crc = ( crc >> 1 );
-            }
-        }
     }
 
     return ( crc );
