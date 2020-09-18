@@ -11,6 +11,7 @@
   * @history:   25/02/2020 Created.
   *             10/07/2020 Naming changed.
   *             13/09/2020 Bug fix.
+  *             18/09/2020 Bux fix.
   *
   * @about:     CRC16 Calculation functions.
   * @device:    Generic
@@ -86,13 +87,27 @@ uint16_t crc16 ( uint8_t* array, uint32_t size )
  */
 uint16_t crc16Alt ( uint8_t* array, uint32_t size )
 {
-    uint32_t i      = 0;        // Array index counter.
-    uint16_t crc    = 0xFFFF;   // CRC of array.
+    uint32_t i = 0;         // Array index counter.
+    uint8_t j = 0;          // Bit shift counter.
+
+    uint16_t crc = 0xFFFF;  // CRC of array.
 
     /* Loop until size. */
-    for ( i = 0; i < size; i += 2 )
+    for ( i = 0 ; i < size ; ++i )
     {
         crc = crc ^ ( ( uint16_t ) array[ i ] );
+
+        for ( j = 0 ; j < 8 ; ++j )
+        {
+            if ( crc & 0x0001 )
+            {
+                crc = ( crc >> 1 ) ^ 0xA001;
+            }
+            else
+            {
+                crc = ( crc >> 1 );
+            }
+        }
     }
 
     return ( crc );

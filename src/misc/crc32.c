@@ -9,6 +9,7 @@
   * @version:   v 1.0.0
   * @cdate:     10/07/2020
   * @history:   10/07/2020 Created.
+  *             18/09/2020 Bux fix.
   *
   * @about:     CRC Calculation functions.
   * @device:    Generic
@@ -27,7 +28,7 @@
 /*
  * @about: Calculates CRC32.
  */
-uint16_t crc32 ( uint8_t* array, uint32_t size )
+uint32_t crc32 ( uint8_t* array, uint32_t size )
 { 
     static const uint32_t crc32Table[ ] =
     {
@@ -97,12 +98,12 @@ uint16_t crc32 ( uint8_t* array, uint32_t size )
         0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
     };
     
-    uint32_t i              = 0;
-    uint32_t crc            = 0xffffffff;
+    uint32_t i      = 0;
+    uint32_t crc    = 0xffffffff;
 
     for ( i = 0 ; i < size ; ++i )
     {
-        crc = ( crc << 8 ) ^ crc32_table[ ( ( crc >> 24 ) ^ array[ i ] ) & 255 ];
+        crc = ( crc << 8 ) ^ crc32Table[ ( ( crc >> 24 ) ^ array[ i ] ) & 255 ];
     }
 
     return ( crc );
