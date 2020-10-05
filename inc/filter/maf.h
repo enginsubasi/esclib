@@ -9,9 +9,6 @@
 
 #define MAX_FILTER_LENGTH       32UL
 
-#define TRUE    1
-#define FALSE   0
-
 /* TYPEDEFS */
 
 /* STRUCTURES */

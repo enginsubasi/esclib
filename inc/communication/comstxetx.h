@@ -7,9 +7,6 @@
 
 /* DEFINITIONS */
 
-#define TRUE 1
-#define FALSE 0
-
 #define RX_BUFFER_LENGTH    256
 #define TX_BUFFER_LENGTH    256
 
