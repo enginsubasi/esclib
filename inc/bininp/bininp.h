@@ -1,5 +1,5 @@
-#ifndef BUTTON_H_
-#define BUTTON_H_
+#ifndef BININP_H_
+#define BININP_H_
 
 #include <stdint.h>
 
@@ -15,10 +15,10 @@ typedef struct
 {
     uint32_t filterCounter;
     uint32_t filterCount;
-    uint8_t (*readButton) ( void );
+    uint8_t (*readBininp) ( void );
     
     uint8_t output;
-} button_t;
+} bininp_t;
 
 /* ENUMS */
 
@@ -26,9 +26,9 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t buttonInit ( button_t* driver, uint32_t filterCount );
-void buttonUpdate ( button_t* driver );
-uint8_t buttonGetValue ( button_t* driver );
+int8_t bininpInit ( bininp_t* driver, uint32_t filterCount );
+void bininpUpdate ( bininp_t* driver );
+uint8_t bininpGetValue ( bininp_t* driver );
 
-#endif /* BUTTON_H_ */
+#endif /* BININP_H_ */
 

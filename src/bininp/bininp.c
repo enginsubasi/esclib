@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   *
-  * @file:      button.c
+  * @file:      bininp.c
   * @author:    Engin Subasi
   * @e-mail:    enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
@@ -9,27 +9,28 @@
   * @version:   v 1.0.0
   * @cdate:     05/10/2020
   * @history:   05/10/2020 Created
+  *             09/10/2020 Button name changed to bininp. It means binary input.
   *
-  * @about:     Button read and filtering.
+  * @about:     Binary input read and filtering.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         buttonInit              :
-  *         buttonUpdate            :
-  *         buttonGetValue          :
+  *         bininpInit              :
+  *         bininpUpdate            :
+  *         bininpGetValue          :
   *
   * @notes:
   *
   ******************************************************************************
   */
 
-#include "button.h"
+#include "bininp.h"
 
 /*
- * @about: Initialize button structure.
+ * @about: Initialize binary input structure.
  */
-int8_t buttonInit ( button_t* driver, uint32_t filterCount )
+int8_t bininpInit ( bininp_t* driver, uint32_t filterCount )
 {
     driver->filterCount = filterCount;
 }
@@ -37,11 +38,11 @@ int8_t buttonInit ( button_t* driver, uint32_t filterCount )
 /*
  * @about: Updates value.
  */
-void buttonUpdate ( button_t* driver )
+void bininpUpdate ( bininp_t* driver )
 {
     uint8_t currentPhysicalValue = 0;
     
-    currentPhysicalValue = driver->readButton ( );
+    currentPhysicalValue = driver->readBininp ( );
     
     if ( currentPhysicalValue != driver->output )
     {
@@ -59,9 +60,9 @@ void buttonUpdate ( button_t* driver )
 }
 
 /*
- * @about: Gets current button value.
+ * @about: Gets current binary input value.
  */
-uint8_t buttonGetValue ( button_t* driver )
+uint8_t bininpGetValue ( bininp_t* driver )
 {
     return ( driver->output );
 }
