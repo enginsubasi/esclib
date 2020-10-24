@@ -10,6 +10,7 @@
   * @cdate:     05/10/2020
   * @history:   05/10/2020 Created
   *             09/10/2020 Button name changed to bininp. It means binary input.
+  *             24/10/2020 newData field added to bininpUpdate function instead of read input function pointer.
   *
   * @about:     Binary input read and filtering.
   * @device:    Generic
@@ -30,7 +31,7 @@
 /*
  * @about: Initialize binary input structure.
  */
-int8_t bininpInit ( bininp_t* driver, uint32_t filterCount )
+void bininpInit ( bininp_t* driver, uint32_t filterCount )
 {
     driver->filterCount = filterCount;
 }
@@ -38,11 +39,11 @@ int8_t bininpInit ( bininp_t* driver, uint32_t filterCount )
 /*
  * @about: Updates value.
  */
-void bininpUpdate ( bininp_t* driver )
+void bininpUpdate ( bininp_t* driver, uint8_t newData )
 {
     uint8_t currentPhysicalValue = 0;
     
-    currentPhysicalValue = driver->readBininp ( );
+    currentPhysicalValue = newData;
     
     if ( currentPhysicalValue != driver->output )
     {
