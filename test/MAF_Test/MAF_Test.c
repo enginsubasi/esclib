@@ -13,8 +13,11 @@ int main ( void )
     maf_t test1;
     maf_t test2;
 
-    mafInit ( &test1, 5, 0 );
-    mafInit ( &test2, 20, 0 );
+    float t1Buf[32];
+    float t2Buf[32];
+
+    mafInit ( &test1, t1Buf, 5, 0 );
+    mafInit ( &test2, t2Buf, 20, 0 );
 
     for ( i = 0; i < 15; ++i )
     {

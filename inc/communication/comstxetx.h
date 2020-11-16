@@ -7,9 +7,6 @@
 
 /* DEFINITIONS */
 
-#define RX_BUFFER_LENGTH    256
-#define TX_BUFFER_LENGTH    256
-
 /* TYPEDEFS */
 
 /* STRUCTURES */
@@ -23,13 +20,14 @@ typedef struct
     uint32_t rxTimeout;
     
     uint32_t rxIndex;
-    uint32_t rxMaxLength;
+    uint32_t rxSize;
+    uint32_t txSize;
     
     uint8_t rxReadyToEvaluate;
 
-    uint8_t rxBuffer[ RX_BUFFER_LENGTH ];
+    uint8_t *rxBuffer;
     
-    uint8_t txBuffer[ TX_BUFFER_LENGTH ];
+    uint8_t *txBuffer;
     
     void (*packetProcess) ( uint8_t* buffer, uint32_t index );
 } com_stxetx_t;
@@ -40,7 +38,7 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void comstxetxInit ( com_stxetx_t* driver );
+void comstxetxInit ( com_stxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) );
 void comstxetxReceive ( com_stxetx_t* driver, uint8_t data );
 void comstxetxEvaluate ( com_stxetx_t* driver );
 void comstxetxTimeoutCounter ( com_stxetx_t* driver );

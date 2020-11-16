@@ -31,13 +31,14 @@
 /*
  * @about: Initialize maf structure.
  */
-int8_t mafInit ( maf_t* driver, uint32_t length, float outputInit )
+int8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputInit )
 {
     int8_t retVal = FALSE;
     uint32_t i = 0;
 
-    if ( ( length != 0 ) && ( length <= MAX_FILTER_LENGTH ) )
+    if ( ( length != 0 ) && ( buffer != 0 ) )
     {
+        driver->buffer = buffer;
         driver->length = length;
         driver->output = outputInit;
         driver->sumOfArray = driver->length * driver->output;

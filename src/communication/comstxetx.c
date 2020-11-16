@@ -30,7 +30,7 @@
 /*
  * @about: Initialize comstxetx structure.
  */
-void comstxetxInit ( com_stxetx_t* driver, void (*packetProcess) ( uint8_t* buffer, uint32_t index ), uint8_t stx, uint8_t etx, uint32_t rxTimeout, uint32_t rxMaxLength )
+void comstxetxInit ( com_stxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) )
 {
     uint32_t i = 0;
     
@@ -38,24 +38,29 @@ void comstxetxInit ( com_stxetx_t* driver, void (*packetProcess) ( uint8_t* buff
     driver->packetProcess = packetProcess;
     
     // Parameter settings.
+    driver->rxBuffer = rxBuffer;
+    driver->txBuffer = txBuffer;
+    
+    driver->rxSize = rxSize;
+    driver->txSize = txSize;
+    
     driver->stx = stx;
     driver->etx = etx;
     
     driver->rxTimeoutCounter = 0;
     driver->rxTimeout = rxTimeout;
-    driver->rxMaxLength = rxMaxLength;
     
     // Initialize to zero and FALSE
     driver->rxIndex = 0;
     driver->rxReadyToEvaluate = FALSE;
     
     // Fill with zero
-    for ( i = 0; i < RX_BUFFER_LENGTH; ++i )
+    for ( i = 0; i < driver->rxSize; ++i )
     {
         driver->rxBuffer[ i ] = 0;
     }
     
-    for ( i = 0; i < TX_BUFFER_LENGTH; ++i )
+    for ( i = 0; i < driver->txSize; ++i )
     {
         driver->txBuffer[ i ] = 0;
     }

@@ -15,7 +15,7 @@
 
 typedef struct
 {
-    float buffer[ MAX_FILTER_LENGTH ];
+    float* buffer;
     uint32_t length;
     uint32_t index;
     float sumOfArray;
@@ -28,7 +28,7 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t mafInit ( maf_t* driver, uint32_t length, float outputInit );
+int8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputInit );
 void mafIteration ( maf_t* driver, float newData );
 float mafGetOutput ( maf_t* driver );
 
