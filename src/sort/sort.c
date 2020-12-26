@@ -97,7 +97,7 @@ void bubbleSort ( float* array, uint32_t length )
 void insertionSort ( float* array, uint32_t length )  
 {  
     uint32_t i = 0;
-    int32_t j = 0;
+    uint32_t j = 0;
     float key = 0;
     
     for ( i = 1; i < length; ++i ) 
@@ -105,7 +105,7 @@ void insertionSort ( float* array, uint32_t length )
         key = array[i];  
         j = i - 1;  
 
-        while ( ( j >= 0 ) && ( array[ j ] > key ) ) 
+        while ( ( j >= 0 ) && ( j != 0xFFFFFFFF ) && ( array[ j ] > key ) ) 
         {  
             array[ j + 1 ] = array[ j ];  
             j = j - 1;  
