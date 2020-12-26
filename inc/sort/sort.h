@@ -27,5 +27,6 @@
 
 void selectionSort ( float* array, uint32_t length );
 void bubbleSort ( float* array, uint32_t length );
+void insertionSort ( float* array, uint32_t length );
 
 #endif /* SORT_H_ */
