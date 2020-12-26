@@ -25,8 +25,7 @@
 
 /* FUNCTION PROTOTYPES */
 
-void swapForSort ( float* xp, float* yp );
-
 void selectionSort ( float* array, uint32_t length );
+void bubbleSort ( float* array, uint32_t length );
 
 #endif /* SORT_H_ */
