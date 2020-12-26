@@ -15,14 +15,8 @@
   *
   * @content:
   *     FUNCTIONS:
-  *         findMax         : Find maximum number of array elements.
-  *         findMax         : Find minimum number of array elements.
-  *         findMinMax      : Find max. and min. numbers of array elements.
-  *
-  *         calculateSum    : Calculates sum of array.
-  *         calculateMean   : Calculates average/mean value of array.
-  *         calculateMedian : Calculates median value of array.
-  *         calculateRange  : Calculates range of array.
+  *         swapForSort     : Swaps the data of the two pointers.
+  *         selectionSort   : 
   *
   * @notes:
   *
