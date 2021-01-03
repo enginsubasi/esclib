@@ -6,9 +6,10 @@
   * @e-mail:    enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.1
+  * @version:   v 0.0.2
   * @cdate:     03/01/2020
   * @history:   03/01/2020 Created.
+  *             03/01/2020 Standard deviation added.
   *
   * @about:     Statistic function library file.
   * @device:    Generic
@@ -22,6 +23,8 @@
   ******************************************************************************
   */
 
+#include <math.h>
+
 #include "statistic.h"
 
 /*
@@ -33,7 +36,6 @@ float variance ( float* array, uint32_t length )
     float sum = 0;
     float average = 0;
     float variance = 0;
-    float tempDif = 0;
     
     for ( i = 0; i < length; ++i )
     {
@@ -45,12 +47,24 @@ float variance ( float* array, uint32_t length )
     
     for ( i = 0; i < length; ++i )
     {
-        // To do not use pow function. Because, It causes dependency to math library.
-        tempDif = ( array[ i ] - average );
-        variance += ( tempDif * tempDif );
+        variance += pow( tempDif, 2 ); // Dep. math.h
     }
     
     variance /= ( length - 1 );
     
     return ( variance );
+}
+
+/*
+ * @about:
+ */
+float standardDeviation ( float* array, uint32_t length )
+{
+    float standardDeviation = 0;
+    
+    standardDeviation = variance ( array, length );
+    
+    standardDeviation = sqrt ( standardDeviation ); // Dep. math.h
+    
+    return ( standardDeviation );
 }

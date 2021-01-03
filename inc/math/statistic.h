@@ -26,5 +26,6 @@
 /* FUNCTION PROTOTYPES */
 
 float variance ( float* array, uint32_t length );
+float standardDeviation ( float* array, uint32_t length );
 
 #endif /* STATISTIC_H_ */
