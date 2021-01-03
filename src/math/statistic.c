@@ -36,22 +36,22 @@ float variance ( float* array, uint32_t length )
     float sum = 0;
     float average = 0;
     float variance = 0;
-    
+
     for ( i = 0; i < length; ++i )
     {
         sum += array[ i ];
     }
-    
+
     // Average value of the array.
     average = sum / length;
-    
+
     for ( i = 0; i < length; ++i )
     {
-        variance += pow( tempDif, 2 ); // Dep. math.h
+        variance += pow( ( array[ i ] - average ), 2 );
     }
-    
+
     variance /= ( length - 1 );
-    
+
     return ( variance );
 }
 
@@ -67,4 +67,34 @@ float standardDeviation ( float* array, uint32_t length )
     standardDeviation = sqrt ( standardDeviation ); // Dep. math.h
     
     return ( standardDeviation );
+}
+
+/*
+ * @about:
+ */
+float covariance ( float* array1, float* array2, uint32_t length )
+{
+    uint32_t i = 0;
+    float sum1 = 0, sum2 = 0;
+    float average1 = 0, average2 = 0;
+    float covariance = 0;
+    
+    for ( i = 0; i < length; ++i )
+    {
+        sum1 += array1[ i ];
+        sum2 += array2[ i ];
+    }
+    
+    // Average values of the arrays.
+    average1 = sum1 / length;
+    average2 = sum2 / length;
+    
+    for ( i = 0; i < length; ++i )
+    {
+        covariance += ( ( array1[ i ] - average1 ) * ( array2[ i ] - average2 ) );
+    }
+
+    covariance /= ( length - 1 );
+
+    return ( covariance );
 }
