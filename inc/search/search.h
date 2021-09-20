@@ -25,4 +25,6 @@
 
 /* FUNCTION PROTOTYPES */
 
+uint8_t linearSearch_i32 ( int32_t* array, uint32_t length, int32_t item, uint32_t* foundIndex );
+
 #endif /* SEARCH_H_ */
