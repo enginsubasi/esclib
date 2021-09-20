@@ -37,7 +37,7 @@ uint8_t linearSearch_i32 ( int32_t* array, uint32_t length, int32_t item, uint32
     {
         if ( array[ i ] == item )
         {
-            *foundIndex = i;
+            (*foundIndex) = i;
             retVal = TRUE;
             break;
         }      
