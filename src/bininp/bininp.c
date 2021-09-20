@@ -3,7 +3,7 @@
   *
   * @file:      bininp.c
   * @author:    Engin Subasi
-  * @e-mail:    enginsubasi@gmail.com
+  * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 1.0.0

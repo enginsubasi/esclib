@@ -3,7 +3,7 @@
   *
   * @file:      pid.c
   * @author:    Engin Subaşı
-  * @e-mail:    enginsubasi@gmail.com
+  * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 0.0.1

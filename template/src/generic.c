@@ -3,7 +3,7 @@
   *
   * @file:      generic.c
   * @author:    Name Surname
-  * @e-mail:    mail@mail.com
+  * @email:     mail@mail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 0.0.1

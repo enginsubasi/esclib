@@ -3,7 +3,7 @@
   *
   * @file:      emaf.c
   * @author:    Engin Subasi
-  * @e-mail:    enginsubasi@gmail.com
+  * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 2.0.0
