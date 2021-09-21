@@ -28,7 +28,7 @@
 /*
  * @about:
  */
-uint8_t linearSearch_i32 ( int32_t* array, uint32_t length, int32_t item, uint32_t* foundIndex )
+uint8_t linearSearch_i32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
 {
     uint8_t retVal = FALSE;
     uint32_t i = 0;
@@ -37,7 +37,7 @@ uint8_t linearSearch_i32 ( int32_t* array, uint32_t length, int32_t item, uint32
     {
         if ( array[ i ] == item )
         {
-            (*foundIndex) = i;
+            ( *foundIndex ) = i;
             retVal = TRUE;
             break;
         }      
@@ -45,3 +45,47 @@ uint8_t linearSearch_i32 ( int32_t* array, uint32_t length, int32_t item, uint32
 
     return ( retVal );
 }
+
+/*
+ * @about:
+ * @param: "array" should be a sorted array.
+ */
+uint8_t binarySearch_i32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
+{
+    uint8_t retVal = FALSE;
+    uint32_t l = 0;
+    uint32_t r = length - 1;
+    uint32_t m = 0;
+
+    while ( l <= r )
+    {
+        m = l + ( ( r - l ) >> 1 ); // divide by 2
+
+        if ( array[ m ] == item )
+        {
+            ( *foundIndex ) = m;
+            retVal = TRUE;
+            break;
+        }
+
+        if ( array[ m ] < item )
+        {
+            l = m + 1;
+        }
+        else
+        {
+            if ( m == 0 )
+            {
+                l = m + 1;
+            }
+            else
+            {
+                r = m - 1;
+            }
+
+        }
+    }
+
+    return ( retVal );
+}
+
