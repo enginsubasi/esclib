@@ -17,6 +17,7 @@
   * @content:
   *     FUNCTIONS:
   *         linearSearch_i32    : Linear search algorithm for signed-integer-32-bit.
+  *         binarySearch_i32    : Binary search algorithm for signed-integer-32-bit.
   *
   * @notes:
   *
