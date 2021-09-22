@@ -6,16 +6,19 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.2
+  * @version:   v 0.0.3
   * @cdate:     15/09/2021
   * @history:   15/09/2021 Created.
   *             20/09/2021 linearSearch_i32 is added to the library.
+  *             20/09/2021 binarySearch_i32 is added to the library.
   *
   * @about:     Search function library file.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
+  *         isEqual_f           : It is a help function for floating point search functions.
+  *
   *         linearSearch_i32    : Linear search algorithm for signed-integer-32-bit.
   *         binarySearch_i32    : Binary search algorithm for signed-integer-32-bit.
   *
@@ -25,6 +28,25 @@
   */
 
 #include "search.h"
+
+/*
+ * @about: isEqual function for floating point data type.
+ */
+static uint8_t isEqual_f ( float f1, float f2, float epsilon )
+{
+    uint8_t retVal = FALSE;
+
+    if ( f1 > f2 )
+    {
+        retVal = ( ( f1 - f2 ) <= epsilon );
+    }
+    else
+    {
+        retVal = ( ( f2 - f1 ) <= epsilon );
+    }
+
+    return ( retVal );
+}
 
 /*
  * @about:
@@ -89,4 +111,3 @@ uint8_t binarySearch_i32 ( const int32_t* const array, uint32_t length, int32_t 
 
     return ( retVal );
 }
-
