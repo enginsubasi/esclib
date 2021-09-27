@@ -71,7 +71,7 @@ uint16_t crc16 ( uint8_t* array, uint32_t size )
     uint16_t crc        = 0xFFFF;
     uint32_t i          = 0;
 
-    for ( i = 0 ; i < size ; ++i )
+    for ( i = 0; i < size; ++i )
     {
         tempVal = array[ i ] ^ crc;
 

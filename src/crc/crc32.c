@@ -101,7 +101,7 @@ uint32_t crc32 ( uint8_t* array, uint32_t size )
     uint32_t i      = 0;
     uint32_t crc    = 0xffffffff;
 
-    for ( i = 0 ; i < size ; ++i )
+    for ( i = 0; i < size; ++i )
     {
         crc = ( crc << 8 ) ^ crc32Table[ ( ( crc >> 24 ) ^ array[ i ] ) & 255 ];
     }
