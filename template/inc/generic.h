@@ -1,6 +1,9 @@
-${filecomment}
-#ifndef ${include_guard_symbol}
-#define ${include_guard_symbol}
+#ifndef GENERIC_H_
+#define GENERIC_H_
+
+#ifdef __cplusplus
+ extern "C" {
+#endif
 
 #include <stdint.h>
 
@@ -26,4 +29,7 @@ ${filecomment}
 
 /* FUNCTION PROTOTYPES */
 
-#endif /* ${include_guard_symbol} */
+#ifdef __cplusplus
+}
+#endif
+#endif /* GENERIC_H_ */   
