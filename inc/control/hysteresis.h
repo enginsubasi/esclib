@@ -1,6 +1,10 @@
 #ifndef HYSTERESIS_H_
 #define HYSTERESIS_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
@@ -35,5 +39,9 @@ typedef struct
 void hysteresisInit ( hysteresis_t* driver, float upValue, float downValue );
 void hysteresisControl ( hysteresis_t* driver, float input );
 uint8_t hysteresisGetOutput ( hysteresis_t* driver );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HYSTERESIS_H_ */

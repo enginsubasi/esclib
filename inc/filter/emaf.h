@@ -1,6 +1,10 @@
 #ifndef EMAF_H_
 #define EMAF_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
@@ -35,5 +39,9 @@ typedef struct
 int8_t emafInit ( emaf_t* driver, float alpha, float outputInit );
 void emafIteration ( emaf_t* driver, float newData );
 float emafGetOutput ( emaf_t* driver );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* EMAF_H_ */

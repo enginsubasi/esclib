@@ -32,4 +32,5 @@
 #ifdef __cplusplus
 }
 #endif
+
 #endif /* GENERIC_H_ */   

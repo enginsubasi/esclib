@@ -1,6 +1,10 @@
 #ifndef MAF_H_
 #define MAF_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
@@ -37,5 +41,9 @@ typedef struct
 int8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputInit );
 void mafIteration ( maf_t* driver, float newData );
 float mafGetOutput ( maf_t* driver );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MAF_H_ */

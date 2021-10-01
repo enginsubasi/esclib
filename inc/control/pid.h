@@ -1,6 +1,10 @@
 #ifndef PID_H_
 #define PID_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
@@ -51,5 +55,9 @@ void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit
 void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd );
 void pidControl ( pidc_t* driver, float input );
 float pidGetOutput ( pidc_t* driver );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PID_H_ */

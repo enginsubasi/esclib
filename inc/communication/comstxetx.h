@@ -1,6 +1,10 @@
 #ifndef COMSTXETX_H_
 #define COMSTXETX_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
@@ -50,5 +54,9 @@ void comstxetxInit ( com_stxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer 
 void comstxetxReceive ( com_stxetx_t* driver, uint8_t data );
 void comstxetxEvaluate ( com_stxetx_t* driver );
 void comstxetxTimeoutCounter ( com_stxetx_t* driver );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COMSTXETX_H_ */

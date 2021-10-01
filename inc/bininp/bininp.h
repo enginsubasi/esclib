@@ -1,6 +1,10 @@
 #ifndef BININP_H_
 #define BININP_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
@@ -36,6 +40,10 @@ typedef struct
 void bininpInit ( bininp_t* driver, uint32_t filterCount );
 void bininpUpdate ( bininp_t* driver, uint8_t newData );
 uint8_t bininpGetValue ( bininp_t* driver );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BININP_H_ */
 

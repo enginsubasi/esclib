@@ -1,6 +1,10 @@
 #ifndef BASICMATH_H_
 #define BASICMATH_H_
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
+
 #include <stdint.h>
 
 /* FUNCTION DEFINITIONS */
@@ -33,5 +37,9 @@ float calculateSum ( float* array, uint32_t length );
 float calculateMean ( float* array, uint32_t length );
 float calculateMedian ( float* array, uint32_t length );
 float calculateRange ( float* array, uint32_t length );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BASICMATH_H_ */
