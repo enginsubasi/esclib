@@ -1,31 +1,53 @@
 /**
   ******************************************************************************
   *
-  * @file:      generic.c
-  * @author:    Name Surname
-  * @email:     mail@mail.com
+  * @file:      logic.c
+  * @author:    Engin Subasi
+  * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 0.0.1
-  * @cdate:     20/02/2020
-  * @history:   20/02/2020 Created
+  * @cdate:     20/10/2021
+  * @history:   20/10/2021 Created
   *
-  * @about:     Generic template file.
+  * @about:     Basic logic function library file.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         foo1            : Brief
-  *         foo2            : Brief
+  *         rsff            : RS Flip-Flop implementation.
   *
   * @notes:
   *
   ******************************************************************************
   */
 
-#include "generic.h"
+#include "logic.h"
 
-${filecomment}
-${includes}
+/*
+ * @about: RS Flip-Flop implementation. All parameters are using as a boolean.
+ */
+uint8_t rsff ( uint8_t r, uint8_t s, uint8_t* mem )
+{
+    uibt8_t retVal = FALSE;
 
-${declarations}
+    if ( r )
+    {
+        ( *mem ) = FALSE;
+    }
+    else
+    {
+        if ( s )
+        {
+            ( *mem ) = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    retVal = ( *mem );
+
+    return ( retVal );
+}
