@@ -2,6 +2,6 @@
 General C Library
 
 # Rules
-esclib rules are derived from MISRA C:2012.
+The library rules are defined in rules.md file.
 
 
