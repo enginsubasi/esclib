@@ -98,8 +98,8 @@ uint32_t crc32 ( uint8_t* array, uint32_t size )
         0xbcb4666d, 0xb8757bda, 0xb5365d03, 0xb1f740b4
     };
     
-    uint32_t i      = 0;
-    uint32_t crc    = 0xffffffff;
+    uint32_t i = 0;
+    uint32_t crc = 0xffffffff;
 
     for ( i = 0; i < size; ++i )
     {
