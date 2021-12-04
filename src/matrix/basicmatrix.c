@@ -16,6 +16,7 @@
   *
   * @content:
   *     FUNCTIONS:
+  *         threshold1D     : Applies thresholding on 1D array.
   *         threshold2D     : Applies thresholding on 2D array.
   *
   * @notes:
@@ -23,7 +24,27 @@
   ******************************************************************************
   */
 
-#include "basicmath.h"
+#include "basicmatrix.h"
+
+/*
+ * @about:
+ */
+void threshold1D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize )
+{
+    uint32_t i = 0;
+    
+    for ( i = 0; i < iSize; ++i )
+    {
+        if ( matrix[ ( i * iSize ) + j ] > thresholdValue )
+        {
+            matrix[ ( i * iSize ) + j ] = upValue;
+        }
+        else
+        {
+            matrix[ ( i * iSize ) + j ] = dwValue;
+        }
+    }
+}
 
 /*
  * @about:

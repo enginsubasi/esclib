@@ -29,6 +29,7 @@
 
 /* FUNCTION PROTOTYPES */
 
+void threshold1D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize );
 void threshold2D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize, uint32_t ySize );
 
 #ifdef __cplusplus
