@@ -67,9 +67,9 @@ uint16_t crc16 ( uint8_t* array, uint32_t size )
            0x4400, 0x84C1, 0x8581, 0x4540, 0x8701, 0x47C0, 0x4680, 0x8641,
            0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040 };
 
-    uint8_t tempVal     = 0;
-    uint16_t crc        = 0xFFFF;
-    uint32_t i          = 0;
+    uint8_t tempVal = 0;
+    uint16_t crc = 0xFFFF;
+    uint32_t i = 0;
 
     for ( i = 0; i < size; ++i )
     {
