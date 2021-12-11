@@ -30,6 +30,7 @@
 /* FUNCTION PROTOTYPES */
 
 uint8_t rsff ( uint8_t r, uint8_t s, uint8_t* mem );
+uint8_t dff ( uint8_t d, uint8_t* mem );
 
 #ifdef __cplusplus
 }
