@@ -107,6 +107,35 @@ void findMinMax ( float* array, uint32_t length, float* min, float* max )
 /*
  * @about:
  */
+void findMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32_t* max )
+{
+    uint32_t i = 0;
+    uint32_t tempMin = 0;
+    uint32_t tempMax = 0;
+
+    tempMin = array[ 0 ];
+    tempMax = array[ 0 ];
+
+    for ( i = 1; i < length; ++i )
+    {
+        if ( tempMin > array[ i ] )
+        {
+            tempMin = array[ i ];
+        }
+
+        if ( tempMax < array[ i ] )
+        {
+            tempMax = array[ i ];
+        }
+    }
+
+    *min = tempMin;
+    *max = tempMax;
+}
+
+/*
+ * @about:
+ */
 float calculateSum ( float* array, uint32_t length )
 {
     uint32_t i = 0;
@@ -117,6 +146,22 @@ float calculateSum ( float* array, uint32_t length )
         sum += array[ i ];
     }
     
+    return ( sum );
+}
+
+/*
+ * @about:
+ */
+uint32_t calculateSumu32 ( uint32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t sum = 0;
+
+    for ( i = 0; i < length; ++i )
+    {
+        sum += array[ i ];
+    }
+
     return ( sum );
 }
 
@@ -142,7 +187,34 @@ float calculateMean ( float* array, uint32_t length )
 /*
  * @about:
  */
+uint32_t calculateMeanu32 ( uint32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t sum = 0;
+    uint32_t average = 0;
+
+    for ( i = 0; i < length; ++i )
+    {
+        sum += array[ i ];
+    }
+
+    average = sum / length;
+
+    return ( average );
+}
+
+/*
+ * @about:
+ */
 float calculateMedian ( float* array, uint32_t length )
+{
+    return ( array[ ( length / 2 ) ] );
+}
+
+/*
+ * @about:
+ */
+uint32_t calculateMedianu32 ( uint32_t* array, uint32_t length )
 {
     return ( array[ ( length / 2 ) ] );
 }
@@ -160,6 +232,22 @@ float calculateRange ( float* array, uint32_t length )
     
     findMinMax ( array, tempLength, &tempMin, &tempMax );
     
+    return ( tempMax - tempMin );
+}
+
+/*
+ * @about:
+ */
+uint32_t calculateRangeu32 ( uint32_t* array, uint32_t length )
+{
+    uint32_t tempMin = 0;
+    uint32_t tempMax = 0;
+    uint32_t tempLength = 0;
+
+    tempLength = length;
+
+    findMinMaxu32 ( array, tempLength, &tempMin, &tempMax );
+
     return ( tempMax - tempMin );
 }
 

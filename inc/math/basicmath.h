@@ -32,11 +32,16 @@
 float findMax ( float* array, uint32_t length );
 float findMin ( float* array, uint32_t length );
 void findMinMax ( float* array, uint32_t length, float* min, float* max );
+void findMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32_t* max );
 
 float calculateSum ( float* array, uint32_t length );
+uint32_t calculateSumu32 ( uint32_t* array, uint32_t length );
 float calculateMean ( float* array, uint32_t length );
+uint32_t calculateMeanu32 ( uint32_t* array, uint32_t length );
 float calculateMedian ( float* array, uint32_t length );
+uint32_t calculateMedianu32 ( uint32_t* array, uint32_t length );
 float calculateRange ( float* array, uint32_t length );
+uint32_t calculateRangeu32 ( uint32_t* array, uint32_t length );
 
 #ifdef __cplusplus
 }
