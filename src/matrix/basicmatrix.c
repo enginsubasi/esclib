@@ -20,6 +20,7 @@
   *         threshold1D     : Applies thresholding on 1D array.
   *         threshold2D     : Applies thresholding on 2D array.
   *         threshold2Du8   : Applies thresholding on 2D array 8-bits.
+  *         threshold2Du32  : Applies thresholding on 2D array 32-bits.
   *
   * @notes:
   *
@@ -96,3 +97,26 @@ void threshold2Du8 ( uint8_t* matrix, uint8_t thresholdValue, uint8_t upValue, u
     }
 }
 
+/*
+ * @about:
+ */
+void threshold2Du32 ( uint32_t* matrix, uint32_t thresholdValue, uint32_t upValue, uint32_t dwValue, uint32_t iSize, uint32_t ySize )
+{
+    uint32_t i = 0;
+    uint32_t j = 0;
+    
+    for ( i = 0; i < iSize; ++i )
+    {
+        for ( j = 0; j < jSize; ++j )
+        {
+            if ( matrix[ ( i * iSize ) + j ] > thresholdValue )
+            {
+                matrix[ ( i * iSize ) + j ] = upValue;
+            }
+            else
+            {
+                matrix[ ( i * iSize ) + j ] = dwValue;
+            }
+        }
+    }
+}

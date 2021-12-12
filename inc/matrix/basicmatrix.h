@@ -32,6 +32,7 @@
 void threshold1D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize );
 void threshold2D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize, uint32_t ySize );
 void threshold2Du8 ( uint8_t* matrix, uint8_t thresholdValue, uint8_t upValue, uint8_t dwValue, uint32_t iSize, uint32_t ySize );
+void threshold2Du32 ( uint8_t* matrix, uint8_t thresholdValue, uint8_t upValue, uint8_t dwValue, uint32_t iSize, uint32_t ySize );
 
 #ifdef __cplusplus
 }
