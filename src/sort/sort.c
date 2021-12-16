@@ -17,9 +17,14 @@
   * @content:
   *     FUNCTIONS:
   *         swapForSort     : Swaps the data of the two pointers.
+  *         swapForSortu32  :
   *
-  *         selectionSort   : 
+  *         selectionSort   :
+  *         selectionSortu32:
   *         bubbleSort      :
+  *         bubbleSortu32   :
+  *         insertionSort   :
+  *         insertionSortu32:
   *
   * @notes:
   *
