@@ -21,10 +21,14 @@
   *         findMax         : Find minimum number of array elements.
   *         findMinMax      : Find max. and min. numbers of array elements.
   *
-  *         calculateSum    : Calculates sum of array.
-  *         calculateMean   : Calculates average/mean value of array.
-  *         calculateMedian : Calculates median value of array.
-  *         calculateRange  : Calculates range of array.
+  *         calculateSum        : Calculates sum of array.
+  *         calculateSumu32     : Calculates sum of array u32.
+  *         calculateMean       : Calculates average/mean value of array.
+  *         calculateMeanu32    : Calculates average/mean value of array u32.
+  *         calculateMedian     : Calculates median value of array.
+  *         calculateMedianu32  : Calculates median value of array u32.
+  *         calculateRange      : Calculates range of array.
+  *         calculateRangeu32   : Calculates range of array u32.
   *
   * @notes:
   *
