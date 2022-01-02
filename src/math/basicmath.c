@@ -12,7 +12,7 @@
   *             10/07/2020 Average named mean.
   *             24/08/2020 Data type changed from double to float.
   *
-  * @about:     Basic mathematic function library file.
+  * @about:     Basic mathematics function library file.
   * @device:    Generic
   *
   * @content:
@@ -20,6 +20,7 @@
   *         findMax         : Find maximum number of array elements.
   *         findMax         : Find minimum number of array elements.
   *         findMinMax      : Find max. and min. numbers of array elements.
+  *         findMinMaxu32   : Find max. and min. numbers of array elements u32.
   *
   *         calculateSum        : Calculates sum of array.
   *         calculateSumu32     : Calculates sum of array u32.
