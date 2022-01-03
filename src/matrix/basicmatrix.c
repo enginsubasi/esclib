@@ -38,13 +38,13 @@ void threshold1D ( float* matrix, float thresholdValue, float upValue, float dwV
     
     for ( i = 0; i < iSize; ++i )
     {
-        if ( matrix[ ( i * iSize ) + j ] > thresholdValue )
+        if ( matrix [ i ] > thresholdValue )
         {
-            matrix[ ( i * iSize ) + j ] = upValue;
+            matrix [ i ] = upValue;
         }
         else
         {
-            matrix[ ( i * iSize ) + j ] = dwValue;
+            matrix [ i ] = dwValue;
         }
     }
 }
@@ -61,13 +61,13 @@ void threshold2D ( float* matrix, float thresholdValue, float upValue, float dwV
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix[ ( i * iSize ) + j ] > thresholdValue )
+            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
             {
-                matrix[ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * iSize ) + j ] = upValue;
             }
             else
             {
-                matrix[ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * iSize ) + j ] = dwValue;
             }
         }
     }
@@ -85,13 +85,13 @@ void threshold2Du8 ( uint8_t* matrix, uint8_t thresholdValue, uint8_t upValue, u
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix[ ( i * iSize ) + j ] > thresholdValue )
+            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
             {
-                matrix[ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * iSize ) + j ] = upValue;
             }
             else
             {
-                matrix[ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * iSize ) + j ] = dwValue;
             }
         }
     }
@@ -109,13 +109,13 @@ void threshold2Du32 ( uint32_t* matrix, uint32_t thresholdValue, uint32_t upValu
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix[ ( i * iSize ) + j ] > thresholdValue )
+            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
             {
-                matrix[ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * iSize ) + j ] = upValue;
             }
             else
             {
-                matrix[ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * iSize ) + j ] = dwValue;
             }
         }
     }
