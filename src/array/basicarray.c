@@ -26,7 +26,7 @@
 #include "basicarray.h"
 
 /*
- * @about:
+ * @about: It limits the input array according to upValue, dwValue. If exceed, the limits values are assigning.
  */
 void limitUpDw1D ( float* array, float, float upValue, float dwValue, uint32_t iSize )
 {
