@@ -58,6 +58,18 @@ static void swapForSortu32 ( uint32_t* xp, uint32_t* yp )
 }
 
 /*
+ * @about: Swaps the data of the two pointers.
+ */
+static void swapForSorti32 ( int32_t* xp, int32_t* yp )
+{
+    uint32_t temp = 0;
+
+    temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+
+/*
  * @about:
  */
 void selectionSort ( float* array, uint32_t length )
