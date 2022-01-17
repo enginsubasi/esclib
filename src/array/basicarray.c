@@ -28,7 +28,7 @@
 /*
  * @about: It limits the input array according to upValue, dwValue. If exceed, the limits values are assigning.
  */
-void limitUpDw1D ( float* array, float, float upValue, float dwValue, uint32_t iSize )
+void limitUpDw1D ( float* array, float upValue, float dwValue, uint32_t iSize )
 {
     uint32_t i = 0;
     
@@ -36,11 +36,35 @@ void limitUpDw1D ( float* array, float, float upValue, float dwValue, uint32_t i
     {
         if ( array[ i ] > upValue )
         {
-            matrix[ i ] = upValue;
+            array[ i ] = upValue;
         }
         else if ( array[ i ] < dwValue )
         {
-            matrix[ i ] = dwValue;
+            array[ i ] = dwValue;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+}
+
+/*
+ * @about: It limits the input array according to upValue, dwValue. If exceed, the limits values are assigning.
+ */
+void limitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint32_t iSize )
+{
+    uint32_t i = 0;
+    
+    for ( i = 0; i < iSize; ++i )
+    {
+        if ( array[ i ] > upValue )
+        {
+            array[ i ] = upValue;
+        }
+        else if ( array[ i ] < dwValue )
+        {
+            array[ i ] = dwValue;
         }
         else
         {

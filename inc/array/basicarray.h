@@ -29,7 +29,8 @@
 
 /* FUNCTION PROTOTYPES */
 
-void limitUpDw1D ( float* array, float, float upValue, float dwValue, uint32_t iSize );
+void limitUpDw1D ( float* array, float upValue, float dwValue, uint32_t iSize );
+void limitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint32_t iSize );
 
 #ifdef __cplusplus
 }
