@@ -62,7 +62,7 @@ static void swapForSortu32 ( uint32_t* xp, uint32_t* yp )
  */
 static void swapForSorti32 ( int32_t* xp, int32_t* yp )
 {
-    uint32_t temp = 0;
+    int32_t temp = 0;
 
     temp = *xp;
     *xp = *yp;
@@ -122,6 +122,34 @@ void selectionSortu32 ( uint32_t* array, uint32_t length )
         }
 
         swapForSortu32 ( &array[ minElmIndex ], &array[ i ] );
+    }
+}
+
+/*
+ * @about:
+ */
+void selectionSorti32 ( int32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t j = 0;
+    uint32_t lengthM1 = 0;      // Length minus 1.
+    uint32_t minElmIndex = 0;   // Minimum elements index.
+
+    lengthM1 = length - 1;      // Optimize loop operations.
+
+    for ( i = 0; i < lengthM1; ++i )
+    {
+        minElmIndex = i;
+
+        for ( j = i + 1; j < length; ++j )
+        {
+            if ( array[ j ] < array[ minElmIndex ] )
+            {
+                minElmIndex = j;
+            }
+        }
+
+        swapForSorti32 ( &array[ minElmIndex ], &array[ i ] );
     }
 }
 

@@ -31,6 +31,7 @@
 
 void selectionSort ( float* array, uint32_t length );
 void selectionSortu32 ( uint32_t* array, uint32_t length );
+void selectionSorti32 ( int32_t* array, uint32_t length );
 void bubbleSort ( float* array, uint32_t length );
 void bubbleSortu32 ( uint32_t* array, uint32_t length );
 void insertionSort ( float* array, uint32_t length );
