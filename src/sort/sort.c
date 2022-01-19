@@ -202,6 +202,29 @@ void bubbleSortu32 ( uint32_t* array, uint32_t length )
 /*
  * @about:
  */
+void bubbleSorti32 ( int32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t j = 0;
+    uint32_t lengthM1 = 0;      // Length minus 1.
+
+    lengthM1 = length - 1;      // Optimize loop operations.
+
+    for ( i = 0; i < lengthM1; ++i )
+    {
+        for ( j = 0; j < ( lengthM1 - i ); ++j )
+        {
+            if ( array[ j ] > array[ j + 1 ] )
+            {
+                swapForSorti32 ( &array[ j ], &array[ j + 1 ] );
+            }
+        }
+    }
+}
+
+/*
+ * @about:
+ */
 void insertionSort ( float* array, uint32_t length )  
 {  
     uint32_t i = 0;
