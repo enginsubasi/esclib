@@ -6,10 +6,11 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.2
-  * @cdate:     24/12/2020
-  * @history:   24/12/2020 Created.
-  *             26/12/2020 bubbleSort added.
+  * @version:   v 0.0.3
+  * @cdate:     24/12/2021
+  * @history:   24/12/2021 Created.
+  *             26/12/2021 bubbleSort added.
+  *             20/01/2022 bubbleSort added.
   *
   * @about:     Sort function library file.
   * @device:    Generic
@@ -18,13 +19,17 @@
   *     FUNCTIONS:
   *         swapForSort     : Swaps the data of the two pointers.
   *         swapForSortu32  :
+  *         swapForSorti32  :
   *
   *         selectionSort   :
   *         selectionSortu32:
+  *         selectionSorti32:
   *         bubbleSort      :
   *         bubbleSortu32   :
+  *         bubbleSorti32   :
   *         insertionSort   :
   *         insertionSortu32:
+  *         insertionSorti32:
   *
   * @notes:
   *
@@ -253,6 +258,29 @@ void insertionSortu32 ( uint32_t* array, uint32_t length )
     uint32_t i = 0;
     uint32_t j = 0;
     uint32_t key = 0;
+
+    for ( i = 1; i < length; ++i )
+    {
+        key = array[i];
+        j = i - 1;
+
+        while ( ( j >= 0 ) && ( j != 0xFFFFFFFF ) && ( array[ j ] > key ) )
+        {
+            array[ j + 1 ] = array[ j ];
+            j = j - 1;
+        }
+        array[ j + 1 ] = key;
+    }
+}
+
+/*
+ * @about:
+ */
+void insertionSorti32 ( int32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t j = 0;
+    int32_t key = 0;
 
     for ( i = 1; i < length; ++i )
     {
