@@ -16,7 +16,9 @@
   *
   * @content:
   *     FUNCTIONS:
-  *         limit1D         : Applies limit on 1D array.
+  *         limitUpDw1D             : Applies limit on 1D array.
+  *         limitUpDw1Du32          : Applies limit on 1D array.
+  *         limitUpDw1Di32          : Applies limit on 1D array.
   *
   * @notes:
   *
