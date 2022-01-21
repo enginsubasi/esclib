@@ -72,3 +72,27 @@ void limitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint3
         }
     }
 }
+
+/*
+ * @about: It limits the input array according to upValue, dwValue. If exceed, the limits values are assigning.
+ */
+void limitUpDw1Di32 ( int32_t* array, int32_t upValue, int32_t dwValue, uint32_t iSize )
+{
+    uint32_t i = 0;
+    
+    for ( i = 0; i < iSize; ++i )
+    {
+        if ( array[ i ] > upValue )
+        {
+            array[ i ] = upValue;
+        }
+        else if ( array[ i ] < dwValue )
+        {
+            array[ i ] = dwValue;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+}
