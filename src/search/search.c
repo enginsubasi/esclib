@@ -32,7 +32,7 @@
 /*
  * @about: isEqual function for floating point data type.
  */
-static uint8_t isEqual_f ( float f1, float f2, float epsilon )
+static uint8_t isEqualf ( float f1, float f2, float epsilon )
 {
     uint8_t retVal = FALSE;
 
@@ -51,7 +51,7 @@ static uint8_t isEqual_f ( float f1, float f2, float epsilon )
 /*
  * @about:
  */
-uint8_t linearSearch_i32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
+uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
 {
     uint8_t retVal = FALSE;
     uint32_t i = 0;
@@ -73,7 +73,7 @@ uint8_t linearSearch_i32 ( const int32_t* const array, uint32_t length, int32_t 
  * @about:
  * @param: "array" should be a sorted array.
  */
-uint8_t binarySearch_i32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
+uint8_t binarySearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
 {
     uint8_t retVal = FALSE;
     uint32_t l = 0;

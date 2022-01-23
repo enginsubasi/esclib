@@ -29,8 +29,8 @@
 
 /* FUNCTION PROTOTYPES */
 
-uint8_t linearSearch_i32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex );
-uint8_t binarySearch_i32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex );
+uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex );
+uint8_t binarySearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex );
 
 #ifdef __cplusplus
 }
