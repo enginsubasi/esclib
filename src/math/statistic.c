@@ -16,7 +16,9 @@
   *
   * @content:
   *     FUNCTIONS:
-  *         variance        : Calculates variance value of the array.
+  *         variance                : Calculates variance value of the array.
+  *         standardDeviation       :
+  *         covariance              :
   *
   * @notes:
   *
