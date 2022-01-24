@@ -120,3 +120,28 @@ void threshold2Du32 ( uint32_t* matrix, uint32_t thresholdValue, uint32_t upValu
         }
     }
 }
+
+/*
+ * @about:
+ */
+void threshold2Di32 ( int32_t* matrix, int32_t thresholdValue, int32_t upValue, int32_t dwValue, uint32_t iSize, uint32_t ySize )
+{
+    uint32_t i = 0;
+    uint32_t j = 0;
+    
+    for ( i = 0; i < iSize; ++i )
+    {
+        for ( j = 0; j < jSize; ++j )
+        {
+            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
+            {
+                matrix [ ( i * iSize ) + j ] = upValue;
+            }
+            else
+            {
+                matrix [ ( i * iSize ) + j ] = dwValue;
+            }
+        }
+    }
+}
+
