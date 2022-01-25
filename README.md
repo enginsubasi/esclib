@@ -1,7 +1,7 @@
 # esclib
 General C Library
 
-# Rules
-The library rules are defined in rules.md file.
+# Coding Reference
+The library coding references are defined in codingReference.md file.
 
 
