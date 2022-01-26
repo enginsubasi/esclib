@@ -106,6 +106,20 @@ float standardDeviation ( float* array, uint32_t length )
 /*
  * @about:
  */
+int32_t standardDeviationi32 ( int32_t* array, uint32_t length )
+{
+    int32_t standardDeviation = 0;
+    
+    standardDeviation = variancei32 ( array, length );
+    
+    standardDeviation = sqrt ( standardDeviation ); // Dep. math.h
+    
+    return ( standardDeviation );
+}
+
+/*
+ * @about:
+ */
 float covariance ( float* array1, float* array2, uint32_t length )
 {
     uint32_t i = 0;
