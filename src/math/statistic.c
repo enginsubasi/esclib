@@ -45,7 +45,7 @@ float variance ( float* array, uint32_t length )
     }
 
     // Average value of the array.
-    // TODO: Prevent to divide by zero.
+    // TODO: Prevent from divide by zero.
     average = sum / length;
 
     for ( i = 0; i < length; ++i )
@@ -53,7 +53,7 @@ float variance ( float* array, uint32_t length )
         variance += pow ( ( array[ i ] - average ), 2 );
     }
 
-    // TODO: Prevent to divide by zero.
+    // TODO: Prevent from divide by zero.
     variance /= ( length - 1 );
 
     return ( variance );
@@ -98,8 +98,8 @@ float covariance ( float* array1, float* array2, uint32_t length )
         covariance += ( ( array1[ i ] - average1 ) * ( array2[ i ] - average2 ) );
     }
 
-    // TODO: Prevent to divide by zero.
-    covariance /= ( length - 1 );
+    // TODO: Prevent from divide by zero.
+    covariance /= length;
 
     return ( covariance );
 }
