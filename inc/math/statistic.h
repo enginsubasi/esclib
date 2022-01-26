@@ -30,6 +30,7 @@
 /* FUNCTION PROTOTYPES */
 
 float variance ( float* array, uint32_t length );
+float variancei32 ( float* array, uint32_t length );
 float standardDeviation ( float* array, uint32_t length );
 float covariance ( float* array1, float* array2, uint32_t length );
 

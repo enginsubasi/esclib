@@ -62,6 +62,36 @@ float variance ( float* array, uint32_t length )
 /*
  * @about:
  */
+int32_t variancei32 ( int32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    int32_t sum = 0;
+    int32_t average = 0;
+    int32_t variance = 0;
+
+    for ( i = 0; i < length; ++i )
+    {
+        sum += array[ i ];
+    }
+
+    // Average value of the array.
+    // TODO: Prevent from divide by zero.
+    average = sum / length;
+
+    for ( i = 0; i < length; ++i )
+    {
+        variance += pow ( ( array[ i ] - average ), 2 );
+    }
+
+    // TODO: Prevent from divide by zero.
+    variance /= ( length - 1 );
+
+    return ( variance );
+}
+
+/*
+ * @about:
+ */
 float standardDeviation ( float* array, uint32_t length )
 {
     float standardDeviation = 0;
