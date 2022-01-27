@@ -21,6 +21,7 @@
   *
   *         linearSearchu32     : Linear search algorithm for unsigned-integer-32-bit.
   *         linearSearchi32     : Linear search algorithm for signed-integer-32-bit.
+  *         binarySearchu32     : Binary search algorithm for unsigned-integer-32-bit.
   *         binarySearchi32     : Binary search algorithm for signed-integer-32-bit.
   *
   * @notes:
@@ -86,6 +87,49 @@ uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t i
             retVal = TRUE;
             break;
         }      
+    }
+
+    return ( retVal );
+}
+
+/*
+ * @about:
+ * @param: "array" should be a sorted array.
+ */
+uint8_t binarySearchu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
+{
+    uint8_t retVal = FALSE;
+    uint32_t l = 0;
+    uint32_t r = length - 1;
+    uint32_t m = 0;
+
+    while ( l <= r )
+    {
+        m = l + ( ( r - l ) >> 1 ); // divide by 2
+
+        if ( array[ m ] == item )
+        {
+            ( *foundIndex ) = m;
+            retVal = TRUE;
+            break;
+        }
+
+        if ( array[ m ] < item )
+        {
+            l = m + 1;
+        }
+        else
+        {
+            if ( m == 0 )
+            {
+                l = m + 1;
+            }
+            else
+            {
+                r = m - 1;
+            }
+
+        }
     }
 
     return ( retVal );
