@@ -19,6 +19,7 @@
   *     FUNCTIONS:
   *         isEqual_f           : It is a help function for floating point search functions.
   *
+  *         linearSearch        : Linear search algorithm for float.
   *         linearSearchu32     : Linear search algorithm for unsigned-integer-32-bit.
   *         linearSearchi32     : Linear search algorithm for signed-integer-32-bit.
   *         binarySearchu32     : Binary search algorithm for unsigned-integer-32-bit.
@@ -45,6 +46,27 @@ static uint8_t isEqualf ( float f1, float f2, float epsilon )
     else
     {
         retVal = ( ( f2 - f1 ) <= epsilon );
+    }
+
+    return ( retVal );
+}
+
+/*
+ * @about:
+ */
+uint8_t linearSearch ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+
+    for ( i = 0; i < length; ++i )
+    {
+        if ( isEqualf ( array[ i ], item, epsilon );
+        {
+            ( *foundIndex ) = i;
+            retVal = TRUE;
+            break;
+        }      
     }
 
     return ( retVal );
