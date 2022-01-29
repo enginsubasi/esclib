@@ -61,7 +61,7 @@ uint8_t linearSearch ( const float* const array, uint32_t length, float item, ui
 
     for ( i = 0; i < length; ++i )
     {
-        if ( isEqualf ( array[ i ], item, epsilon );
+        if ( isEqualf ( array[ i ], item, epsilon ) == TRUE );
         {
             ( *foundIndex ) = i;
             retVal = TRUE;
@@ -109,6 +109,49 @@ uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t i
             retVal = TRUE;
             break;
         }      
+    }
+
+    return ( retVal );
+}
+
+/*
+ * @about:
+ * @param: "array" should be a sorted array.
+ */
+uint8_t binarySearch ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
+{
+    uint8_t retVal = FALSE;
+    uint32_t l = 0;
+    uint32_t r = length - 1;
+    uint32_t m = 0;
+
+    while ( l <= r )
+    {
+        m = l + ( ( r - l ) >> 1 ); // divide by 2
+
+        if ( isEqualf ( array[ m ], item, epsilon ) == TRUE )
+        {
+            ( *foundIndex ) = m;
+            retVal = TRUE;
+            break;
+        }
+
+        if ( array[ m ] < item )
+        {
+            l = m + 1;
+        }
+        else
+        {
+            if ( m == 0 )
+            {
+                l = m + 1;
+            }
+            else
+            {
+                r = m - 1;
+            }
+
+        }
     }
 
     return ( retVal );
