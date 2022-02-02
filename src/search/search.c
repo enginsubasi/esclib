@@ -22,6 +22,7 @@
   *         linearSearch        : Linear search algorithm for float.
   *         linearSearchu32     : Linear search algorithm for unsigned-integer-32-bit.
   *         linearSearchi32     : Linear search algorithm for signed-integer-32-bit.
+  *         binarySearch        : Binary search algorithm for float.
   *         binarySearchu32     : Binary search algorithm for unsigned-integer-32-bit.
   *         binarySearchi32     : Binary search algorithm for signed-integer-32-bit.
   *
