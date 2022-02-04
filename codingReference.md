@@ -2,6 +2,20 @@
 
 ## if and switch Statements
 
+### if
+    if ( ( a > b ) || ( c == d ) )
+    {
+        // The code is here.
+    }
+    else if ( ( e > f ) && ( g == h ) )
+    {
+        // The code is here.
+    }
+    else
+    {
+        // The code is here.
+    }
+
 ## Loop Statements
 
 ### for
