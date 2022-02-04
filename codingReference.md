@@ -5,15 +5,31 @@
 ### if
     if ( ( a > b ) || ( c == d ) )
     {
-        // The code is here.
+        // Code to be executed.
     }
     else if ( ( e > f ) && ( g == h ) )
     {
-        // The code is here.
+        // Code to be executed.
     }
     else
     {
-        // The code is here.
+        // Code to be executed.
+    }
+    
+### switch
+    switch ( expression )
+    {
+        case val1:
+            // Code to be executed.
+        break;
+        
+        case val2:
+            // Code to be executed.
+        break;
+        
+        default:
+            // Code to be executed.
+        break;
     }
 
 ## Loop Statements
@@ -21,19 +37,19 @@
 ### for
     for ( i = 0; i < DEF_SIZE; ++i )
     {
-        // The code is here.
+        // Code to be executed.
     }
 
 ### while
     while ( loopControl == TRUE )
     {
-        // The code is here.
+        // Code to be executed.
     }
 
 ### do-while
     do
     {
-        // The code is here.
+        // Code to be executed.
     } while ( loopControl == TRUE );
 
 
