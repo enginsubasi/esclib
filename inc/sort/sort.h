@@ -37,7 +37,7 @@ void bubbleSortu32 ( uint32_t* array, uint32_t length );
 void bubbleSorti32 ( int32_t* array, uint32_t length );
 void insertionSort ( float* array, uint32_t length );
 void insertionSortu32 ( uint32_t* array, uint32_t length );
-void insertionSorti32 ( uint32_t* array, uint32_t length );
+void insertionSorti32 ( int32_t* array, uint32_t length );
 
 #ifdef __cplusplus
 }
