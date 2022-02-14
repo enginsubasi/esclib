@@ -30,6 +30,8 @@
 /* FUNCTION PROTOTYPES */
 
 float findMax ( float* array, uint32_t length );
+uint32_t findMaxu32 ( uint32_t* array, uint32_t length );
+int32_t findMaxi32 ( int32_t* array, uint32_t length );
 float findMin ( float* array, uint32_t length );
 void findMinMax ( float* array, uint32_t length, float* min, float* max );
 void findMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32_t* max );

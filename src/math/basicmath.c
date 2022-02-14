@@ -62,6 +62,48 @@ float findMax ( float* array, uint32_t length )
 /*
  * @about:
  */
+uint32_t findMaxu32 ( uint32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t tempMax = 0;
+    
+    tempMax = array[ 0 ];
+    
+    for ( i = 1; i < length; ++i )
+    {
+        if ( tempMax < array[ i ] )
+        {
+            tempMax = array[ i ];
+        }
+    }
+    
+    return ( tempMax );
+}
+
+/*
+ * @about:
+ */
+int32_t findMaxi32 ( int32_t* array, uint32_t length )
+{
+    uint32_t i = 0;
+    int32_t tempMax = 0;
+    
+    tempMax = array[ 0 ];
+    
+    for ( i = 1; i < length; ++i )
+    {
+        if ( tempMax < array[ i ] )
+        {
+            tempMax = array[ i ];
+        }
+    }
+    
+    return ( tempMax );
+}
+
+/*
+ * @about:
+ */
 float findMin ( float* array, uint32_t length )
 {
     uint32_t i = 0;
