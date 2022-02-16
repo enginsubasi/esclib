@@ -125,6 +125,27 @@ float findMin ( float* array, uint32_t length )
 /*
  * @about:
  */
+uint32_t findMin32 ( uint32_t* array, uint32_t length );
+{
+    uint32_t i = 0;
+    uint32_t tempMin = 0;
+    
+    tempMin = array[ 0 ];
+    
+    for ( i = 1; i < length; ++i )
+    {
+        if ( tempMin > array[ i ] )
+        {
+            tempMin = array[ i ];
+        }
+    }
+    
+    return ( tempMin );
+}
+
+/*
+ * @about:
+ */
 void findMinMax ( float* array, uint32_t length, float* min, float* max )
 {
     uint32_t i = 0;
