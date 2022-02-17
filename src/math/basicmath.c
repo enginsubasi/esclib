@@ -125,7 +125,7 @@ float findMin ( float* array, uint32_t length )
 /*
  * @about:
  */
-uint32_t findMin32 ( uint32_t* array, uint32_t length );
+uint32_t findMin32 ( uint32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t tempMin = 0;
