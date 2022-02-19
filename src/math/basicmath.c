@@ -247,6 +247,7 @@ float calculateMean ( float* array, uint32_t length )
         sum += array[ i ];
     }
     
+    // TODO: Div. by zero risk
     average = sum / length;
     
     return ( average );
@@ -266,6 +267,7 @@ uint32_t calculateMeanu32 ( uint32_t* array, uint32_t length )
         sum += array[ i ];
     }
 
+    // TODO: Div. by zero risk
     average = sum / length;
 
     return ( average );
