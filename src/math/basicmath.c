@@ -18,7 +18,10 @@
   * @content:
   *     FUNCTIONS:
   *         findMax         : Find maximum number of array elements.
-  *         findMax         : Find minimum number of array elements.
+  *         findMaxu32      : Find maximum number of array elements u32.
+  *         findMaxi32      : Find maximum number of array elements i32.
+  *         findMin         : Find minimum number of array elements.
+  *         findMin32:      : Find minimum number of array elements .
   *         findMinMax      : Find max. and min. numbers of array elements.
   *         findMinMaxu32   : Find max. and min. numbers of array elements u32.
   *
@@ -125,7 +128,7 @@ float findMin ( float* array, uint32_t length )
 /*
  * @about:
  */
-uint32_t findMin32 ( uint32_t* array, uint32_t length )
+uint32_t findMinu32 ( uint32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t tempMin = 0;
