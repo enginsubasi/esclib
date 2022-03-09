@@ -40,6 +40,17 @@
         // Code to be executed.
     }
 
+    for ( i = 0; i < DEF_SIZE; ++i )
+    {
+        // Code to be executed.
+        
+        if ( a == b )
+        {
+            // Only one break expression is acceptable.
+            break;
+        }
+    }
+
 ### while
     while ( loopControl == TRUE )
     {
