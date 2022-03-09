@@ -32,6 +32,15 @@ typedef struct
     float output;
 } maf_t;
 
+typedef struct
+{
+    uint32_t* buffer;
+    uint32_t length;
+    uint32_t index;
+    uint32_t sumOfArray;
+    uint32_t output;
+} mafu32_t;
+
 /* ENUMS */
 
 /* EXTERNS */
