@@ -51,6 +51,10 @@ int8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputInit
 void mafIteration ( maf_t* driver, float newData );
 float mafGetOutput ( maf_t* driver );
 
+int8_t mafInitu32 ( mafu32_t* driver, uint32_t* buffer, uint32_t length, uint32_t outputInit );
+void mafIterationu32 ( mafu32_t* driver, uint32_t newData );
+uint32_t mafGetOutputu32 ( mafu32_t* driver );
+
 #ifdef __cplusplus
 }
 #endif
