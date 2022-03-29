@@ -23,6 +23,14 @@
 
 /* STRUCTURES */
 
+typedef struct
+{
+    uint32_t filterCounter;
+    uint32_t filterCount;
+    
+    uint8_t output;
+} circBuf_t;
+
 /* ENUMS */
 
 /* EXTERNS */

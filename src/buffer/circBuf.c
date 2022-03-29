@@ -1,31 +1,29 @@
 /**
   ******************************************************************************
   *
-  * @file:      generic.c
-  * @author:    Name Surname
-  * @email:     mail@mail.com
+  * @file:      circBuf.c
+  * @author:    Engin Subaşı
+  * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 0.0.1
-  * @cdate:     20/02/2020
-  * @history:   20/02/2020 Created
+  * @cdate:     29/03/2022
+  * @history:   29/03/2022 Created.
   *
-  * @about:     Generic template file.
+  * @about:     Circular buffer implementation.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         foo1            : Brief
-  *         foo2            : Brief
+  *         foo1                : Initialize comstxetx structure.
+  *         foo2                : 
   *
   * @notes:
   *
   ******************************************************************************
   */
 
-#include "generic.h"
+#include "circBuf.h"
 
-${filecomment}
-${includes}
 
-${declarations}
+
