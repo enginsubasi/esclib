@@ -26,7 +26,9 @@
 typedef struct
 {
     uint32_t* buffer;
-    uint32_t size;
+    uint32_t capacity;
+    uint32_t rp;
+    uint32_t wp;
     
 } circBufu32_t;
 
@@ -35,6 +37,9 @@ typedef struct
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
+
+void circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t size );
+uint32_t circBufGetsizeu32 ( circBufu32_t* driver );
 
 #ifdef __cplusplus
 }
