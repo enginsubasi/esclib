@@ -1,5 +1,5 @@
-#ifndef GENERIC_H_
-#define GENERIC_H_
+#ifndef CIRCBUF_H_
+#define CIRCBUF_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -29,7 +29,6 @@ typedef struct
     uint32_t capacity;
     uint32_t rp;
     uint32_t wp;
-    
 } circBufu32_t;
 
 /* ENUMS */
@@ -45,4 +44,4 @@ uint32_t circBufGetsizeu32 ( circBufu32_t* driver );
 }
 #endif
 
-#endif /* GENERIC_H_ */   
+#endif /* CIRCBUF_H_ */   
