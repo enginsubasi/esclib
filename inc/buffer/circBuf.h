@@ -25,11 +25,10 @@
 
 typedef struct
 {
-    uint32_t filterCounter;
-    uint32_t filterCount;
+    uint32_t* buffer;
+    uint32_t size;
     
-    uint8_t output;
-} circBuf_t;
+} circBufu32_t;
 
 /* ENUMS */
 
