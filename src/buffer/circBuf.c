@@ -28,12 +28,29 @@
 /*
  * @about:
  */
-void circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity )
+uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity )
 {
-    driver->buffer = buffer;
-    driver->capacity = capacity;
-    driver->rp = 0;
-    driver->wp = 0;
+    int8_t retVal = FALSE;
+    
+    if ( ( driver != NULL ) && ( buffer != NULL ) && ( capacity != 0 ) )
+    {
+        // Assignments
+        driver->buffer = buffer;
+        driver->capacity = capacity;
+
+        // Initilizations
+        driver->rp = 0;
+        driver->wp = 0;
+
+        // Set return value
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /*
@@ -41,6 +58,54 @@ void circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity 
  */
 uint32_t circBufGetsizeu32 ( circBufu32_t* driver )
 {
+    uint32_t retVal = 0;
 
+    if ( wp >= rp )
+    {
+        retVal = ( wp - rp );
+    }
+    else
+    {
+        retVal = driver->wp + ( driver->capacity - driver->rp )
+    }
+
+    return ( retVal );
 }
+
+/*
+ * @about:
+ */
+uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver->wp < driver->capacity ) && ( ( driver->rp + 1 ) != driver->wp )  )
+    {
+        driver->buffer[ driver->wp ]
+        ++driver->wp;
+    }
+
+    if ( driver->capacity == driver->wp )
+    {
+        if ( ( driver->rp + 1 ) != driver->wp )
+        {
+            driver->wp = 0;
+            driver->buffer[ driver->wp ];
+
+            retVal = TRUE;
+        }
+        else
+        {
+            retVal = FALSE;
+        }
+    }
+
+    
+
+    return ( retVal );
+}
+
+
+
+
 
