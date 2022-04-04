@@ -29,9 +29,16 @@ typedef struct
     uint32_t capacity;
     uint32_t rp;
     uint32_t wp;
+    uint8_t behaviour;
 } circBufu32_t;
 
 /* ENUMS */
+
+enum BUFBEH
+{
+    BUFBEH_OVERWRITE        = 0,
+    BUFBEH_STOP             = 1,
+};
 
 /* EXTERNS */
 
