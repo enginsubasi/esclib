@@ -17,6 +17,8 @@
   *
   * @content:
   *     FUNCTIONS:
+  *         absolute        :
+  *         
   *         findMax         : Find maximum number of array elements.
   *         findMaxu32      : Find maximum number of array elements u32.
   *         findMaxi32      : Find maximum number of array elements i32.
@@ -40,6 +42,25 @@
   */
 
 #include "basicmath.h"
+
+/*
+ * @about:
+ */
+float absolute ( float inp )
+{
+    float retVal = 0;
+
+    if ( inp < 0 )
+    {
+        retVal = -inp;
+    }
+    else
+    {
+        retVal = inp;
+    }
+
+    return ( retVal );
+}
 
 /*
  * @about:
