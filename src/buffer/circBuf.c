@@ -79,11 +79,35 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
 {
     uint8_t retVal = FALSE;
 
-    if ( ( driver->wp < driver->capacity ) && ( ( driver->rp + 1 ) != driver->wp )  )
+    if ( driver->wp < driver->capacity )
     {
-        driver->buffer[ driver->wp ]
-        ++driver->wp;
+        if ( driver->wp != ( driver->rp + 1 ) )
+        {
+            driver->buffer[ driver->wp ];
+            ++driver->wp;
+            retVal = TRUE;
+        }
+        else
+        {
+            if ( driver->behaviour == BUFBEH_OVERWRITE )
+            {
+                driver->buffer[ driver->wp ];
+                ++driver->wp;
+                retVal = TRUE;
+            }
+            else if ( driver->behaviour == BUFBEH_STOP )
+            {
+                retVal = FALSE;
+            }
+        }
     }
+    else
+    {
+        
+    }
+
+
+
 
     if ( driver->capacity == driver->wp )
     {
@@ -99,8 +123,6 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
             retVal = FALSE;
         }
     }
-
-    
 
     return ( retVal );
 }
