@@ -30,6 +30,7 @@
 /* FUNCTION PROTOTYPES */
 
 float absolute ( float inp );
+int32_t absolutei32 ( int32_t inp );
 
 float findMax ( float* array, uint32_t length );
 uint32_t findMaxu32 ( uint32_t* array, uint32_t length );

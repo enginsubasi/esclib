@@ -65,6 +65,25 @@ float absolute ( float inp )
 /*
  * @about:
  */
+int32_t absolutei32 ( int32_t inp )
+{
+    int32_t retVal = 0;
+
+    if ( inp < 0 )
+    {
+        retVal = -inp;
+    }
+    else
+    {
+        retVal = inp;
+    }
+
+    return ( retVal );
+}
+
+/*
+ * @about:
+ */
 float findMax ( float* array, uint32_t length )
 {
     uint32_t i = 0;
