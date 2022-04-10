@@ -46,6 +46,7 @@ enum BUFBEH
 
 void circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t size );
 uint32_t circBufGetsizeu32 ( circBufu32_t* driver );
+uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data );
 
 #ifdef __cplusplus
 }
