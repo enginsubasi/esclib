@@ -10,13 +10,15 @@
   * @cdate:     20/11/2021
   * @history:   20/11/2021 Created
   *
-  * @about:     Generic template file.
+  * @about:     HC595 driver file.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         foo1            : Brief
-  *         foo2            : Brief
+  *         hc595Init           :
+  *         hc595DlyCtrl        :
+  *         hc595DrvLoop        :
+  *         hc595DrvOneShoot    :
   *
   * @notes:
   *
@@ -25,6 +27,9 @@
 
 #include "hc595_drv.h"
 
+/*
+ * @about:
+ */
 void hc595Init ( struct HC595_Driver *driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
@@ -52,6 +57,9 @@ void hc595Init ( struct HC595_Driver *driver,
 
 }
 
+/*
+ * @about:
+ */
 static void hc595DlyCtrl ( struct HC595_Driver *driver )
 {
     if ( driver->dlyType == DLY_NO )
@@ -73,11 +81,17 @@ static void hc595DlyCtrl ( struct HC595_Driver *driver )
     }
 }
 
+/*
+ * @about:
+ */
 void hc595DrvLoop ( struct HC595_Driver *driver )
 {
 
 }
 
+/*
+ * @about:
+ */
 void hc595DrvOneShoot ( struct HC595_Driver *driver )
 {
     uint32_t i = 0;
@@ -103,6 +117,9 @@ void hc595DrvOneShoot ( struct HC595_Driver *driver )
     hc595DlyCtrl ( driver );
 }
 
+/*
+ * @about:
+ */
 void hc595DrvInterrupt ( struct HC595_Driver *driver )
 {
 
