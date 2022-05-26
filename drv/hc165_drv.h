@@ -36,8 +36,8 @@ struct HC165_Driver
     uint8_t dlyType;
     uint32_t dlyCount;
 
-    void ( *sckDrv )( uint8_t );
-    void ( *rckDrv )( uint8_t );
+    void ( *clkDrv )( uint8_t );
+    void ( *lodDrv )( uint8_t );
     void ( *datDrv )( uint8_t );
 
     void ( *dlyMs )( uint32_t );
