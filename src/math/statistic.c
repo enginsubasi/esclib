@@ -17,7 +17,7 @@
   * @content:
   *     FUNCTIONS:
   *         variance                : Calculates variance value of the array.
-  *         variancei32             :
+  *         variancei32             : Calculates variance value of the array 32-bits integer.
   *         standardDeviation       :
   *         standardDeviationi32    : 
   *         covariance              :
