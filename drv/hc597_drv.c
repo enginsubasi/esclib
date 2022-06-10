@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   *
-  * @file:      hc165.c
+  * @file:      hc597.c
   * @author:    Engin Subasi
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
@@ -10,27 +10,27 @@
   * @cdate:     23/05/2022
   * @history:   23/05/2022 Created
   *
-  * @about:     HC165 driver file.
+  * @about:     HC597 driver file.
   * @device:    Generic
   *
   * @content:
   *     FUNCTIONS:
-  *         hc165Init           :
-  *         hc165DlyCtrl        :
-  *         hc165DrvLoop        :
-  *         hc165DrvOneShoot    :
+  *         hc597Init           :
+  *         hc597DlyCtrl        :
+  *         hc597DrvLoop        :
+  *         hc597DrvOneShoot    :
   *
   * @notes:
   *
   ******************************************************************************
   */
 
-#include "hc165_drv.h"
+#include "hc597_drv.h"
 
 /*
  * @about:
  */
-void hc165Init ( struct HC165_Driver *driver,
+void hc597Init ( struct HC597_Driver *driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
@@ -60,7 +60,7 @@ void hc165Init ( struct HC165_Driver *driver,
 /*
  * @about:
  */
-static void hc595DlyCtrl ( struct HC165_Driver *driver )
+static void hc595DlyCtrl ( struct HC597_Driver *driver )
 {
     if ( driver->dlyType == DLY_NO )
     {
@@ -84,7 +84,7 @@ static void hc595DlyCtrl ( struct HC165_Driver *driver )
 /*
  * @about:
  */
-void hc165DrvLoop ( struct HC165_Driver *driver )
+void hc597DrvLoop ( struct HC597_Driver *driver )
 {
 
 }
@@ -92,7 +92,7 @@ void hc165DrvLoop ( struct HC165_Driver *driver )
 /*
  * @about:
  */
-void hc165DrvOneShoot ( struct HC165_Driver *driver )
+void hc597DrvOneShoot ( struct HC597_Driver *driver )
 {
 
 }
@@ -100,7 +100,7 @@ void hc165DrvOneShoot ( struct HC165_Driver *driver )
 /*
  * @about:
  */
-void hc165DrvInterrupt ( struct HC595_Driver *driver )
+void hc597DrvInterrupt ( struct HC595_Driver *driver )
 {
 
 }

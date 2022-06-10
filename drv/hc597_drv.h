@@ -26,7 +26,7 @@
 /* STRUCTURES */
 
 
-struct HC165_Driver
+struct HC597_Driver
 {
     uint8_t trigger;
 
@@ -56,7 +56,7 @@ enum DLY_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void hc165Init ( struct HC165_Driver *driver,
+void hc597Init ( struct HC597_Driver *driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
@@ -66,9 +66,9 @@ void hc165Init ( struct HC165_Driver *driver,
                     void ( *datDrvFnc )( uint8_t ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
-void hc165DrvLoop ( struct HC165_Driver *driver );
-void hc165DrvOneShoot ( struct HC165_Driver *driver );
-void hc165DrvInterrupt ( struct HC165_Driver *driver );
+void hc597DrvLoop ( struct HC597_Driver *driver );
+void hc597DrvOneShoot ( struct HC597_Driver *driver );
+void hc597DrvInterrupt ( struct HC597_Driver *driver );
 
 #ifdef __cplusplus
 }
