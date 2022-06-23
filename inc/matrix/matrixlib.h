@@ -23,10 +23,10 @@
 
 /* STRUCTURES */
 
-struct mtrx
+typedef struct
 {
     float *matrix;
-};
+} mtrx_t;
 
 /* ENUMS */
 
