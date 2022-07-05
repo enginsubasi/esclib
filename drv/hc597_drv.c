@@ -28,7 +28,7 @@
 #include "hc597_drv.h"
 
 /*
- * @about:
+ * @about: HC597_Driver Initializer.
  */
 void hc597Init ( struct HC597_Driver *driver,
                     uint8_t* dataPtr,
