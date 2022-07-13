@@ -30,7 +30,8 @@
 /*
  * @about: Initialize pid structure.
  */
-void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit, float iPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
+void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit, float iPartMinLimit,
+                float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
 {
     driver->output = pidOutputMinLimit;
 
@@ -42,6 +43,10 @@ void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit
     // Limits of integral part.
     driver->iMax = iPartMaxLimit;
     driver->iMin = iPartMinLimit;
+    
+    // Limits of derivative part.
+    driver->dMax = dPartMaxLimit;
+    driver->dMin = dPartMinLimit;
 
     // Limits of PID output value.
     driver->pidMax = pidOutputMaxLimit;
@@ -88,6 +93,20 @@ void pidControl ( pidc_t* driver, float error )
 
     // Calculate derivative part
     driver->partD = ( driver->error - driver->lastError );
+    
+    // Control derivative range
+    if ( driver->partD > driver->dMax )
+    {
+        driver->partD = driver->dMax;
+    }
+    else if ( driver->partD < driver->dMin )
+    {
+        driver->partD = driver->dMin;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
 
     // Calculate PID output value
     driver->output = ( driver->kp * driver->partP ) +
