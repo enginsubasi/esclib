@@ -72,7 +72,7 @@ void pidControl ( pidc_t* driver, float error )
     driver->error = error;
 
     // Calculate proportional part
-    driver->partP = driver->error * driver->kp;
+    driver->partP = driver->error;
 
     // Calculate integral part
     driver->partI += driver->error;
