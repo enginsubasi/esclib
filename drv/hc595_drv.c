@@ -53,8 +53,7 @@ void hc595Init ( struct HC595_Driver *driver,
 
     driver->datDrv ( FALSE );
     driver->sckDrv ( FALSE );
-    driver->rckDrv ( FALSE);
-
+    driver->rckDrv ( FALSE );
 }
 
 /*
