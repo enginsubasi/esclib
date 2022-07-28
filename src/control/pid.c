@@ -96,7 +96,7 @@ void pidControl ( pidc_t* driver, float error )
     }
 
     // Calculate derivative part
-    driver->partD = ( ( driver->error - driver->lastError ) / driver-ts );
+    driver->partD = ( ( driver->error - driver->lastError ) / driver->ts );
     
     // Control derivative range
     if ( driver->partD > driver->dMax )
