@@ -30,7 +30,7 @@
 /*
  * @about: Initialize pid structure.
  */
-void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit, float iPartMinLimit,
+void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float iPartMaxLimit, float iPartMinLimit,
                 float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
 {
     driver->output = pidOutputMinLimit;
@@ -39,6 +39,8 @@ void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit
     driver->kp = kp;
     driver->ki = ki;
     driver->kd = kd;
+
+    driver->ts = ts;
 
     // Limits of integral part.
     driver->iMax = iPartMaxLimit;
@@ -56,12 +58,14 @@ void pidInit ( pidc_t* driver, float kp, float ki, float kd, float iPartMaxLimit
 /*
  * @about: Changes PID coefficients.
  */
-void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd )
+void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, float ts )
 {
     // Coefficients.
     driver->kp = kp;
     driver->ki = ki;
     driver->kd = kd;
+
+    driver->ts = ts;
 }
 
 /*
@@ -75,7 +79,7 @@ void pidControl ( pidc_t* driver, float error )
     driver->partP = driver->error;
 
     // Calculate integral part
-    driver->partI += driver->error;
+    driver->partI += ( driver->error * driver->ts );
 
     // Control integral range
     if ( driver->partI > driver->iMax )
@@ -92,7 +96,7 @@ void pidControl ( pidc_t* driver, float error )
     }
 
     // Calculate derivative part
-    driver->partD = ( driver->error - driver->lastError );
+    driver->partD = ( ( driver->error - driver->lastError ) / driver-ts );
     
     // Control derivative range
     if ( driver->partD > driver->dMax )
