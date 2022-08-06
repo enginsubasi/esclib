@@ -25,8 +25,12 @@
 
 #include "circBuf.h"
 
-/*
- * @about:
+/**
+ * @brief Circular buffer initialization
+ * @param driver
+ * @param buffer
+ * @param capacity
+ * @return Success
  */
 uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity )
 {
@@ -53,8 +57,8 @@ uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capaci
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief
  */
 uint32_t circBufGetsizeu32 ( circBufu32_t* driver )
 {
@@ -72,8 +76,8 @@ uint32_t circBufGetsizeu32 ( circBufu32_t* driver )
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief
  */
 uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
 {
