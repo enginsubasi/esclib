@@ -62,5 +62,16 @@
     {
         // Code to be executed.
     } while ( loopControl == TRUE );
+    
+## array
+
+### Initialization of an array
+    uint8_t ar [ SIZE_OF_AR ] = { 0, 0, 0 };
+
+### Allowed Operations on arrays
+    Index op. ar [ 2 ] = 5;
+
+### Forbidden Operations on arrays
+    Increment on the pointer ++ar;
 
 
