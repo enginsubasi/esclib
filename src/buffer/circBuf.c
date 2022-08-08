@@ -32,7 +32,7 @@
  * @param capacity
  * @return Success
  */
-uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity )
+uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity, uint8_t behaviour )
 {
     int8_t retVal = FALSE;
     
@@ -45,6 +45,8 @@ uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capaci
         // Initilizations
         driver->rp = 0;
         driver->wp = 0;
+
+        driver->behaviour = behaviour;
 
         // Set return value
         retVal = TRUE;
