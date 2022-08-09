@@ -25,7 +25,17 @@
 
 #include "generic.h"
 
-${filecomment}
-${includes}
+/**
+ * @brief Circular buffer initialization
+ * @param driver
+ * @param buffer
+ * @param capacity
+ * @return Success
+ */
+void complexInit ( complex_t* driver, float re, float im )
+{
+    driver->re = re;
+    driver->im = im;
+}
 
-${declarations}
+

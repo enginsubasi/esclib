@@ -21,6 +21,12 @@
 
 /* TYPEDEFS */
 
+typedef struct
+{
+    float re;
+    float im;
+} complex_t;
+
 /* STRUCTURES */
 
 /* ENUMS */
@@ -28,6 +34,9 @@
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
+
+void complexInit ( complex_t* driver, float re, float im );
+
 
 #ifdef __cplusplus
 }
