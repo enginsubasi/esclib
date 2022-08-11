@@ -104,7 +104,13 @@ void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 void complexToPolar ( complex_t* prm1, float* r, float* a )
 {
     *r = sqrt ( ( prm1->re * prm1->re ) + ( prm1->im * prm1->im ) );
-    *a = atan ( prm1->im / prm1->re );
+
+    if ( *r < 0 )
+    {
+        *r *= -1;
+    }
+
+    *a = ( atan ( prm1->im / prm1->re ) * 180 ) / M_PI;
 }
 
 /**
@@ -116,6 +122,6 @@ void complexToPolar ( complex_t* prm1, float* r, float* a )
  */
 void complexFromPolar ( complex_t* prm1, float r, float a )
 {
-    prm1->re = r * cos ( a );
-    prm1->im = r * sin ( a );
+    prm1->re = r * cos ( ( a * M_PI ) / 180 );
+    prm1->im = r * sin ( ( a * M_PI ) / 180 );
 }
