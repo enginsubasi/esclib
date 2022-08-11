@@ -92,3 +92,15 @@ void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
     result->re = ( ( cprm1->re * cprm2->re ) + ( cprm1->im * cprm2->im ) / ( ( cprm2->re * cprm2->re ) + ( cprm2->im * cprm2->im ) ) );
     result->im = ( ( cprm1->im * cprm2->re ) - ( cprm1->re * cprm2->im ) / ( ( cprm2->re * cprm2->re ) + ( cprm2->im * cprm2->im ) ) );
 }
+
+/**
+ * @brief Complex number to polar
+ * @param cprm1
+ * @param r
+ * @param a
+ * @return void
+ */
+void compexToPolar ( complex_t* prm1, float* r, float* a )
+{
+
+}
