@@ -27,6 +27,7 @@
   */
 
 #include "complex.h"
+#include <math.h>
 
 /**
  * @brief Complex number initialization
@@ -100,7 +101,21 @@ void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  * @param a
  * @return void
  */
-void compexToPolar ( complex_t* prm1, float* r, float* a )
+void complexToPolar ( complex_t* prm1, float* r, float* a )
 {
+    *r = sqrt ( ( prm1->re * prm1->re ) + ( prm1->im * prm1->im ) );
+    *a = atan ( prm1->im / prm1->re );
+}
 
+/**
+ * @brief Complex number to polar
+ * @param cprm1
+ * @param r
+ * @param a
+ * @return void
+ */
+void complexFromPolar ( complex_t* prm1, float r, float a )
+{
+    prm1->re = r * cos ( a );
+    prm1->im = r * sin ( a );
 }

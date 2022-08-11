@@ -41,7 +41,8 @@ void complexSub ( complex_t* cprm1, complex_t* cprm2, complex_t* result );
 void complexMul ( complex_t* cprm1, complex_t* cprm2, complex_t* result );
 void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result );
 
-void compexToPolar ( complex_t* prm1, float* r, float* a );
+void complexToPolar ( complex_t* prm1, float* r, float* a );
+void complexFromPolar ( complex_t* prm1, float r, float a );
 
 #ifdef __cplusplus
 }
