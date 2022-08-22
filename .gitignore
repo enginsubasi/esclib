@@ -57,3 +57,6 @@ test/MAF_Test/MAF_Test.cbp
 test/MAF_Test/MAF_Test.depend
 test/MAF_Test/MAF_Test.layout
 sample/DFT/dftplots.m
+test/Complex_Test/Complex_Test.layout
+test/Complex_Test/Complex_Test.depend
+test/Complex_Test/Complex_Test.cbp
