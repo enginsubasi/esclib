@@ -47,7 +47,7 @@ uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capaci
         driver->wp = 0;
 
         driver->behaviour = behaviour;
-        driver->status = BS_FULL;
+        driver->status = BS_EMPTY;
 
         // Set return value
         retVal = TRUE;
@@ -93,10 +93,11 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
 
     if ( driver->wp < driver->capacity )
     {
-        if ( driver->wp != driver->rp )
+        if ( driver->wp != driver->rp || driver->status == BS_EMPTY )
         {
             driver->buffer[ driver->wp ] = data;
             ++driver->wp;
+            driver->status = BS_NOTEMPTY;
             retVal = TRUE;
         }
         else
@@ -106,10 +107,12 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
                 driver->buffer[ driver->wp ] = data;
                 ++driver->rp;
                 ++driver->wp;
+                driver->status = BS_FULL;
                 retVal = TRUE;
             }
             else if ( driver->behaviour == BB_STOP )
             {
+                driver->status = BS_FULL;
                 retVal = FALSE;
             }
         }

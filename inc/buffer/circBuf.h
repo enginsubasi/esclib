@@ -38,7 +38,8 @@ typedef struct
 enum BUFFERSTATUS
 {
     BS_EMPTY            = 0,
-    BS_FULL             = 1,
+    BS_NOTEMPTY         = 1,
+    BS_FULL             = 2,
 };
 
 enum BUFFERBEHAVIOUR
