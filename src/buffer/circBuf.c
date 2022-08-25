@@ -93,7 +93,7 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
 
     if ( driver->wp < driver->capacity )
     {
-        if ( driver->wp != driver->rp || driver->status == BS_EMPTY )
+        if ( ( driver->wp != driver->rp ) || ( driver->status == BS_EMPTY ) )
         {
             driver->buffer[ driver->wp ] = data;
             ++driver->wp;
@@ -134,10 +134,12 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
                 driver->buffer[ driver->wp ] = data;
                 ++driver->rp;
                 ++driver->wp;
+                driver->status = BS_FULL;
                 retVal = TRUE;
             }
             else if ( driver->behaviour == BB_STOP )
             {
+                driver->status = BS_FULL;
                 retVal = FALSE;
             }
         }
@@ -145,6 +147,55 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
 
     return ( retVal );
 }
+
+/**
+ * @brief
+ */
+uint8_t circBufReadu32 ( circBufu32_t* driver, uint32_t* data )
+{
+    uint8_t retVal = FALSE;
+
+    if ( driver->status != BS_EMPTY )
+    {
+        if ( driver->rp < driver->capacity )
+        {
+            *data = driver->buffer[ driver->rp ];
+            ++driver->rp;
+
+            if ( driver->rp >= driver->capacity )
+            {
+                driver->rp = 0;
+
+                if ( driver->status == BS_FULL )
+                {
+                    driver->status = BS_NOTEMPTY;
+                }
+
+                if ( driver->rp == driver->wp )
+                {
+                    driver->status = BS_EMPTY;
+                }
+            }
+            else
+            {
+                if ( driver->status == BS_FULL )
+                {
+                    driver->status = BS_NOTEMPTY;
+                }
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        *data = 0;
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
 
 
 
