@@ -36,6 +36,9 @@ typedef struct
 
     float ts;
 
+    float pMax;
+    float pMin;
+
     float iMax;
     float iMin;
     
@@ -56,9 +59,11 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float iPartMaxLimit, float iPartMinLimit,
+void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
                 float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit );
 void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, float ts );
+void pidChangeLimits ( pidc_t* driver, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
+                        float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit );
 void pidControl ( pidc_t* driver, float input );
 float pidGetOutput ( pidc_t* driver );
 

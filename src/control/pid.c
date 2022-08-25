@@ -30,7 +30,7 @@
 /*
  * @about: Initialize pid structure.
  */
-void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float iPartMaxLimit, float iPartMinLimit,
+void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
                 float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
 {
     driver->output = pidOutputMinLimit;
@@ -41,6 +41,10 @@ void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float iPa
     driver->kd = kd;
 
     driver->ts = ts;
+
+    // Limits of proportional part.
+    driver->pMax = pPartMaxLimit;
+    driver->pMin = pPartMinLimit;
 
     // Limits of integral part.
     driver->iMax = iPartMaxLimit;
@@ -69,6 +73,29 @@ void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, float
 }
 
 /*
+ * @about: Changes PID limits.
+ */
+void pidChangeLimits ( pidc_t* driver, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
+                        float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
+{
+    // Limits of proportional part.
+    driver->pMax = pPartMaxLimit;
+    driver->pMin = pPartMinLimit;
+
+    // Limits of integral part.
+    driver->iMax = iPartMaxLimit;
+    driver->iMin = iPartMinLimit;
+    
+    // Limits of derivative part.
+    driver->dMax = dPartMaxLimit;
+    driver->dMin = dPartMinLimit;
+
+    // Limits of PID output value.
+    driver->pidMax = pidOutputMaxLimit;
+    driver->pidMin = pidOutputMinLimit;
+}
+
+/*
  * @about: Control iteration.
  */
 void pidControl ( pidc_t* driver, float error )
@@ -77,6 +104,20 @@ void pidControl ( pidc_t* driver, float error )
 
     // Calculate proportional part
     driver->partP = driver->error;
+
+    // Control proportional range
+    if ( driver->partP > driver->pMax )
+    {
+        driver->partP = driver->pMax;
+    }
+    else if ( driver->partP < driver->pMin )
+    {
+        driver->partP = driver->pMin;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
 
     // Calculate integral part
     driver->partI += ( driver->error * driver->ts );
