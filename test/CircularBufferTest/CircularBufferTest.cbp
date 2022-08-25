@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="../../inc/buffer" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -31,6 +32,13 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="../../inc/buffer/circBuf.h" />
+		<Unit filename="../../src/buffer/circBuf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="CircularBufferTest.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

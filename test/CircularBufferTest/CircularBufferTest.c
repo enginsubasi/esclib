@@ -28,14 +28,14 @@ int main ( void )
 
     circBufInitu32 ( &cb, buf, BUFSIZE, BB_STOP );
     circBufInitu32 ( &cb, buf, BUFSIZE, BB_OVERWRITE );
-    circBufInitu32 ( &cb, buf, BUFSIZE, BB_STOP );
+    circBufInitu32 ( &cb, buf, BUFSIZE, BB_OVERWRITE );
 
     printBuffer ( cb.buffer, cb.capacity );
 
-    for ( i = 0; i < 15; ++i )
+    for ( i = 0; i < 5; ++i )
     {
         circBufAddu32 ( &cb, i*2 );
-        printf ( "S: %d, W: %d, R: %d-", cb.status, cb.wp, cb.rp );
+        printf ( "W-S: %d, W: %d, R: %d L: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ) );
         printBuffer ( cb.buffer, cb.capacity );
     }
 
@@ -43,10 +43,28 @@ int main ( void )
     {
         retValTemp = circBufReadu32 ( &cb, &readTemp );
 
-        printf ( "R: %d, D: %d\r\n", retValTemp, readTemp );
-        printf ( "%d-", cb.status );
+        //printf ( "R: %d, D: %d\r\n", retValTemp, readTemp );
+        printf ( "R-S: %d, W: %d, R: %d L: %d D: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ), readTemp );
         printBuffer ( cb.buffer, cb.capacity );
     }
+
+    for ( i = 1; i < 15; ++i )
+    {
+        circBufAddu32 ( &cb, i*3 );
+        printf ( "W-S: %d, W: %d, R: %d L: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ) );
+        printBuffer ( cb.buffer, cb.capacity );
+    }
+
+    for ( i = 0; i < 15; ++i )
+    {
+        retValTemp = circBufReadu32 ( &cb, &readTemp );
+
+        //printf ( "R: %d, D: %d\r\n", retValTemp, readTemp );
+        printf ( "R-S: %d, W: %d, R: %d L: %d D: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ), readTemp );
+        printBuffer ( cb.buffer, cb.capacity );
+    }
+
+
 
     return ( 1 );
 }
