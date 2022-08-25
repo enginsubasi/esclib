@@ -47,6 +47,7 @@ uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capaci
         driver->wp = 0;
 
         driver->behaviour = behaviour;
+        driver->status = BS_FULL;
 
         // Set return value
         retVal = TRUE;
@@ -62,7 +63,7 @@ uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capaci
 /**
  * @brief
  */
-uint32_t circBufGetsizeu32 ( circBufu32_t* driver )
+uint32_t circBufGetLengthu32 ( circBufu32_t* driver )
 {
     uint32_t retVal = 0;
 
@@ -78,6 +79,11 @@ uint32_t circBufGetsizeu32 ( circBufu32_t* driver )
     return ( retVal );
 }
 
+uint8_t circBufGetStatusu32 ( circBufu32_t* driver )
+{
+    return ( driver->status );
+}
+
 /**
  * @brief
  */
@@ -87,21 +93,22 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
 
     if ( driver->wp < driver->capacity )
     {
-        if ( driver->wp != ( driver->rp + 1 ) )
+        if ( driver->wp != driver->rp )
         {
-            driver->buffer[ driver->wp ];
+            driver->buffer[ driver->wp ] = data;
             ++driver->wp;
             retVal = TRUE;
         }
         else
         {
-            if ( driver->behaviour == BUFBEH_OVERWRITE )
+            if ( driver->behaviour == BB_OVERWRITE )
             {
-                driver->buffer[ driver->wp ];
+                driver->buffer[ driver->wp ] = data;
+                ++driver->rp;
                 ++driver->wp;
                 retVal = TRUE;
             }
-            else if ( driver->behaviour == BUFBEH_STOP )
+            else if ( driver->behaviour == BB_STOP )
             {
                 retVal = FALSE;
             }
@@ -109,27 +116,30 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
     }
     else
     {
-        
-    }
-
-
-
-
-    if ( driver->capacity == driver->wp )
-    {
-        if ( ( driver->rp + 1 ) != driver->wp )
+        if ( driver->rp != 0 )
         {
             driver->wp = 0;
-            driver->buffer[ driver->wp ];
-
+            driver->buffer[ driver->wp ] = data;
+            ++driver->wp;
             retVal = TRUE;
         }
         else
         {
-            retVal = FALSE;
+            if ( driver->behaviour == BB_OVERWRITE )
+            {
+                driver->wp = 0;
+                driver->buffer[ driver->wp ] = data;
+                ++driver->rp;
+                ++driver->wp;
+                retVal = TRUE;
+            }
+            else if ( driver->behaviour == BB_STOP )
+            {
+                retVal = FALSE;
+            }
         }
     }
-
+    
     return ( retVal );
 }
 
