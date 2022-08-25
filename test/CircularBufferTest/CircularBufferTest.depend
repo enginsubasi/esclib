@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1661456492 source:c:\users\engin\documents\github\esclib\test\circularbuffertest\circularbuffertest.c
+	<stdio.h>
+	"circBuf.h"
+
+1661456528 c:\users\engin\documents\github\esclib\inc\buffer\circbuf.h
+	<stdint.h>
+

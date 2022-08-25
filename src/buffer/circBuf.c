@@ -16,7 +16,7 @@
   * @content:
   *     FUNCTIONS:
   *         foo1                : Initialize comstxetx structure.
-  *         foo2                : 
+  *         foo2                :
   *
   * @notes:
   *
@@ -35,7 +35,7 @@
 uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity, uint8_t behaviour )
 {
     int8_t retVal = FALSE;
-    
+
     if ( ( driver != NULL ) && ( buffer != NULL ) && ( capacity != 0 ) )
     {
         // Assignments
@@ -67,13 +67,13 @@ uint32_t circBufGetLengthu32 ( circBufu32_t* driver )
 {
     uint32_t retVal = 0;
 
-    if ( wp >= rp )
+    if ( driver->wp >= driver->rp )
     {
-        retVal = ( wp - rp );
+        retVal = ( driver->wp - driver->rp );
     }
     else
     {
-        retVal = driver->wp + ( driver->capacity - driver->rp )
+        retVal = driver->wp + ( driver->capacity - driver->rp );
     }
 
     return ( retVal );
@@ -139,7 +139,7 @@ uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data )
             }
         }
     }
-    
+
     return ( retVal );
 }
 
