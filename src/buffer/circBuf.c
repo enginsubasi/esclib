@@ -15,8 +15,11 @@
   *
   * @content:
   *     FUNCTIONS:
-  *         foo1                : Initialize comstxetx structure.
-  *         foo2                :
+  *         circBufInitu32      : Initialize comstxetx structure.
+  *         circBufGetLengthu32 :
+  *         circBufGetStatusu32 :
+  *         circBufAddu32       :
+  *         circBufReadu32      :
   *
   * @notes:
   *
