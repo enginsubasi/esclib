@@ -50,7 +50,7 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void comstxetxInit ( com_stxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) );
+void comstxetxInit ( com_stxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) );
 void comstxetxReceive ( com_stxetx_t* driver, uint8_t data );
 void comstxetxEvaluate ( com_stxetx_t* driver );
 void comstxetxTimeoutCounter ( com_stxetx_t* driver );
