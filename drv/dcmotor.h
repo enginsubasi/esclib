@@ -28,20 +28,7 @@
 
 struct dcmotor_t
 {
-    uint8_t trigger;
 
-    uint8_t* data;
-    uint32_t size;
-
-    uint8_t dlyType;
-    uint32_t dlyCount;
-
-    void ( *clkDrv )( uint8_t );
-    void ( *lodDrv )( uint8_t );
-    void ( *datDrv )( uint8_t );
-
-    void ( *dlyMs )( uint32_t );
-    void ( *dlyNop )( uint32_t );
 };
 
 /* ENUMS */

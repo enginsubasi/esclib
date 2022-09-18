@@ -30,29 +30,7 @@
 /*
  * @about: HC597_Driver Initializer.
  */
-void hc597Init ( struct HC597_Driver *driver,
-                    uint8_t* dataPtr,
-                    uint32_t dataSize,
-                    uint8_t dlyType,
-                    uint32_t dlyCount,
-                    void ( *sckDrvFnc )( uint8_t ),
-                    void ( *rckDrvFnc )( uint8_t ),
-                    void ( *datDrvFnc )( uint8_t ),
-                    void ( *dlyMsFnc )( uint32_t ),
-                    void ( *dlyNopFnc )( uint32_t ) )
+void dcmotorInit ( struct dcmotor_t *driver )
 {
-    driver->data = dataPtr;
-    driver->size = dataSize;
-    driver->dlyType = dlyType;
-    driver->dlyCount = dlyCount;
-    driver->sckDrv = sckDrvFnc;
-    driver->rckDrv = rckDrvFnc;
-    driver->datDrv = datDrvFnc;
-    driver->dlyMs = dlyMsFnc;
-    driver->dlyNop = dlyNopFnc;
-
-    driver->datDrv ( FALSE );
-    driver->sckDrv ( FALSE );
-    driver->rckDrv ( FALSE);
 
 }
