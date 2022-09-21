@@ -28,7 +28,10 @@
 
 struct dcmotor_t
 {
+    double rpm;
 
+
+    void ( *pwm )( uint8_t );
 };
 
 /* ENUMS */
