@@ -19,8 +19,6 @@
 #define FALSE 0
 #endif
 
-#define DEF_DLY_COUNT   1 // In millisecond.
-
 /* TYPEDEFS */
 
 /* STRUCTURES */
@@ -28,25 +26,29 @@
 
 struct dcmotor_t
 {
-    double rpm;
-
-
-    void ( *pwm )( uint8_t );
+    void ( *bridgeHigh )( uint8_t );
+    void ( *bridgeLow )( uint8_t );
+    void ( *pwm )( double );
 };
 
 /* ENUMS */
 
-enum DLY_TYPE
+enum BRIDGE_TYPE
 {
-    DLY_NO              = 0,
-    DLY_MS              = 1,
-    DLY_NOP             = 2
+    BRIDGE_NO       = 0,
+    BRIDGE_FORWARD  = 1,
+    BRIDGE_BACKWARD = 2,
+    BRIDGE_LOCK     = 3,
 };
 
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void dcmotorInit ( struct dcmotor_t *driver );
+void dcmotorInit ( struct dcmotor_t *driver,
+                    void ( *bridgeHighFnc )( uint8_t ),
+                    void ( *bridgeLowFnc )( uint8_t ),
+                    void ( *pwmFnc )( double ));
+void dcMotorBridgeState ( struct dcmotor_t *driver, uint8_t bridgeState );
 
 #ifdef __cplusplus
 }

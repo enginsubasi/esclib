@@ -28,9 +28,51 @@
 #include "dcmotor.h"
 
 /*
- * @about: HC597_Driver Initializer.
+ * @about:
  */
-void dcmotorInit ( struct dcmotor_t *driver )
+void dcmotorInit ( struct dcmotor_t *driver,
+                    void ( *bridgeHighFnc )( uint8_t ),
+                    void ( *bridgeLowFnc )( uint8_t ),
+                    void ( *pwmFnc )( double ))
 {
+    driver->bridgeHigh = bridgeHighFnc;
+    driver->bridgeLow = bridgeLowFnc;
+    driver->pwm = pwmFnc;
 
+    driver->pwm ( ( double ) 0.0 );
+    dcMotorBridgeState ( driver, BRIDGE_NO );
+}
+
+/*
+ * @about:
+ */
+void dcMotorBridgeState ( struct dcmotor_t *driver, uint8_t bridgeState )
+{
+    switch ( bridgeState )
+    {
+        case BRIDGE_NO:
+            driver->bridgeHigh ( FALSE );
+            driver->bridgeLow ( FALSE );
+        break;
+
+        case BRIDGE_FORWARD:
+            driver->bridgeHigh ( TRUE );
+            driver->bridgeLow ( FALSE );
+        break;
+
+        case BRIDGE_BACKWARD:
+            driver->bridgeHigh ( FALSE );
+            driver->bridgeLow ( TRUE );
+        break;
+
+        case BRIDGE_LOCK:
+            driver->bridgeHigh ( TRUE );
+            driver->bridgeLow ( TRUE );
+        break;
+
+        default:
+            driver->bridgeHigh ( FALSE );
+            driver->bridgeLow ( FALSE );
+        break;
+    }
 }
