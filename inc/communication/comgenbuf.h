@@ -1,5 +1,5 @@
-#ifndef COMSEC_H_
-#define COMSEC_H_
+#ifndef COMGENBUF_H_
+#define COMGENBUF_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -52,4 +52,4 @@ typedef struct
 }
 #endif
 
-#endif /* COMSEC_H_ */   
+#endif /* COMGENBUF_H_ */   
