@@ -48,6 +48,11 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
+comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, 
+                                uint32_t rxSize, uint32_t txSize, 
+                                uint32_t rxTimeout, 
+                                void (*packetProcess) ( uint8_t* buffer, uint32_t index ) );
+
 #ifdef __cplusplus
 }
 #endif

@@ -42,7 +42,7 @@ typedef struct
     uint8_t *txBuffer;
     
     void (*packetProcess) ( uint8_t* buffer, uint32_t index );
-} com_stxetx_t;
+} comstxetx_t;
 
 /* ENUMS */
 
@@ -50,10 +50,10 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void comstxetxInit ( com_stxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) );
-void comstxetxReceive ( com_stxetx_t* driver, uint8_t data );
-void comstxetxEvaluate ( com_stxetx_t* driver );
-void comstxetxTimeoutCounter ( com_stxetx_t* driver );
+void comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) );
+void comstxetxReceive ( comstxetx_t* driver, uint8_t data );
+void comstxetxEvaluate ( comstxetx_t* driver );
+void comstxetxTimeoutCounter ( comstxetx_t* driver );
 
 #ifdef __cplusplus
 }
