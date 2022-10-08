@@ -15,10 +15,8 @@
   *
   * @content:
   *     FUNCTIONS:
-  *         hc597Init           :
-  *         hc597DlyCtrl        :
-  *         hc597DrvLoop        :
-  *         hc597DrvOneShoot    :
+  *         dcmotorInit         :
+  *         dcMotorBridgeState  :
   *
   * @notes:
   *
