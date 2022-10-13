@@ -69,7 +69,7 @@ void comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, 
 /*
  * @about: Run when new data taken. Run at rx interrupt or run at timer interrupt with control new data flag.
  */
-void comstxetxReceive ( com_stxetx_t* driver, uint8_t data )
+void comstxetxReceive ( comstxetx_t* driver, uint8_t data )
 {
     if ( driver->rxReadyToEvaluate == FALSE )
     {
@@ -105,7 +105,7 @@ void comstxetxReceive ( com_stxetx_t* driver, uint8_t data )
 /*
  * @about: Run at the loop or timer interrupt to evaluate received data frame.
  */
-void comstxetxEvaluate ( com_stxetx_t* driver )
+void comstxetxEvaluate ( comstxetx_t* driver )
 {
     if ( driver->rxReadyToEvaluate = TRUE )
     {
@@ -119,7 +119,7 @@ void comstxetxEvaluate ( com_stxetx_t* driver )
 /*
  * @about: Run at constant timer interrupt.
  */
-void comstxetxTimeoutCounter ( com_stxetx_t* driver )
+void comstxetxTimeoutCounter ( comstxetx_t* driver )
 {
     if ( ( driver->rxIndex != 0 ) && ( drive->rxReadyToEvaluate == FALSE ) )
     {
