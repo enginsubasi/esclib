@@ -39,7 +39,8 @@ typedef struct
     
     uint8_t *txBuffer;
     
-    void (*packetProcess) ( uint8_t* buffer, uint32_t index );
+    void (*packetProcess) ( uint8_t* rxBuf, uint32_t* rxInd, uint8_t* txBuf, uint32_t* txInd );
+    void (*txTransmissionTrigger) ( uint8_t* txBuf, uint32_t txInd );
 } comat_t;
 
 /* ENUMS */
@@ -48,10 +49,11 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, 
-                                uint32_t rxSize, uint32_t txSize, 
-                                uint32_t rxTimeout, 
-                                void (*packetProcess) ( uint8_t* buffer, uint32_t index ) );
+void comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
+                                uint32_t rxSize, uint32_t txSize,
+                                uint32_t rxTimeout,
+                                void (*packetProcess) ( uint8_t* rxBuf, uint32_t* rxInd, uint8_t* txBuf, uint32_t* txInd ),
+                                void (*txTransmissionTrigger) ( uint8_t* txBuf, uint32_t txInd ) );
 void comatReceive ( comat_t* driver, uint8_t data );
 void comatEvaluate ( comat_t* driver );
 void comatTimeoutCounter ( comat_t* driver );
