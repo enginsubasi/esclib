@@ -31,7 +31,7 @@
 void comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
                                 uint32_t rxSize, uint32_t txSize,
                                 uint32_t rxTimeout,
-                                void (*packetProcess) ( uint8_t* rxBuf, uint32_t* rxInd, uint8_t* txBuf, uint32_t* txInd ),
+                                void (*packetProcess) ( uint8_t* rxBuf, uint32_t rxInd, uint8_t* txBuf, uint32_t* txInd ),
                                 void (*txTransmissionTrigger) ( uint8_t* txBuf, uint32_t txInd ) )
 {
     uint32_t i = 0;
@@ -88,6 +88,11 @@ void comatReceive ( comat_t* driver, uint8_t data )
                 driver->rxBuffer [ driver->rxIndex ] = data;
                 ++driver->rxIndex;
             }
+            else
+            {
+                // Terminate buffering
+                driver->rxIndex = 0;
+            }
         }
         else
         {
@@ -98,7 +103,8 @@ void comatReceive ( comat_t* driver, uint8_t data )
                 ( driver->rxBuffer [ driver->rxIndex - 2 ] == '\r' ) )
             {
                 driver->rxReadyToEvaluate = TRUE;
-            }else if ( driver->rxIndex >= driver->rxSize )
+            }
+            else if ( driver->rxIndex >= driver->rxSize )
             {
                 // Terminate buffering
                 driver->rxIndex = 0;
@@ -114,10 +120,12 @@ void comatEvaluate ( comat_t* driver )
 {
     if ( driver->rxReadyToEvaluate = TRUE )
     {
-        driver->packetProcess ( driver->rxBuffer, driver->rxIndex );
+        driver->packetProcess ( driver->rxBuffer, driver->rxIndex, driver->txBuffer, &driver->txIndex );
+        driver->txTransmissionTrigger ( driver->txBuffer, driver->txIndex );
         
         driver->rxIndex = 0;
         driver->rxReadyToEvaluate = FALSE;
+        driver->txIndex = 0;
     }
 }
 
