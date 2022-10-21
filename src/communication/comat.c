@@ -15,8 +15,10 @@
   *
   * @content:
   *     FUNCTIONS:
-  *         foo1            : Brief
-  *         foo2            : Brief
+  *         comatInit       : Brief
+  *         comatReceive    : Brief
+  *         comatEvaluate   :
+  *         comatTimeoutCounter :
   *
   * @notes:
   *
