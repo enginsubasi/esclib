@@ -15,7 +15,7 @@
   *
   * @content:
   *     FUNCTIONS:
-  *         dcmotorInit         :
+  *         dcMotorInit         :
   *         dcMotorBridgeState  :
   *
   * @notes:
@@ -28,7 +28,7 @@
 /*
  * @about:
  */
-void dcmotorInit ( struct dcmotor_t *driver,
+void dcMotorInit ( struct dcmotor_t *driver,
                     void ( *bridgeHighFnc )( uint8_t ),
                     void ( *bridgeLowFnc )( uint8_t ),
                     void ( *pwmFnc )( double ))
