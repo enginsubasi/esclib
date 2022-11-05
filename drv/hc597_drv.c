@@ -45,15 +45,15 @@ void hc597Init ( struct HC597_Driver *driver,
     driver->size = dataSize;
     driver->dlyType = dlyType;
     driver->dlyCount = dlyCount;
-    driver->sckDrv = sckDrvFnc;
-    driver->rckDrv = rckDrvFnc;
+    //driver->sckDrv = sckDrvFnc;
+    //driver->rckDrv = rckDrvFnc;
     driver->datDrv = datDrvFnc;
     driver->dlyMs = dlyMsFnc;
     driver->dlyNop = dlyNopFnc;
 
     driver->datDrv ( FALSE );
-    driver->sckDrv ( FALSE );
-    driver->rckDrv ( FALSE);
+    //driver->sckDrv ( FALSE );
+    //driver->rckDrv ( FALSE);
 
 }
 
@@ -100,7 +100,7 @@ void hc597DrvOneShoot ( struct HC597_Driver *driver )
 /*
  * @about:
  */
-void hc597DrvInterrupt ( struct HC595_Driver *driver )
+void hc597DrvInterrupt ( struct HC597_Driver *driver )
 {
 
 }
