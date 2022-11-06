@@ -61,21 +61,21 @@ void hc595Init ( struct HC595_Driver *driver,
  */
 static void hc595DlyCtrl ( struct HC595_Driver *driver )
 {
-    if ( driver->dlyType == DLY_NO )
+    if ( driver->dlyType == HC595_DLY_NO )
     {
         // Intentionally blank.
     }
-    else if ( driver->dlyType == DLY_NOP )
+    else if ( driver->dlyType == HC595_DLY_NOP )
     {
         driver->dlyNop ( driver->dlyCount );
     }
-    else if ( driver->dlyType == DLY_MS )
+    else if ( driver->dlyType == HC595_DLY_MS )
     {
         driver->dlyMs ( driver->dlyCount );
     }
     else
     {
-        driver->dlyType = DLY_MS;
+        driver->dlyType = HC595_DLY_MS;
         driver->dlyCount = DEF_DLY_COUNT;
     }
 }

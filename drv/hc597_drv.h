@@ -46,11 +46,11 @@ struct HC597_Driver
 
 /* ENUMS */
 
-enum DLY_TYPE
+enum HC597_DLY_TYPE
 {
-    DLY_NO              = 0,
-    DLY_MS              = 1,
-    DLY_NOP             = 2
+    HC597_DLY_NO        = 0,
+    HC597_DLY_MS        = 1,
+    HC597_DLY_NOP       = 2
 };
 
 /* EXTERNS */
