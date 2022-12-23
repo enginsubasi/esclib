@@ -30,37 +30,34 @@
 /*
  * @about: HC597_Driver Initializer.
  */
-void hc597Init ( struct HC597_Driver *driver,
-                    uint8_t* dataPtr,
-                    uint32_t dataSize,
-                    uint8_t dlyType,
-                    uint32_t dlyCount,
-                    void ( *sckDrvFnc )( uint8_t ),
-                    void ( *rckDrvFnc )( uint8_t ),
-                    void ( *datDrvFnc )( uint8_t ),
-                    void ( *dlyMsFnc )( uint32_t ),
-                    void ( *dlyNopFnc )( uint32_t ) )
+void hc597Init ( struct HC597_Driver* driver,
+                            uint8_t* dataPtr,
+                            uint32_t dataSize,
+                            uint8_t dlyType,
+                            uint32_t dlyCount,
+                            void ( *clkDrvFnc )( uint8_t ),
+                            void ( *lodDrvFnc )( uint8_t ),
+                            uint8_t ( *datDrvFnc )( void ),
+                            void ( *dlyMsFnc )( uint32_t ),
+                            void ( *dlyNopFnc )( uint32_t ) )
 {
     driver->data = dataPtr;
     driver->size = dataSize;
     driver->dlyType = dlyType;
     driver->dlyCount = dlyCount;
-    //driver->sckDrv = sckDrvFnc;
-    //driver->rckDrv = rckDrvFnc;
+
+    driver->clkDrv = clkDrvFnc;
+    driver->lodDrv = lodDrvFnc;
     driver->datDrv = datDrvFnc;
     driver->dlyMs = dlyMsFnc;
     driver->dlyNop = dlyNopFnc;
-
-    driver->datDrv ( FALSE );
-    //driver->sckDrv ( FALSE );
-    //driver->rckDrv ( FALSE);
 
 }
 
 /*
  * @about:
  */
-static void hc595DlyCtrl ( struct HC597_Driver *driver )
+static void hc597DlyCtrl ( struct HC597_Driver* driver )
 {
     if ( driver->dlyType == HC597_DLY_NO )
     {
@@ -84,7 +81,7 @@ static void hc595DlyCtrl ( struct HC597_Driver *driver )
 /*
  * @about:
  */
-void hc597DrvLoop ( struct HC597_Driver *driver )
+void hc597DrvLoop ( struct HC597_Driver* driver )
 {
 
 }
@@ -92,15 +89,33 @@ void hc597DrvLoop ( struct HC597_Driver *driver )
 /*
  * @about:
  */
-void hc597DrvOneShoot ( struct HC597_Driver *driver )
+void hc597DrvOneShoot ( struct HC597_Driver* driver )
 {
+    uint32_t i = 0;
 
+    driver->data[ 0 ] = 0;
+
+    driver->clkDrv ( TRUE );
+    driver->clkDrv ( FALSE );
+
+    driver->lodDrv ( FALSE );
+    driver->lodDrv ( TRUE );
+
+    for ( i = 0; i < 8; ++i )
+    {
+        hc597DlyCtrl ( driver );
+
+        driver->data[ 0 ] |= ( driver->datDrv() << i );
+
+        driver->clkDrv ( TRUE );
+        driver->clkDrv ( FALSE );
+    }
 }
 
 /*
  * @about:
  */
-void hc597DrvInterrupt ( struct HC597_Driver *driver )
+void hc597DrvInterrupt ( struct HC597_Driver* driver )
 {
 
 }

@@ -38,7 +38,7 @@ struct HC597_Driver
 
     void ( *clkDrv )( uint8_t );
     void ( *lodDrv )( uint8_t );
-    void ( *datDrv )( uint8_t );
+    uint8_t ( *datDrv )( void );
 
     void ( *dlyMs )( uint32_t );
     void ( *dlyNop )( uint32_t );
@@ -56,14 +56,14 @@ enum HC597_DLY_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void hc597Init ( struct HC597_Driver *driver,
+void hc597Init ( struct HC597_Driver* driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
                     uint32_t dlyCount,
-                    void ( *sckDrvFnc )( uint8_t ),
-                    void ( *rckDrvFnc )( uint8_t ),
-                    void ( *datDrvFnc )( uint8_t ),
+                    void ( *clkDrvFnc )( uint8_t ),
+                    void ( *lodDrvFnc )( uint8_t ),
+                    uint8_t ( *datDrvFnc )( void ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
 void hc597DrvLoop ( struct HC597_Driver *driver );

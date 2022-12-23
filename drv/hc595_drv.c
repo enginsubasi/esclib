@@ -30,7 +30,7 @@
 /*
  * @about:
  */
-void hc595Init ( struct HC595_Driver *driver,
+void hc595Init ( struct HC595_Driver* driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
@@ -59,7 +59,7 @@ void hc595Init ( struct HC595_Driver *driver,
 /*
  * @about:
  */
-static void hc595DlyCtrl ( struct HC595_Driver *driver )
+static void hc595DlyCtrl ( struct HC595_Driver* driver )
 {
     if ( driver->dlyType == HC595_DLY_NO )
     {
@@ -83,7 +83,7 @@ static void hc595DlyCtrl ( struct HC595_Driver *driver )
 /*
  * @about:
  */
-void hc595DrvLoop ( struct HC595_Driver *driver )
+void hc595DrvLoop ( struct HC595_Driver* driver )
 {
 
 }
@@ -91,7 +91,7 @@ void hc595DrvLoop ( struct HC595_Driver *driver )
 /*
  * @about:
  */
-void hc595DrvOneShoot ( struct HC595_Driver *driver )
+void hc595DrvOneShoot ( struct HC595_Driver* driver )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -119,7 +119,7 @@ void hc595DrvOneShoot ( struct HC595_Driver *driver )
 /*
  * @about:
  */
-void hc595DrvInterrupt ( struct HC595_Driver *driver )
+void hc595DrvInterrupt ( struct HC595_Driver* driver )
 {
 
 }
