@@ -1,5 +1,5 @@
-#ifndef INC_HC595_DRV_H_
-#define INC_HC595_DRV_H_
+#ifndef INC_HC597_DRV_H_
+#define INC_HC597_DRV_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -74,4 +74,4 @@ void hc597DrvInterrupt ( struct HC597_Driver *driver );
 }
 #endif
 
-#endif /* INC_HC595_DRV_H_ */
+#endif /* INC_HC597_DRV_H_ */
