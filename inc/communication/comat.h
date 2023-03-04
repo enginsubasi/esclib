@@ -1,5 +1,5 @@
-#ifndef GENERIC_H_
-#define GENERIC_H_
+#ifndef COMAT_H_
+#define COMAT_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -52,7 +52,7 @@ typedef struct
 void comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
                                 uint32_t rxSize, uint32_t txSize,
                                 uint32_t rxTimeout,
-                                void (*packetProcess) ( uint8_t* rxBuf, uint32_t* rxInd, uint8_t* txBuf, uint32_t* txInd ),
+                                void (*packetProcess) ( uint8_t* rxBuf, uint32_t rxInd, uint8_t* txBuf, uint32_t* txInd ),
                                 void (*txTransmissionTrigger) ( uint8_t* txBuf, uint32_t txInd ) );
 void comatReceive ( comat_t* driver, uint8_t data );
 void comatEvaluate ( comat_t* driver );
@@ -62,4 +62,4 @@ void comatTimeoutCounter ( comat_t* driver );
 }
 #endif
 
-#endif /* GENERIC_H_ */   
+#endif /* COMAT_H_ */   

@@ -1,7 +1,7 @@
 /**
   ******************************************************************************
   *
-  * @file:      generic.c
+  * @file:      comat.c
   * @author:    Name Surname
   * @email:     mail@mail.com
   * @address:   github.com/enginsubasi
