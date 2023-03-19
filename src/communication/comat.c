@@ -2,15 +2,15 @@
   ******************************************************************************
   *
   * @file:      comat.c
-  * @author:    Name Surname
-  * @email:     mail@mail.com
+  * @author:    Engin Subaşı
+  * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
   * @version:   v 0.0.1
   * @cdate:     20/02/2020
   * @history:   20/02/2020 Created
   *
-  * @about:     Generic template file.
+  * @about:     AT communication framework.
   * @device:    Generic
   *
   * @content:
