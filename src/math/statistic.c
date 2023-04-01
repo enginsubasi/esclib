@@ -86,7 +86,7 @@ int32_t variancei32 ( int32_t* array, uint32_t length )
     }
 
     // TODO: Prevent from divide by zero.
-    variance /= ( length - 1 );
+    variance /= length;
 
     return ( variance );
 }
