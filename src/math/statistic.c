@@ -56,7 +56,7 @@ float variance ( float* array, uint32_t length )
     }
 
     // TODO: Prevent from divide by zero.
-    variance /= ( length - 1 );
+    variance /= length;
 
     return ( variance );
 }
