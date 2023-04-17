@@ -18,9 +18,9 @@
   *     FUNCTIONS:
   *         variance                : Calculates variance value of the array.
   *         variancei32             : Calculates variance value of the array 32-bits integer.
-  *         standardDeviation       :
-  *         standardDeviationi32    : 
-  *         covariance              :
+  *         standardDeviation       : Calculates standard deviation value of the array.
+  *         standardDeviationi32    : Calculates standard deviation value of the array 32-bits integer.
+  *         covariance              : Calculates covariance value of two arrays.
   *
   * @notes:
   *
