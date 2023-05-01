@@ -18,8 +18,8 @@
   * @content:
   *     FUNCTIONS:
   *         swapForSort     : Swaps the data of the two pointers.
-  *         swapForSortu32  :
-  *         swapForSorti32  :
+  *         swapForSortu32  : Swaps the data of the two pointers for u32.
+  *         swapForSorti32  : Swaps the data of the two pointers for i32.
   *
   *         selectionSort   :
   *         selectionSortu32:
