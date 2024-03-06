@@ -20,11 +20,11 @@
   *         isEqual_f           : It is a help function for floating point search functions.
   *
   *         linearSearch        : Linear search algorithm for float.
-  *         linearSearchu32     : Linear search algorithm for unsigned-integer-32-bit.
-  *         linearSearchi32     : Linear search algorithm for signed-integer-32-bit.
+  *         linearSearchu32     : Linear search algorithm for u32.
+  *         linearSearchi32     : Linear search algorithm for i32.
   *         binarySearch        : Binary search algorithm for float.
-  *         binarySearchu32     : Binary search algorithm for unsigned-integer-32-bit.
-  *         binarySearchi32     : Binary search algorithm for signed-integer-32-bit.
+  *         binarySearchu32     : Binary search algorithm for u32.
+  *         binarySearchi32     : Binary search algorithm for i32.
   *
   * @notes:
   *

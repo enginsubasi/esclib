@@ -16,10 +16,10 @@
   * @content:
   *     FUNCTIONS:
   *         complexInit     : Complex number initialization.
-  *         complexSum      : Brief
-  *         complexSub      : Brief
-  *         complexMul      : Brief
-  *         complexDiv      : Brief
+  *         complexSum      : 
+  *         complexSub      : 
+  *         complexMul      : 
+  *         complexDiv      : 
   *
   * @notes:
   *

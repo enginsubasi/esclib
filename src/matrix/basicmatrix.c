@@ -19,8 +19,10 @@
   *     FUNCTIONS:
   *         threshold1D     : Applies thresholding on 1D array.
   *         threshold2D     : Applies thresholding on 2D array.
-  *         threshold2Du8   : Applies thresholding on 2D array 8-bits.
-  *         threshold2Du32  : Applies thresholding on 2D array 32-bits.
+  *         threshold2Du8   : Applies thresholding on 2D array for u8.
+  *         threshold2Du32  : Applies thresholding on 2D array for u32.
+  *         threshold2Di32  : Applies thresholding on 2D array for i32.
+  *         limitUpDw2D     : Applies limitting up and down on 1D array.
   *
   * @notes:
   *

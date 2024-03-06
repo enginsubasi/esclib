@@ -21,15 +21,15 @@
   *         swapForSortu32  : Swaps the data of the two pointers for u32.
   *         swapForSorti32  : Swaps the data of the two pointers for i32.
   *
-  *         selectionSort   :
-  *         selectionSortu32:
-  *         selectionSorti32:
-  *         bubbleSort      :
-  *         bubbleSortu32   :
-  *         bubbleSorti32   :
-  *         insertionSort   :
-  *         insertionSortu32:
-  *         insertionSorti32:
+  *         selectionSort   : Sorts array elements using selection method by length.
+  *         selectionSortu32: Sorts array elements using selection method by length for u32.
+  *         selectionSorti32: Sorts array elements using selection method by length for i32.
+  *         bubbleSort      : Sorts array elements using buble method by length.
+  *         bubbleSortu32   : Sorts array elements using buble method by length for u32.
+  *         bubbleSorti32   : Sorts array elements using buble method by length for i32.
+  *         insertionSort   : Sorts array elements using interion method by length.
+  *         insertionSortu32: Sorts array elements using interion method by length for u32.
+  *         insertionSorti32: Sorts array elements using interion method by length for i32.
   *
   * @notes:
   *
