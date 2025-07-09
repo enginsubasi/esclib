@@ -11,6 +11,7 @@
   * @history:   05/10/2020 Created
   *             09/10/2020 Button name changed to bininp. It means binary input.
   *             24/10/2020 newData field added to bininpUpdate function instead of read input function pointer.
+  *             09/07/2025 bininpGetRisingValue function is added.
   *
   * @about:     Binary input read and filtering.
   * @device:    Generic
@@ -20,6 +21,7 @@
   *         bininpInit              :
   *         bininpUpdate            :
   *         bininpGetValue          :
+  *         bininpGetRisingValue    :
   *
   * @notes:
   *
@@ -68,5 +70,16 @@ uint8_t bininpGetValue ( bininp_t* driver )
     return ( driver->output );
 }
 
+/*
+ * @about: Gets rising edge value and reset internal mamory.
+ */
+uint8_t bininpGetRisingValue ( bininp_t* driver )
+{
+    uint8_t retVal = 0;
 
+    retVal = driver->rising;
 
+    driver->rising = FALSE;
+
+    return ( retVal );
+}
