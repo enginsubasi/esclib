@@ -1,5 +1,5 @@
-#ifndef BASICMATRIX_H_
-#define BASICMATRIX_H_
+#ifndef BASICARRAY_H_
+#define BASICARRAY_H_
 
 #ifdef __cplusplus
  extern "C" {

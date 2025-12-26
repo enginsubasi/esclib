@@ -54,6 +54,7 @@ void bininpUpdate ( bininp_t* driver, uint8_t newData )
         if ( driver->filterCounter > driver->filterCount )
         {
             driver->output = currentPhysicalValue;
+            driver->filterCounter = 0;
         }
     }
     else
