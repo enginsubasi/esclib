@@ -6,10 +6,19 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.1
+  * @version:   v 0.0.2
   * @cdate:     04/12/2021
   * @history:   04/12/2021 Created.
   *             11/12/2021 threshold2Du8 is addded.
+  *             29/07/2026 Bug fix. The undeclared jSize identifier is fixed by
+  *                        renaming the ySize parameter to jSize.
+  *             29/07/2026 Bug fix. The row stride of the 2D index calculation
+  *                        was iSize instead of jSize. Non square matrices were
+  *                        processed incorrectly.
+  *             29/07/2026 Bug fix. limitUpDw2D had an unused thresholdValue
+  *                        parameter which did not match the prototype, and it
+  *                        compared the elements against its own address instead
+  *                        of upValue.
   *
   *
   * @about:     Basic matrix function library file.
@@ -25,6 +34,8 @@
   *         limitUpDw2D     : Applies limitting up and down on 1D array.
   *
   * @notes:
+  *     The 2D functions expect a row major matrix. iSize is the row count and
+  *     jSize is the column count, so the row stride is jSize.
   *
   ******************************************************************************
   */
@@ -37,7 +48,7 @@
 void threshold1D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize )
 {
     uint32_t i = 0;
-    
+
     for ( i = 0; i < iSize; ++i )
     {
         if ( matrix [ i ] > thresholdValue )
@@ -54,22 +65,22 @@ void threshold1D ( float* matrix, float thresholdValue, float upValue, float dwV
 /*
  * @about:
  */
-void threshold2D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize, uint32_t ySize )
+void threshold2D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize, uint32_t jSize )
 {
     uint32_t i = 0;
     uint32_t j = 0;
-    
+
     for ( i = 0; i < iSize; ++i )
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
+            if ( matrix [ ( i * jSize ) + j ] > thresholdValue )
             {
-                matrix [ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * jSize ) + j ] = upValue;
             }
             else
             {
-                matrix [ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * jSize ) + j ] = dwValue;
             }
         }
     }
@@ -78,22 +89,22 @@ void threshold2D ( float* matrix, float thresholdValue, float upValue, float dwV
 /*
  * @about:
  */
-void threshold2Du8 ( uint8_t* matrix, uint8_t thresholdValue, uint8_t upValue, uint8_t dwValue, uint32_t iSize, uint32_t ySize )
+void threshold2Du8 ( uint8_t* matrix, uint8_t thresholdValue, uint8_t upValue, uint8_t dwValue, uint32_t iSize, uint32_t jSize )
 {
     uint32_t i = 0;
     uint32_t j = 0;
-    
+
     for ( i = 0; i < iSize; ++i )
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
+            if ( matrix [ ( i * jSize ) + j ] > thresholdValue )
             {
-                matrix [ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * jSize ) + j ] = upValue;
             }
             else
             {
-                matrix [ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * jSize ) + j ] = dwValue;
             }
         }
     }
@@ -102,22 +113,22 @@ void threshold2Du8 ( uint8_t* matrix, uint8_t thresholdValue, uint8_t upValue, u
 /*
  * @about:
  */
-void threshold2Du32 ( uint32_t* matrix, uint32_t thresholdValue, uint32_t upValue, uint32_t dwValue, uint32_t iSize, uint32_t ySize )
+void threshold2Du32 ( uint32_t* matrix, uint32_t thresholdValue, uint32_t upValue, uint32_t dwValue, uint32_t iSize, uint32_t jSize )
 {
     uint32_t i = 0;
     uint32_t j = 0;
-    
+
     for ( i = 0; i < iSize; ++i )
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
+            if ( matrix [ ( i * jSize ) + j ] > thresholdValue )
             {
-                matrix [ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * jSize ) + j ] = upValue;
             }
             else
             {
-                matrix [ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * jSize ) + j ] = dwValue;
             }
         }
     }
@@ -126,22 +137,22 @@ void threshold2Du32 ( uint32_t* matrix, uint32_t thresholdValue, uint32_t upValu
 /*
  * @about:
  */
-void threshold2Di32 ( int32_t* matrix, int32_t thresholdValue, int32_t upValue, int32_t dwValue, uint32_t iSize, uint32_t ySize )
+void threshold2Di32 ( int32_t* matrix, int32_t thresholdValue, int32_t upValue, int32_t dwValue, uint32_t iSize, uint32_t jSize )
 {
     uint32_t i = 0;
     uint32_t j = 0;
-    
+
     for ( i = 0; i < iSize; ++i )
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix [ ( i * iSize ) + j ] > thresholdValue )
+            if ( matrix [ ( i * jSize ) + j ] > thresholdValue )
             {
-                matrix [ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * jSize ) + j ] = upValue;
             }
             else
             {
-                matrix [ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * jSize ) + j ] = dwValue;
             }
         }
     }
@@ -150,22 +161,22 @@ void threshold2Di32 ( int32_t* matrix, int32_t thresholdValue, int32_t upValue, 
 /*
  * @about:
  */
-void limitUpDw2D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize, uint32_t ySize )
+void limitUpDw2D ( float* matrix, float upValue, float dwValue, uint32_t iSize, uint32_t jSize )
 {
     uint32_t i = 0;
     uint32_t j = 0;
-    
+
     for ( i = 0; i < iSize; ++i )
     {
         for ( j = 0; j < jSize; ++j )
         {
-            if ( matrix [ ( i * iSize ) + j ] > limitUpDw2D )
+            if ( matrix [ ( i * jSize ) + j ] > upValue )
             {
-                matrix [ ( i * iSize ) + j ] = upValue;
+                matrix [ ( i * jSize ) + j ] = upValue;
             }
-            else if ( matrix [ ( i * iSize ) + j ] < dwValue )
+            else if ( matrix [ ( i * jSize ) + j ] < dwValue )
             {
-                matrix [ ( i * iSize ) + j ] = dwValue;
+                matrix [ ( i * jSize ) + j ] = dwValue;
             }
             else
             {

@@ -1,5 +1,5 @@
-#ifndef GENERIC_H_
-#define GENERIC_H_
+#ifndef LOGIC_H_
+#define LOGIC_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -36,4 +36,4 @@ uint8_t dff ( uint8_t d, uint8_t* mem );
 }
 #endif
 
-#endif /* GENERIC_H_ */   
+#endif /* LOGIC_H_ */   

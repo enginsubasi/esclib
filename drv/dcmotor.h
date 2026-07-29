@@ -1,5 +1,5 @@
-#ifndef INC_HC595_DRV_H_
-#define INC_HC595_DRV_H_
+#ifndef INC_DCMOTOR_H_
+#define INC_DCMOTOR_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -28,7 +28,7 @@ struct dcmotor_t
 {
     void ( *bridgeHigh )( uint8_t );
     void ( *bridgeLow )( uint8_t );
-    void ( *pwm )( double );
+    void ( *pwm )( float );
 };
 
 /* ENUMS */
@@ -47,11 +47,11 @@ enum BRIDGE_TYPE
 void dcMotorInit ( struct dcmotor_t *driver,
                     void ( *bridgeHighFnc )( uint8_t ),
                     void ( *bridgeLowFnc )( uint8_t ),
-                    void ( *pwmFnc )( double ));
+                    void ( *pwmFnc )( float ));
 void dcMotorBridgeState ( struct dcmotor_t *driver, uint8_t bridgeState );
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* INC_HC595_DRV_H_ */
+#endif /* INC_DCMOTOR_H_ */

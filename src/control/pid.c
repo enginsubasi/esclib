@@ -10,6 +10,8 @@
   * @cdate:     23/07/2020
   * @history:   23/07/2020 Created.
   *             24/08/2020 Data type changed from double to float.
+  *             29/07/2026 Bug fix. pidInit left error, lastError, partP, partI
+  *                        and partD uninitialized.
   *
   * @about:     PID control.
   * @device:    Generic
@@ -34,6 +36,15 @@ void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPa
                 float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
 {
     driver->output = pidOutputMinLimit;
+
+    // Error memory. Without this the first derivative term would use garbage.
+    driver->error = 0;
+    driver->lastError = 0;
+
+    // Term accumulators. partI integrates, so it must start from a known value.
+    driver->partP = 0;
+    driver->partI = 0;
+    driver->partD = 0;
 
     // Coefficients.
     driver->kp = kp;

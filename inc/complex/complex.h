@@ -1,5 +1,5 @@
-#ifndef GENERIC_H_
-#define GENERIC_H_
+#ifndef COMPLEX_H_
+#define COMPLEX_H_
 
 #ifdef __cplusplus
  extern "C" {
@@ -48,4 +48,4 @@ void complexFromPolar ( complex_t* prm1, float r, float a );
 }
 #endif
 
-#endif /* GENERIC_H_ */   
+#endif /* COMPLEX_H_ */   

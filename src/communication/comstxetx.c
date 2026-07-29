@@ -6,9 +6,15 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.1
+  * @version:   v 0.0.2
   * @cdate:     26/08/2020
   * @history:   26/08/2020 Created.
+  *             29/07/2026 Bug fix. The driver variable was spelled drive in
+  *                        comstxetxTimeoutCounter.
+  *             29/07/2026 Bug fix. comstxetxEvaluate assigned instead of
+  *                        compared rxReadyToEvaluate, so it fired on every call.
+  *             29/07/2026 Bug fix. The receive bound checked a rxMaxLength
+  *                        member that does not exist. It now checks rxSize.
   *
   * @about:     Basic STX, ETX communication framework.
   * @device:    Generic
@@ -92,7 +98,7 @@ void comstxetxReceive ( comstxetx_t* driver, uint8_t data )
                 driver->rxBuffer[ driver->rxIndex ] = data;
                 ++driver->rxIndex;
                 
-                if ( driver->rxIndex > driver->rxMaxLength )
+                if ( driver->rxIndex >= driver->rxSize )
                 {
                     // Terminate all received bytes.
                     driver->rxIndex = 0;
@@ -107,7 +113,7 @@ void comstxetxReceive ( comstxetx_t* driver, uint8_t data )
  */
 void comstxetxEvaluate ( comstxetx_t* driver )
 {
-    if ( driver->rxReadyToEvaluate = TRUE )
+    if ( driver->rxReadyToEvaluate == TRUE )
     {
         driver->packetProcess ( driver->rxBuffer, driver->rxIndex );
         
@@ -121,7 +127,7 @@ void comstxetxEvaluate ( comstxetx_t* driver )
  */
 void comstxetxTimeoutCounter ( comstxetx_t* driver )
 {
-    if ( ( driver->rxIndex != 0 ) && ( drive->rxReadyToEvaluate == FALSE ) )
+    if ( ( driver->rxIndex != 0 ) && ( driver->rxReadyToEvaluate == FALSE ) )
     {
         if ( driver->rxTimeoutCounter > driver->rxTimeout )
         {

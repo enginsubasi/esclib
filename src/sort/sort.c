@@ -6,11 +6,16 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.3
+  * @version:   v 0.0.4
   * @cdate:     24/12/2021
   * @history:   24/12/2021 Created.
   *             26/12/2021 bubbleSort added.
   *             20/01/2022 bubbleSort added.
+  *             29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF for a
+  *                        zero length array, which drove the loops far past the
+  *                        end of the buffer.
+  *             29/07/2026 The insertion sort inner loop no longer relies on the
+  *                        unsigned index wrapping to 0xFFFFFFFF.
   *
   * @about:     Sort function library file.
   * @device:    Generic
@@ -32,6 +37,8 @@
   *         insertionSorti32: Sorts array elements using interion method by length for i32.
   *
   * @notes:
+  *     A zero or one element array is already sorted, so every function below
+  *     leaves it untouched.
   *
   ******************************************************************************
   */
@@ -44,7 +51,7 @@
 static void swapForSort ( float* xp, float* yp )
 {
     float temp = 0;
-    
+
     temp = *xp;
     *xp = *yp;
     *yp = temp;
@@ -83,13 +90,21 @@ void selectionSort ( float* array, uint32_t length )
     uint32_t j = 0;
     uint32_t lengthM1 = 0;      // Length minus 1.
     uint32_t minElmIndex = 0;   // Minimum elements index.
-    
-    lengthM1 = length - 1;      // Optimize loop operations.
-        
+
+    if ( length != 0 )
+    {
+        lengthM1 = length - 1;  // Optimize loop operations.
+    }
+    else
+    {
+        // Keep lengthM1 at zero so that the loop below does not run.
+        lengthM1 = 0;
+    }
+
     for ( i = 0; i < lengthM1; ++i )
     {
         minElmIndex = i;
-        
+
         for ( j = i + 1; j < length; ++j )
         {
             if ( array[ j ] < array[ minElmIndex ] )
@@ -97,7 +112,7 @@ void selectionSort ( float* array, uint32_t length )
                 minElmIndex = j;
             }
         }
-        
+
         swapForSort ( &array[ minElmIndex ], &array[ i ] );
     }
 }
@@ -112,7 +127,15 @@ void selectionSortu32 ( uint32_t* array, uint32_t length )
     uint32_t lengthM1 = 0;      // Length minus 1.
     uint32_t minElmIndex = 0;   // Minimum elements index.
 
-    lengthM1 = length - 1;      // Optimize loop operations.
+    if ( length != 0 )
+    {
+        lengthM1 = length - 1;  // Optimize loop operations.
+    }
+    else
+    {
+        // Keep lengthM1 at zero so that the loop below does not run.
+        lengthM1 = 0;
+    }
 
     for ( i = 0; i < lengthM1; ++i )
     {
@@ -140,7 +163,15 @@ void selectionSorti32 ( int32_t* array, uint32_t length )
     uint32_t lengthM1 = 0;      // Length minus 1.
     uint32_t minElmIndex = 0;   // Minimum elements index.
 
-    lengthM1 = length - 1;      // Optimize loop operations.
+    if ( length != 0 )
+    {
+        lengthM1 = length - 1;  // Optimize loop operations.
+    }
+    else
+    {
+        // Keep lengthM1 at zero so that the loop below does not run.
+        lengthM1 = 0;
+    }
 
     for ( i = 0; i < lengthM1; ++i )
     {
@@ -166,9 +197,17 @@ void bubbleSort ( float* array, uint32_t length )
     uint32_t i = 0;
     uint32_t j = 0;
     uint32_t lengthM1 = 0;      // Length minus 1.
-    
-    lengthM1 = length - 1;      // Optimize loop operations.
-        
+
+    if ( length != 0 )
+    {
+        lengthM1 = length - 1;  // Optimize loop operations.
+    }
+    else
+    {
+        // Keep lengthM1 at zero so that the loop below does not run.
+        lengthM1 = 0;
+    }
+
     for ( i = 0; i < lengthM1; ++i )
     {
         for ( j = 0; j < ( lengthM1 - i ); ++j )
@@ -190,7 +229,15 @@ void bubbleSortu32 ( uint32_t* array, uint32_t length )
     uint32_t j = 0;
     uint32_t lengthM1 = 0;      // Length minus 1.
 
-    lengthM1 = length - 1;      // Optimize loop operations.
+    if ( length != 0 )
+    {
+        lengthM1 = length - 1;  // Optimize loop operations.
+    }
+    else
+    {
+        // Keep lengthM1 at zero so that the loop below does not run.
+        lengthM1 = 0;
+    }
 
     for ( i = 0; i < lengthM1; ++i )
     {
@@ -213,7 +260,15 @@ void bubbleSorti32 ( int32_t* array, uint32_t length )
     uint32_t j = 0;
     uint32_t lengthM1 = 0;      // Length minus 1.
 
-    lengthM1 = length - 1;      // Optimize loop operations.
+    if ( length != 0 )
+    {
+        lengthM1 = length - 1;  // Optimize loop operations.
+    }
+    else
+    {
+        // Keep lengthM1 at zero so that the loop below does not run.
+        lengthM1 = 0;
+    }
 
     for ( i = 0; i < lengthM1; ++i )
     {
@@ -230,25 +285,29 @@ void bubbleSorti32 ( int32_t* array, uint32_t length )
 /*
  * @about:
  */
-void insertionSort ( float* array, uint32_t length )  
-{  
+void insertionSort ( float* array, uint32_t length )
+{
     uint32_t i = 0;
     uint32_t j = 0;
     float key = 0;
-    
-    for ( i = 1; i < length; ++i ) 
-    {  
-        key = array[i];  
-        j = i - 1;  
 
-        while ( ( j >= 0 ) && ( j != 0xFFFFFFFF ) && ( array[ j ] > key ) ) 
-        {  
-            array[ j + 1 ] = array[ j ];  
-            j = j - 1;  
-        }  
-        array[ j + 1 ] = key;  
-    }  
-}  
+    for ( i = 1; i < length; ++i )
+    {
+        key = array[ i ];
+
+        // j is the insert position. It is compared against j - 1 so that the
+        // unsigned index never has to go below zero.
+        j = i;
+
+        while ( ( j != 0 ) && ( array[ j - 1 ] > key ) )
+        {
+            array[ j ] = array[ j - 1 ];
+            --j;
+        }
+
+        array[ j ] = key;
+    }
+}
 
 /*
  * @about:
@@ -261,15 +320,19 @@ void insertionSortu32 ( uint32_t* array, uint32_t length )
 
     for ( i = 1; i < length; ++i )
     {
-        key = array[i];
-        j = i - 1;
+        key = array[ i ];
 
-        while ( ( j >= 0 ) && ( j != 0xFFFFFFFF ) && ( array[ j ] > key ) )
+        // j is the insert position. It is compared against j - 1 so that the
+        // unsigned index never has to go below zero.
+        j = i;
+
+        while ( ( j != 0 ) && ( array[ j - 1 ] > key ) )
         {
-            array[ j + 1 ] = array[ j ];
-            j = j - 1;
+            array[ j ] = array[ j - 1 ];
+            --j;
         }
-        array[ j + 1 ] = key;
+
+        array[ j ] = key;
     }
 }
 
@@ -284,14 +347,18 @@ void insertionSorti32 ( int32_t* array, uint32_t length )
 
     for ( i = 1; i < length; ++i )
     {
-        key = array[i];
-        j = i - 1;
+        key = array[ i ];
 
-        while ( ( j >= 0 ) && ( j != 0xFFFFFFFF ) && ( array[ j ] > key ) )
+        // j is the insert position. It is compared against j - 1 so that the
+        // unsigned index never has to go below zero.
+        j = i;
+
+        while ( ( j != 0 ) && ( array[ j - 1 ] > key ) )
         {
-            array[ j + 1 ] = array[ j ];
-            j = j - 1;
+            array[ j ] = array[ j - 1 ];
+            --j;
         }
-        array[ j + 1 ] = key;
+
+        array[ j ] = key;
     }
 }

@@ -6,9 +6,17 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.1
+  * @version:   v 0.0.2
   * @cdate:     20/02/2020
   * @history:   20/02/2020 Created
+  *             29/07/2026 Bug fix. The driver variable was spelled drive in
+  *                        comatTimeoutCounter.
+  *             29/07/2026 Bug fix. comatEvaluate assigned instead of compared
+  *                        rxReadyToEvaluate, so it fired on every call.
+  *             29/07/2026 Bug fix. The packetProcess member took rxInd by
+  *                        pointer while the prototype and the call site passed
+  *                        it by value. The member now takes it by value.
+  *             29/07/2026 Bug fix. comatInit did not initialize txIndex.
   *
   * @about:     AT communication framework.
   * @device:    Generic
@@ -54,6 +62,7 @@ void comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
     
     // Initialize to zero and FALSE
     driver->rxIndex = 0;
+    driver->txIndex = 0;
     driver->rxReadyToEvaluate = FALSE;
     
     // Fill with zero
@@ -120,7 +129,7 @@ void comatReceive ( comat_t* driver, uint8_t data )
  */
 void comatEvaluate ( comat_t* driver )
 {
-    if ( driver->rxReadyToEvaluate = TRUE )
+    if ( driver->rxReadyToEvaluate == TRUE )
     {
         driver->packetProcess ( driver->rxBuffer, driver->rxIndex, driver->txBuffer, &driver->txIndex );
         driver->txTransmissionTrigger ( driver->txBuffer, driver->txIndex );
@@ -136,7 +145,7 @@ void comatEvaluate ( comat_t* driver )
  */
 void comatTimeoutCounter ( comat_t* driver )
 {
-    if ( ( driver->rxIndex != 0 ) && ( drive->rxReadyToEvaluate == FALSE ) )
+    if ( ( driver->rxIndex != 0 ) && ( driver->rxReadyToEvaluate == FALSE ) )
     {
         if ( driver->rxTimeoutCounter > driver->rxTimeout )
         {

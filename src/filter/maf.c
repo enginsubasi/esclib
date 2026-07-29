@@ -6,11 +6,14 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 2.0.0
+  * @version:   v 2.1.0
   * @cdate:     26/04/2020
   * @history:   26/04/2020 Created
   *             07/06/2020 Naming style changed
   *             24/08/2020 Data type changed from double to float.
+  *             29/07/2026 The u32 variants declared by maf.h are implemented.
+  *                        They were missing, which broke linking for any caller
+  *                        that used them.
   *
   * @about:     Moving average filter.
   * @device:    Generic
@@ -20,6 +23,9 @@
   *         mafInit               : Initialize maf structure.
   *         mafIteration          : Adds new data to filter.
   *         mafGetOutput          : Gets current filter output.
+  *         mafInitu32            : Initialize mafu32 structure.
+  *         mafIterationu32       : Adds new data to filter for u32.
+  *         mafGetOutputu32       : Gets current filter output for u32.
   *
   * @notes:
   *
@@ -89,6 +95,71 @@ void mafIteration ( maf_t* driver, float newData )
  * @about: Gets current filter output.
  */
 float mafGetOutput ( maf_t* driver )
+{
+    return ( driver->output );
+}
+
+/*
+ * @about: Initialize mafu32 structure.
+ */
+int8_t mafInitu32 ( mafu32_t* driver, uint32_t* buffer, uint32_t length, uint32_t outputInit )
+{
+    int8_t retVal = FALSE;
+    uint32_t i = 0;
+
+    if ( ( length != 0 ) && ( buffer != 0 ) )
+    {
+        driver->buffer = buffer;
+        driver->length = length;
+        driver->output = outputInit;
+        driver->sumOfArray = driver->length * driver->output;
+        driver->index = 0;
+
+        for ( i = 0; i < length; ++i )
+        {
+            driver->buffer[ i ] = outputInit;
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/*
+ * @about: Adds new data to filter.
+ */
+void mafIterationu32 ( mafu32_t* driver, uint32_t newData )
+{
+    // Add new data to buffer array and sum. of buffer array.
+    driver->sumOfArray -= driver->buffer[ driver->index ];
+    driver->buffer[ driver->index ] = newData;
+    driver->sumOfArray += driver->buffer[ driver->index ];
+
+    // Calculate output.
+    driver->output = ( driver->sumOfArray / driver->length );
+
+    // Index control.
+    ++driver->index;
+
+    if ( driver->index >= driver->length )
+    {
+        driver->index = 0;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+
+/*
+ * @about: Gets current filter output.
+ */
+uint32_t mafGetOutputu32 ( mafu32_t* driver )
 {
     return ( driver->output );
 }

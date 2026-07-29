@@ -39,7 +39,11 @@ typedef struct
     
     uint8_t *txBuffer;
     
-    void (*packetProcess) ( uint8_t* rxBuf, uint32_t* rxInd, uint8_t* txBuf, uint32_t* txInd );
+    /*
+     * rxInd is an input. It is the number of received bytes.
+     * txInd is an output. The callback writes the number of bytes to transmit.
+     */
+    void (*packetProcess) ( uint8_t* rxBuf, uint32_t rxInd, uint8_t* txBuf, uint32_t* txInd );
     void (*txTransmissionTrigger) ( uint8_t* txBuf, uint32_t txInd );
 } comat_t;
 

@@ -6,11 +6,16 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.3
+  * @version:   v 0.0.4
   * @cdate:     15/09/2021
   * @history:   15/09/2021 Created.
   *             20/09/2021 linearSearch_i32 is added to the library.
   *             20/09/2021 binarySearch_i32 is added to the library.
+  *             29/07/2026 Bug fix. A stray semicolon after the if statement of
+  *                        linearSearch made the body run unconditionally, so the
+  *                        function always reported a match at index 0.
+  *             29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF in the
+  *                        binary search functions for a zero length array.
   *
   * @about:     Search function library file.
   * @device:    Generic
@@ -27,6 +32,8 @@
   *         binarySearchi32     : Binary search algorithm for i32.
   *
   * @notes:
+  *     Every function reports FALSE for a zero length array and leaves
+  *     foundIndex untouched.
   *
   ******************************************************************************
   */
@@ -62,12 +69,12 @@ uint8_t linearSearch ( const float* const array, uint32_t length, float item, ui
 
     for ( i = 0; i < length; ++i )
     {
-        if ( isEqualf ( array[ i ], item, epsilon ) == TRUE );
+        if ( isEqualf ( array[ i ], item, epsilon ) == TRUE )
         {
             ( *foundIndex ) = i;
             retVal = TRUE;
             break;
-        }      
+        }
     }
 
     return ( retVal );
@@ -88,7 +95,7 @@ uint8_t linearSearchu32 ( const uint32_t* const array, uint32_t length, uint32_t
             ( *foundIndex ) = i;
             retVal = TRUE;
             break;
-        }      
+        }
     }
 
     return ( retVal );
@@ -109,7 +116,7 @@ uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t i
             ( *foundIndex ) = i;
             retVal = TRUE;
             break;
-        }      
+        }
     }
 
     return ( retVal );
@@ -123,36 +130,46 @@ uint8_t binarySearch ( const float* const array, uint32_t length, float item, ui
 {
     uint8_t retVal = FALSE;
     uint32_t l = 0;
-    uint32_t r = length - 1;
+    uint32_t r = 0;
     uint32_t m = 0;
 
-    while ( l <= r )
+    if ( length != 0 )
     {
-        m = l + ( ( r - l ) >> 1 ); // divide by 2
+        r = length - 1;
 
-        if ( isEqualf ( array[ m ], item, epsilon ) == TRUE )
+        while ( l <= r )
         {
-            ( *foundIndex ) = m;
-            retVal = TRUE;
-            break;
-        }
+            m = l + ( ( r - l ) >> 1 ); // divide by 2
 
-        if ( array[ m ] < item )
-        {
-            l = m + 1;
-        }
-        else
-        {
-            if ( m == 0 )
+            if ( isEqualf ( array[ m ], item, epsilon ) == TRUE )
+            {
+                ( *foundIndex ) = m;
+                retVal = TRUE;
+                break;
+            }
+
+            if ( array[ m ] < item )
             {
                 l = m + 1;
             }
             else
             {
-                r = m - 1;
+                if ( m == 0 )
+                {
+                    // The item is below the first element. Ending the search
+                    // this way keeps the unsigned right bound from underflowing.
+                    l = m + 1;
+                }
+                else
+                {
+                    r = m - 1;
+                }
             }
-
         }
+    }
+    else
+    {
+        /* Intentionally blank. */
     }
 
     return ( retVal );
@@ -166,36 +183,46 @@ uint8_t binarySearchu32 ( const uint32_t* const array, uint32_t length, uint32_t
 {
     uint8_t retVal = FALSE;
     uint32_t l = 0;
-    uint32_t r = length - 1;
+    uint32_t r = 0;
     uint32_t m = 0;
 
-    while ( l <= r )
+    if ( length != 0 )
     {
-        m = l + ( ( r - l ) >> 1 ); // divide by 2
+        r = length - 1;
 
-        if ( array[ m ] == item )
+        while ( l <= r )
         {
-            ( *foundIndex ) = m;
-            retVal = TRUE;
-            break;
-        }
+            m = l + ( ( r - l ) >> 1 ); // divide by 2
 
-        if ( array[ m ] < item )
-        {
-            l = m + 1;
-        }
-        else
-        {
-            if ( m == 0 )
+            if ( array[ m ] == item )
+            {
+                ( *foundIndex ) = m;
+                retVal = TRUE;
+                break;
+            }
+
+            if ( array[ m ] < item )
             {
                 l = m + 1;
             }
             else
             {
-                r = m - 1;
+                if ( m == 0 )
+                {
+                    // The item is below the first element. Ending the search
+                    // this way keeps the unsigned right bound from underflowing.
+                    l = m + 1;
+                }
+                else
+                {
+                    r = m - 1;
+                }
             }
-
         }
+    }
+    else
+    {
+        /* Intentionally blank. */
     }
 
     return ( retVal );
@@ -209,36 +236,46 @@ uint8_t binarySearchi32 ( const int32_t* const array, uint32_t length, int32_t i
 {
     uint8_t retVal = FALSE;
     uint32_t l = 0;
-    uint32_t r = length - 1;
+    uint32_t r = 0;
     uint32_t m = 0;
 
-    while ( l <= r )
+    if ( length != 0 )
     {
-        m = l + ( ( r - l ) >> 1 ); // divide by 2
+        r = length - 1;
 
-        if ( array[ m ] == item )
+        while ( l <= r )
         {
-            ( *foundIndex ) = m;
-            retVal = TRUE;
-            break;
-        }
+            m = l + ( ( r - l ) >> 1 ); // divide by 2
 
-        if ( array[ m ] < item )
-        {
-            l = m + 1;
-        }
-        else
-        {
-            if ( m == 0 )
+            if ( array[ m ] == item )
+            {
+                ( *foundIndex ) = m;
+                retVal = TRUE;
+                break;
+            }
+
+            if ( array[ m ] < item )
             {
                 l = m + 1;
             }
             else
             {
-                r = m - 1;
+                if ( m == 0 )
+                {
+                    // The item is below the first element. Ending the search
+                    // this way keeps the unsigned right bound from underflowing.
+                    l = m + 1;
+                }
+                else
+                {
+                    r = m - 1;
+                }
             }
-
         }
+    }
+    else
+    {
+        /* Intentionally blank. */
     }
 
     return ( retVal );

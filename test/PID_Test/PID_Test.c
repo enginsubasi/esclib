@@ -13,8 +13,21 @@ int main ( void )
     pidc_t test1;
     pidc_t test2;
 
-    pidInit ( &test1, 0.1, 0.001, 0.001, 10, 0, 100, 0 );
-    pidInit ( &test2, 0.5, 0.001, 0.01, 10, 0, 100, 0 );
+    /*
+     * pidInit takes the coefficients, the sample time, then the max and min
+     * limit pair of the P, I and D parts, and finally the output limit pair.
+     */
+    pidInit ( &test1, 0.1, 0.001, 0.001, 10,
+                100, -100,
+                100, -100,
+                100, -100,
+                100, 0 );
+
+    pidInit ( &test2, 0.5, 0.001, 0.01, 10,
+                100, -100,
+                100, -100,
+                100, -100,
+                100, 0 );
 
     for ( i = 0; i < 15; ++i )
     {

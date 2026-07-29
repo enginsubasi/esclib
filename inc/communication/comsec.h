@@ -40,7 +40,7 @@ typedef struct
     uint8_t *txBuffer;
     
     void (*packetProcess) ( uint8_t* buffer, uint32_t index );
-} comat_t;
+} comsec_t;
 
 /* ENUMS */
 

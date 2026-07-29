@@ -1,14 +1,19 @@
 /**
   ******************************************************************************
   *
-  * @file:      hc597.c
+  * @file:      hc597_drv.c
   * @author:    Engin Subasi
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.1
+  * @version:   v 0.0.2
   * @cdate:     23/05/2022
   * @history:   23/05/2022 Created
+  *             29/07/2026 Bug fix. hc597DrvOneShoot only filled data[ 0 ] and
+  *                        ignored driver->size, so a chain longer than one
+  *                        device could not be read.
+  *             29/07/2026 hc597Init drives the clock and load pins to a known
+  *                        state, the way hc595Init already does.
   *
   * @about:     HC597 driver file.
   * @device:    Generic
@@ -52,6 +57,9 @@ void hc597Init ( struct HC597_Driver* driver,
     driver->dlyMs = dlyMsFnc;
     driver->dlyNop = dlyNopFnc;
 
+    // Idle state. The load pulse is active low, so it idles high.
+    driver->clkDrv ( FALSE );
+    driver->lodDrv ( TRUE );
 }
 
 /*
@@ -92,23 +100,36 @@ void hc597DrvLoop ( struct HC597_Driver* driver )
 void hc597DrvOneShoot ( struct HC597_Driver* driver )
 {
     uint32_t i = 0;
+    uint32_t j = 0;
 
-    driver->data[ 0 ] = 0;
-
+    // Latch the parallel inputs of the whole chain once.
     driver->clkDrv ( TRUE );
     driver->clkDrv ( FALSE );
 
     driver->lodDrv ( FALSE );
     driver->lodDrv ( TRUE );
 
-    for ( i = 0; i < 8; ++i )
+    for ( i = 0; i < driver->size; ++i )
     {
-        hc597DlyCtrl ( driver );
+        driver->data[ i ] = 0;
 
-        driver->data[ 0 ] |= ( driver->datDrv() << i );
+        for ( j = 0; j < 8; ++j )
+        {
+            hc597DlyCtrl ( driver );
 
-        driver->clkDrv ( TRUE );
-        driver->clkDrv ( FALSE );
+            // Any non zero read is one bit, so it is normalized here.
+            if ( driver->datDrv ( ) != FALSE )
+            {
+                driver->data[ i ] |= ( uint8_t ) ( 1u << j );
+            }
+            else
+            {
+                /* Intentionally blank. */
+            }
+
+            driver->clkDrv ( TRUE );
+            driver->clkDrv ( FALSE );
+        }
     }
 }
 

@@ -6,9 +6,10 @@
   * @email:     enginsubasi@gmail.com
   * @address:   github.com/enginsubasi
   *
-  * @version:   v 0.0.1
+  * @version:   v 0.0.2
   * @cdate:     29/03/2022
   * @history:   29/03/2022 Created.
+  *             29/07/2026 Bug fix. NULL was used without including stddef.h.
   *
   * @about:     Circular buffer implementation.
   * @device:    Generic
@@ -25,6 +26,8 @@
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "circBuf.h"
 
