@@ -60,3 +60,6 @@ sample/DFT/dftplots.m
 test/Complex_Test/Complex_Test.layout
 test/Complex_Test/Complex_Test.depend
 test/Complex_Test/Complex_Test.cbp
+
+# Doxygen generated output
+doc/
