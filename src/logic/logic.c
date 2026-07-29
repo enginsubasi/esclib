@@ -1,33 +1,32 @@
 /**
   ******************************************************************************
   *
-  * @file:      logic.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      logic.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.1
+  * @date      20/10/2021
   *
-  * @version:   v 0.0.1
-  * @cdate:     20/10/2021
-  * @history:   20/10/2021 Created
-  *             11/12/2021 D Flip-Flop is added
+  * @brief     Basic logic function library file.
   *
-  * @about:     Basic logic function library file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         rsff            : RS Flip-Flop implementation.
-  *         dff             : D Flip-Flop implementation.
-  *
-  * @notes:
+  * @par History
+  * 20/10/2021 Created @n
+  * 11/12/2021 D Flip-Flop is added @n
   *
   ******************************************************************************
   */
 
 #include "logic.h"
 
-/*
- * @about: RS Flip-Flop implementation. All parameters are using as a boolean.
+/**
+ * @brief   Evaluates one step of an RS flip-flop; reset is dominant over set.
+ * @param[in]     r    Reset input, treated as a boolean.
+ * @param[in]     s    Set input, treated as a boolean.
+ * @param[in,out] mem  Flip-flop's stored state; read and then updated.
+ * @return  New state of mem, i.e. TRUE or FALSE.
+ * @note    When r is TRUE the output is cleared regardless of s.
  */
 uint8_t rsff ( uint8_t r, uint8_t s, uint8_t* mem )
 {
@@ -54,8 +53,11 @@ uint8_t rsff ( uint8_t r, uint8_t s, uint8_t* mem )
     return ( retVal );
 }
 
-/*
- * @about: D Flip-Flop implementation. All parameters are using as a boolean.
+/**
+ * @brief   Evaluates one step of a D flip-flop.
+ * @param[in]     d    Data input, treated as a boolean.
+ * @param[in,out] mem  Flip-flop's stored state; read and then updated.
+ * @return  Previous state of mem, captured before it is updated to d.
  */
 uint8_t dff ( uint8_t d, uint8_t* mem )
 {

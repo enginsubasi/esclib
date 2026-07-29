@@ -1,42 +1,38 @@
 /**
   ******************************************************************************
   *
-  * @file:      bininp.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      bininp.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   1.0.0
+  * @date      05/10/2020
   *
-  * @version:   v 1.0.0
-  * @cdate:     05/10/2020
-  * @history:   05/10/2020 Created
-  *             09/10/2020 Button name changed to bininp. It means binary input.
-  *             24/10/2020 newData field added to bininpUpdate function instead of read input function pointer.
-  *             09/07/2025 bininpGetRisingValue function is added.
-  *             29/07/2026 Bug fix. The rising field was never set, so
-  *                        bininpGetRisingValue always returned FALSE. The rising
-  *                        edge is now detected in bininpUpdate.
-  *             29/07/2026 Bug fix. bininpInit only assigned filterCount and left
-  *                        filterCounter, output and rising uninitialized.
+  * @brief     Binary input read and filtering.
   *
-  * @about:     Binary input read and filtering.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         bininpInit              :
-  *         bininpUpdate            :
-  *         bininpGetValue          :
-  *         bininpGetRisingValue    :
-  *
-  * @notes:
+  * @par History
+  * 05/10/2020 Created @n
+  * 09/10/2020 Button name changed to bininp. It means binary input. @n
+  * 24/10/2020 newData field added to bininpUpdate function instead of read input function pointer. @n
+  * 09/07/2025 bininpGetRisingValue function is added. @n
+  * 29/07/2026 Bug fix. The rising field was never set, so @n
+  *            bininpGetRisingValue always returned FALSE. The rising @n
+  *            edge is now detected in bininpUpdate. @n
+  * 29/07/2026 Bug fix. bininpInit only assigned filterCount and left @n
+  *            filterCounter, output and rising uninitialized. @n
   *
   ******************************************************************************
   */
 
 #include "bininp.h"
 
-/*
- * @about: Initialize binary input structure.
+/**
+ * @brief   Initializes the binary input filter state.
+ * @param[out] driver       Binary input state to initialize.
+ * @param[in]  filterCount  Number of consecutive bininpUpdate calls a new
+ *                          physical value must persist for before it is
+ *                          accepted as the filtered output.
  */
 void bininpInit ( bininp_t* driver, uint32_t filterCount )
 {
@@ -47,8 +43,10 @@ void bininpInit ( bininp_t* driver, uint32_t filterCount )
     driver->rising = FALSE;
 }
 
-/*
- * @about: Updates value.
+/**
+ * @brief   Filters a new raw sample and updates the binary input's output and rising edge flag.
+ * @param[in,out] driver   Binary input state.
+ * @param[in]     newData  New raw sample; any nonzero value is treated as TRUE.
  */
 void bininpUpdate ( bininp_t* driver, uint8_t newData )
 {
@@ -90,16 +88,21 @@ void bininpUpdate ( bininp_t* driver, uint8_t newData )
     }
 }
 
-/*
- * @about: Gets current binary input value.
+/**
+ * @brief   Gets the current filtered value of the binary input.
+ * @param[in] driver  Binary input state.
+ * @return  TRUE or FALSE, the current debounced output value.
  */
 uint8_t bininpGetValue ( bininp_t* driver )
 {
     return ( driver->output );
 }
 
-/*
- * @about: Gets rising edge value and reset internal mamory.
+/**
+ * @brief   Gets whether a rising edge occurred on the binary input and clears the flag.
+ * @param[in,out] driver  Binary input state.
+ * @return  TRUE when a rising edge occurred since the last call, FALSE otherwise.
+ * @note    Reading the flag clears it, so an immediate second call returns FALSE.
  */
 uint8_t bininpGetRisingValue ( bininp_t* driver )
 {
