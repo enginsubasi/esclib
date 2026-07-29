@@ -1,35 +1,32 @@
 /**
   ******************************************************************************
   *
-  * @file:      hysteresis.c
-  * @author:    Engin Subaşı
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      hysteresis.c
+  * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.1
+  * @date      16/07/2020
   *
-  * @version:   v 0.0.1
-  * @cdate:     16/07/2020
-  * @history:   16/07/2020 Created.
-  *             24/08/2020 Data type changed from double to float.
-  *             24/08/2020 Naming changes. Comments added.
+  * @brief     Hysteresis control.
   *
-  * @about:     Hysteresis control.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         hysteresisInit              : Initialize hysteresis structure.
-  *         hysteresisControl           : Process new input data.
-  *         hysteresisGetOutput         : Gets current control data. The output value is boolean.
-  *
-  * @notes:
+  * @par History
+  * 16/07/2020 Created. @n
+  * 24/08/2020 Data type changed from double to float. @n
+  * 24/08/2020 Naming changes. Comments added. @n
   *
   ******************************************************************************
   */
 
 #include "hysteresis.h"
 
-/*
- * @about: Initialize hysteresis structure.
+/**
+ * @brief   Initializes the hysteresis controller state.
+ * @param[out] driver     Controller state to initialize.
+ * @param[in]  upValue    Threshold above which the output switches TRUE.
+ * @param[in]  downValue  Threshold below which the output switches FALSE.
+ * @note    The output is initialized to FALSE.
  */
 void hysteresisInit ( hysteresis_t* driver, float upValue, float downValue )
 {
@@ -38,8 +35,12 @@ void hysteresisInit ( hysteresis_t* driver, float upValue, float downValue )
     driver->dw = downValue;
 }
 
-/*
- * @about: Control iteration.
+/**
+ * @brief   Runs one hysteresis control iteration for the given input.
+ * @param[in,out] driver  Controller state.
+ * @param[in]     input   Input value to compare against the up and down thresholds.
+ * @note    The output only changes when input crosses the up or down threshold;
+ *          it holds its previous value inside the band between them.
  */
 void hysteresisControl ( hysteresis_t* driver, float input )
 {
@@ -57,8 +58,10 @@ void hysteresisControl ( hysteresis_t* driver, float input )
     }
 }
 
-/*
- * @about: Gets current control output.
+/**
+ * @brief   Gets the current output of the hysteresis controller.
+ * @param[in] driver  Controller state.
+ * @return  TRUE or FALSE depending on which threshold was last crossed.
  */
 uint8_t hysteresisGetOutput ( hysteresis_t* driver )
 {
