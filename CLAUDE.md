@@ -79,7 +79,9 @@ Every header is a copy of `template/inc/generic.h` with content filled into fixe
 
 ## Source file header block
 
-Every `.c` starts with the doxygen-style banner from `template/src/generic.c`: `@file`, `@author`, `@email`, `@address`, `@version`, `@cdate`, `@history`, `@about`, `@device`, `@content` (a `FUNCTIONS:` list of every public function with a brief), `@notes`. When modifying a module, **append a dated line to `@history`** (`DD/MM/YYYY Description`) and bump `@version`; add new functions to the `@content` list.
+Every `.c` starts with the Doxygen-style banner from `template/src/generic.c`: `@file`, `@author`, `@version`, `@date`, `@brief`, `@par Device`, `@par History`. When modifying a module, **append a dated line to `@par History`** (`DD/MM/YYYY Description @n`) and bump `@version`.
+
+Every function is documented with a `/**` block using exactly `@brief`, `@param[in]`/`@param[out]`/`@param[in,out]`, `@return` (non-void functions only), `@note` (only when it adds real information) — see `codingReference.md` for the full convention, including the `driver` parameter direction table. Documentation lives in `.c` files only; headers stay pure declarations.
 
 ## Coding style
 
