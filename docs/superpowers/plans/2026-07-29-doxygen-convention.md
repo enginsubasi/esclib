@@ -400,12 +400,11 @@ All three `limitUpDw1D*` functions take `[in,out]` on `array` — they clamp in 
  * @param[in]     dwValue         Value written at or below the threshold.
  * @param[in]     iSize           Row count.
  * @param[in]     jSize           Column count, which is also the row stride.
- * @return  void
  */
 void threshold2D ( float* matrix, float thresholdValue, float upValue, float dwValue, uint32_t iSize, uint32_t jSize )
 ```
 
-Drop the `@return void` line — void functions get no `@return` at all. The example above shows it only to be explicit that it must not appear.
+Note that the block above ends at `jSize` with no `@return`. `threshold2D` is void, and void functions get no `@return` tag at all — not even `@return void`.
 
 The row major layout and the `iSize` / `jSize` meaning must appear in the parameter descriptions of all five 2D functions. This was the source of a real bug fixed in `1861aa7`, so the documentation is what stops it recurring.
 
