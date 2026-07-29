@@ -1,24 +1,18 @@
 /**
   ******************************************************************************
   *
-  * @file:      comsafe.c
-  * @author:    Engin Subaşı
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      comsafe.c
+  * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.1
+  * @date      18/03/2023
   *
-  * @version:   v 0.0.1
-  * @cdate:     18/03/2023
-  * @history:   18/03/2023 Created
+  * @brief     Safe communication framework.
   *
-  * @about:     Safe communication framework.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  * 
-  * 
-  *
-  * @notes:
+  * @par History
+  * 18/03/2023 Created @n
   *
   ******************************************************************************
   */
