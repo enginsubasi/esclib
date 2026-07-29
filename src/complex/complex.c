@@ -72,6 +72,10 @@ void complexSub ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  * @param[in]  cprm1   First factor.
  * @param[in]  cprm2   Second factor.
  * @param[out] result  Product of cprm1 and cprm2.
+ * @note    result must not alias cprm1 or cprm2. result->re is written
+ *          before cprm1->re is read again to compute result->im, so
+ *          calling complexMul with result equal to cprm1 or cprm2 produces
+ *          a wrong result.
  */
 void complexMul ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 {
@@ -86,6 +90,10 @@ void complexMul ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  * @param[out] result  cprm1 divided by cprm2.
  * @note    When cprm2 is zero, result is set to zero rather than
  *          reporting an error.
+ * @note    result must not alias cprm1 or cprm2. result->re is written
+ *          before cprm1->re is read again to compute result->im, so
+ *          calling complexDiv with result equal to cprm1 or cprm2 produces
+ *          a wrong result.
  */
 void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 {

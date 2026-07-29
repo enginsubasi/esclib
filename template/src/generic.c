@@ -19,6 +19,11 @@
 
 #include "generic.h"
 
+${filecomment}
+${includes}
+
+${declarations}
+
 /**
  * @brief   One sentence describing what the function does.
  * @param[in,out] driver  Module state. Use [out] in an Init function and

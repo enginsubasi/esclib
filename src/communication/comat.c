@@ -34,8 +34,10 @@
  * @param[in]  txBuffer               Caller owned transmit buffer.
  * @param[in]  rxSize                 Size of rxBuffer in bytes.
  * @param[in]  txSize                 Size of txBuffer in bytes.
- * @param[in]  rxTimeout              Ticks of silence before a partial frame
- *                                    is discarded.
+ * @param[in]  rxTimeout              Total tick count a partial frame may
+ *                                    stay pending before it is discarded.
+ *                                    This is not a silence or inter-byte
+ *                                    timeout; see comatTimeoutCounter.
  * @param[in]  packetProcess          Called with a complete frame. Receives the
  *                                    byte count by value and writes the reply
  *                                    length through txInd.
@@ -156,8 +158,13 @@ void comatEvaluate ( comat_t* driver )
 
 /**
  * @brief   Called from a periodic timer tick; discards a partial frame once
- *          rxTimeout ticks pass without a new byte.
+ *          it has been pending for more than rxTimeout ticks in total.
  * @param[in,out] driver  Framework state.
+ * @note    comatReceive never resets rxTimeoutCounter, so this measures
+ *          total elapsed ticks since the partial frame started, not
+ *          inter-byte silence. A frame that arrives steadily, one byte per
+ *          tick, but takes longer than rxTimeout ticks in total will still
+ *          be discarded mid-stream.
  */
 void comatTimeoutCounter ( comat_t* driver )
 {

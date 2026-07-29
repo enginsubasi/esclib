@@ -61,7 +61,8 @@ void hc595Init ( struct HC595_Driver* driver,
 }
 
 /**
- * @brief   Applies the delay configured for hc595DrvOneShoot's shift steps.
+ * @brief   Applies the delay configured for hc595DrvOneShoot's shift steps
+ *          and the latch pulse that follows them.
  * @param[in,out] driver  Driver state.
  * @note    When dlyType holds a value other than HC595_DLY_NO, HC595_DLY_MS
  *          or HC595_DLY_NOP, this repairs it to HC595_DLY_MS and dlyCount to

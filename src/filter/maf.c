@@ -27,7 +27,7 @@
 /**
  * @brief   Initializes the moving average filter.
  * @param[out] driver      Filter state to initialize.
- * @param[in]  buffer      Caller owned sample buffer of at least length entries.
+ * @param[out] buffer      Caller owned sample buffer of at least length entries.
  * @param[in]  length      Number of samples in the averaging window.
  * @param[in]  outputInit  Value the whole window is preloaded with.
  * @return  TRUE on success, FALSE when length is zero or buffer is NULL.
@@ -102,7 +102,7 @@ float mafGetOutput ( maf_t* driver )
 /**
  * @brief   Initializes the moving average filter for unsigned 32-bit data.
  * @param[out] driver      Filter state to initialize.
- * @param[in]  buffer      Caller owned sample buffer of at least length entries.
+ * @param[out] buffer      Caller owned sample buffer of at least length entries.
  * @param[in]  length      Number of samples in the averaging window.
  * @param[in]  outputInit  Value the whole window is preloaded with.
  * @return  TRUE on success, FALSE when length is zero or buffer is NULL.

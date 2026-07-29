@@ -109,7 +109,7 @@ void hc597DrvLoop ( struct HC597_Driver* driver )
 
 /**
  * @brief   Latches the parallel inputs once, then clocks driver->size bytes
- *          in, filling driver->data.
+ *          in least significant bit first, filling driver->data.
  * @param[in,out] driver  Driver state; data is written with the bytes read
  *                        from datDrv, clocked by clkDrv.
  */

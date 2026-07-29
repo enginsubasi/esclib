@@ -34,9 +34,16 @@
  * @param[in]  txSize         Size of txBuffer in bytes.
  * @param[in]  stx            Byte that marks the start of a frame.
  * @param[in]  etx            Byte that marks the end of a frame.
- * @param[in]  rxTimeout      Ticks of silence before a partial frame is
- *                            discarded.
- * @param[in]  packetProcess  Called with a complete frame and its length.
+ * @param[in]  rxTimeout      Total tick count a partial frame may stay
+ *                            pending before it is discarded. This is not a
+ *                            silence or inter-byte timeout; see
+ *                            comstxetxTimeoutCounter.
+ * @param[in]  packetProcess  Called with the completed frame and its length.
+ *                            The frame holds the STX byte at index 0
+ *                            followed by the payload bytes; ETX itself is
+ *                            not stored, unlike comatReceive, which stores
+ *                            every byte of its frame including the leading
+ *                            'A', 'T' and the trailing CR LF.
  * @note    Both buffers are zero filled here and are not copied. They must
  *          outlive the driver.
  */
@@ -81,6 +88,11 @@ void comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, 
  *          a frame that starts at the STX byte and completes at the ETX byte.
  * @param[in,out] driver  Framework state.
  * @param[in]     data    Byte received from the interface.
+ * @note    The assembled buffer holds STX at index 0 followed by the
+ *          payload bytes; ETX is not stored, it only sets the ready flag,
+ *          so rxIndex is not incremented for it. This differs from
+ *          comatReceive, which stores every byte of the frame including
+ *          the leading 'A', 'T' and the trailing CR LF.
  * @note    If rxBuffer fills before ETX arrives, the partial frame is
  *          discarded and the driver goes back to looking for STX. Bytes are
  *          ignored while a completed frame is still waiting for
@@ -137,8 +149,13 @@ void comstxetxEvaluate ( comstxetx_t* driver )
 
 /**
  * @brief   Called from a periodic timer tick; discards a partial frame once
- *          rxTimeout ticks pass without a new byte.
+ *          it has been pending for more than rxTimeout ticks in total.
  * @param[in,out] driver  Framework state.
+ * @note    comstxetxReceive never resets rxTimeoutCounter, so this measures
+ *          total elapsed ticks since the partial frame started, not
+ *          inter-byte silence. A frame that arrives steadily, one byte per
+ *          tick, but takes longer than rxTimeout ticks in total will still
+ *          be discarded mid-stream.
  */
 void comstxetxTimeoutCounter ( comstxetx_t* driver )
 {

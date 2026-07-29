@@ -29,12 +29,12 @@
  * @param[in]  ki                 Integral gain.
  * @param[in]  kd                 Derivative gain.
  * @param[in]  ts                 Sample time used by the integral and derivative terms.
- * @param[in]  pPartMaxLimit      Upper clamp for the proportional term.
- * @param[in]  pPartMinLimit      Lower clamp for the proportional term.
- * @param[in]  iPartMaxLimit      Upper clamp for the integral term.
- * @param[in]  iPartMinLimit      Lower clamp for the integral term.
- * @param[in]  dPartMaxLimit      Upper clamp for the derivative term.
- * @param[in]  dPartMinLimit      Lower clamp for the derivative term.
+ * @param[in]  pPartMaxLimit      Upper clamp for partP, in error units, applied before the kp multiply.
+ * @param[in]  pPartMinLimit      Lower clamp for partP, in error units, applied before the kp multiply.
+ * @param[in]  iPartMaxLimit      Upper clamp for partI, in error units, applied before the ki multiply.
+ * @param[in]  iPartMinLimit      Lower clamp for partI, in error units, applied before the ki multiply.
+ * @param[in]  dPartMaxLimit      Upper clamp for partD, in error units, applied before the kd multiply.
+ * @param[in]  dPartMinLimit      Lower clamp for partD, in error units, applied before the kd multiply.
  * @param[in]  pidOutputMaxLimit  Upper clamp for the controller output.
  * @param[in]  pidOutputMinLimit  Lower clamp for the controller output; also the initial output value.
  */
@@ -97,12 +97,12 @@ void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, float
 /**
  * @brief   Changes the PID controller's proportional, integral, derivative and output clamp limits.
  * @param[in,out] driver             Controller state.
- * @param[in]     pPartMaxLimit      New upper clamp for the proportional term.
- * @param[in]     pPartMinLimit      New lower clamp for the proportional term.
- * @param[in]     iPartMaxLimit      New upper clamp for the integral term.
- * @param[in]     iPartMinLimit      New lower clamp for the integral term.
- * @param[in]     dPartMaxLimit      New upper clamp for the derivative term.
- * @param[in]     dPartMinLimit      New lower clamp for the derivative term.
+ * @param[in]     pPartMaxLimit      New upper clamp for partP, in error units, applied before the kp multiply.
+ * @param[in]     pPartMinLimit      New lower clamp for partP, in error units, applied before the kp multiply.
+ * @param[in]     iPartMaxLimit      New upper clamp for partI, in error units, applied before the ki multiply.
+ * @param[in]     iPartMinLimit      New lower clamp for partI, in error units, applied before the ki multiply.
+ * @param[in]     dPartMaxLimit      New upper clamp for partD, in error units, applied before the kd multiply.
+ * @param[in]     dPartMinLimit      New lower clamp for partD, in error units, applied before the kd multiply.
  * @param[in]     pidOutputMaxLimit  New upper clamp for the controller output.
  * @param[in]     pidOutputMinLimit  New lower clamp for the controller output.
  */
