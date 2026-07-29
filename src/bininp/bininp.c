@@ -30,9 +30,10 @@
 /**
  * @brief   Initializes the binary input filter state.
  * @param[out] driver       Binary input state to initialize.
- * @param[in]  filterCount  Number of consecutive bininpUpdate calls a new
- *                          physical value must persist for before it is
- *                          accepted as the filtered output.
+ * @param[in]  filterCount  Debounce threshold. A new physical value is
+ *                          accepted as the filtered output only once it has
+ *                          persisted for more than filterCount consecutive
+ *                          bininpUpdate calls, i.e. filterCount + 1 calls.
  */
 void bininpInit ( bininp_t* driver, uint32_t filterCount )
 {
