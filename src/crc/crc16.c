@@ -1,35 +1,34 @@
 /**
   ******************************************************************************
   *
-  * @file:      crc16.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      crc16.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   1.0.1
+  * @date      25/02/2020
   *
-  * @version:   v 1.0.1
-  * @cdate:     25/02/2020
-  * @history:   25/02/2020 Created.
-  *             10/07/2020 Naming changed.
-  *             13/09/2020 Bug fix.
-  *             18/09/2020 Bux fix.
+  * @brief     CRC16 Calculation functions.
   *
-  * @about:     CRC16 Calculation functions.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         crc16                   : Calculates MODBUS CRC via LUT.
-  *         crc16Alt                : Calculates MODBUS CRC.
-  *
-  * @notes:
+  * @par History
+  * 25/02/2020 Created. @n
+  * 10/07/2020 Naming changed. @n
+  * 13/09/2020 Bug fix. @n
+  * 18/09/2020 Bux fix. @n
   *
   ******************************************************************************
   */
 
 #include "crc16.h"
 
-/*
- * @about: Calculates CRC16 (MODBUS). Speed priority.
+/**
+ * @brief   Calculates the MODBUS CRC16 of a byte array using a lookup table.
+ * @param[in] array  Bytes to run the CRC over.
+ * @param[in] size   Number of bytes.
+ * @return  The CRC16 value, seeded with 0xFFFF.
+ * @note    Trades 512 bytes of table space for speed. Use crc16Alt when
+ *          code size matters more than throughput.
  */
 uint16_t crc16 ( uint8_t* array, uint32_t size )
 {
@@ -82,8 +81,14 @@ uint16_t crc16 ( uint8_t* array, uint32_t size )
     return ( crc );
 }
 
-/*
- * @about: Calculates CRC16 (MODBUS). Data size priority.
+/**
+ * @brief   Calculates the MODBUS CRC16 of a byte array bit by bit.
+ * @param[in] array  Bytes to run the CRC over.
+ * @param[in] size   Number of bytes.
+ * @return  The CRC16 value, seeded with 0xFFFF.
+ * @note    Trades speed for code size: no lookup table, but each byte
+ *          costs 8 conditional shifts instead of one table lookup. Use
+ *          crc16 when throughput matters more than code size.
  */
 uint16_t crc16Alt ( uint8_t* array, uint32_t size )
 {

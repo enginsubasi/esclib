@@ -1,33 +1,24 @@
 /**
   ******************************************************************************
   *
-  * @file:      complex.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      complex.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.2
+  * @date      09/08/2022
   *
-  * @version:   v 0.0.2
-  * @cdate:     09/08/2022
-  * @history:   09/08/2022 Created
-  *             29/07/2026 Bug fix. complexDiv applied the division to the second
-  *                        term only, because of a misplaced parenthesis.
-  *             29/07/2026 Bug fix. complexToPolar used atan, which divides by
-  *                        zero when re is zero and loses the quadrant when re is
-  *                        negative. Replaced with atan2.
-  *             29/07/2026 M_PI fallback added. It is not a standard C99 macro.
+  * @brief     Complex number library.
   *
-  * @about:     Complex number library.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         complexInit     : Complex number initialization.
-  *         complexSum      : 
-  *         complexSub      : 
-  *         complexMul      : 
-  *         complexDiv      : 
-  *
-  * @notes:
+  * @par History
+  * 09/08/2022 Created @n
+  * 29/07/2026 Bug fix. complexDiv applied the division to the second @n
+  *            term only, because of a misplaced parenthesis. @n
+  * 29/07/2026 Bug fix. complexToPolar used atan, which divides by @n
+  *            zero when re is zero and loses the quadrant when re is @n
+  *            negative. Replaced with atan2. @n
+  * 29/07/2026 M_PI fallback added. It is not a standard C99 macro. @n
   *
   ******************************************************************************
   */
@@ -41,11 +32,10 @@
 #endif
 
 /**
- * @brief Complex number initialization
- * @param cprm1
- * @param re
- * @param im
- * @return void
+ * @brief   Initializes a complex number from its real and imaginary parts.
+ * @param[out] cprm1  Complex number to initialize.
+ * @param[in]  re     Real part.
+ * @param[in]  im     Imaginary part.
  */
 void complexInit ( complex_t* cprm1, float re, float im )
 {
@@ -54,11 +44,10 @@ void complexInit ( complex_t* cprm1, float re, float im )
 }
 
 /**
- * @brief Complex number summation
- * @param cprm1
- * @param cprm2
- * @param result
- * @return void
+ * @brief   Adds two complex numbers.
+ * @param[in]  cprm1   First addend.
+ * @param[in]  cprm2   Second addend.
+ * @param[out] result  Sum of cprm1 and cprm2.
  */
 void complexSum ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 {
@@ -67,11 +56,10 @@ void complexSum ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 }
 
 /**
- * @brief Complex number subtraction
- * @param cprm1
- * @param cprm2
- * @param result
- * @return void
+ * @brief   Subtracts one complex number from another.
+ * @param[in]  cprm1   Minuend.
+ * @param[in]  cprm2   Subtrahend.
+ * @param[out] result  cprm1 minus cprm2.
  */
 void complexSub ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 {
@@ -80,11 +68,10 @@ void complexSub ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 }
 
 /**
- * @brief Complex number multiplication
- * @param cprm1
- * @param cprm2
- * @param result
- * @return void
+ * @brief   Multiplies two complex numbers.
+ * @param[in]  cprm1   First factor.
+ * @param[in]  cprm2   Second factor.
+ * @param[out] result  Product of cprm1 and cprm2.
  */
 void complexMul ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 {
@@ -93,11 +80,12 @@ void complexMul ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 }
 
 /**
- * @brief Complex number divide
- * @param cprm1
- * @param cprm2
- * @param result
- * @return void
+ * @brief   Divides one complex number by another.
+ * @param[in]  cprm1   Dividend.
+ * @param[in]  cprm2   Divisor.
+ * @param[out] result  cprm1 divided by cprm2.
+ * @note    When cprm2 is zero, result is set to zero rather than
+ *          reporting an error.
  */
 void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 {
@@ -118,11 +106,11 @@ void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
 }
 
 /**
- * @brief Complex number to polar
- * @param cprm1
- * @param r
- * @param a
- * @return void
+ * @brief   Converts a complex number to polar form.
+ * @param[in]  prm1  Complex number to convert.
+ * @param[out] r     Magnitude of prm1.
+ * @param[out] a     Angle of prm1.
+ * @note    The angle is in degrees, not radians.
  */
 void complexToPolar ( complex_t* prm1, float* r, float* a )
 {
@@ -134,11 +122,11 @@ void complexToPolar ( complex_t* prm1, float* r, float* a )
 }
 
 /**
- * @brief Complex number to polar
- * @param cprm1
- * @param r
- * @param a
- * @return void
+ * @brief   Converts a polar form magnitude and angle to a complex number.
+ * @param[out] prm1  Complex number set from r and a.
+ * @param[in]  r     Magnitude.
+ * @param[in]  a     Angle.
+ * @note    The angle is expected in degrees, not radians.
  */
 void complexFromPolar ( complex_t* prm1, float r, float a )
 {

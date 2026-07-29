@@ -1,32 +1,34 @@
 /**
   ******************************************************************************
   *
-  * @file:      crc32.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      crc32.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   1.0.0
+  * @date      10/07/2020
   *
-  * @version:   v 1.0.0
-  * @cdate:     10/07/2020
-  * @history:   10/07/2020 Created.
-  *             18/09/2020 Bux fix.
+  * @brief     CRC Calculation functions.
   *
-  * @about:     CRC Calculation functions.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         crc32                   : Calculates CRC32 via LUT.
-  *
-  * @notes:
+  * @par History
+  * 10/07/2020 Created. @n
+  * 18/09/2020 Bux fix. @n
   *
   ******************************************************************************
   */
 
 #include "crc32.h"
 
-/*
- * @about: Calculates CRC32.
+/**
+ * @brief   Calculates the CRC32 of a byte array using a lookup table.
+ * @param[in] array  Bytes to run the CRC over.
+ * @param[in] size   Number of bytes.
+ * @return  The CRC32 value, seeded with 0xFFFFFFFF.
+ * @note    This is the CRC-32/MPEG-2 variant: no input or output
+ *          reflection and no final XOR. A generic "CRC32" usually means
+ *          CRC-32/ISO-HDLC, which reflects and XORs the result, so
+ *          comparing against that will produce a different value.
  */
 uint32_t crc32 ( uint8_t* array, uint32_t size )
 { 
