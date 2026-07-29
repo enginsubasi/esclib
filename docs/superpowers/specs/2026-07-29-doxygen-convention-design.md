@@ -117,7 +117,7 @@ The `@content` FUNCTIONS list is removed. Doxygen generates the function list fo
 | `.c` files getting banner conversion | 23 |
 
 Of the 24 `.c` files, three contain no function definitions and so get a banner only: `src/communication/comsafe.c` and `src/matrix/matrixlib.c` hold nothing but a banner, and `src/communication/comsec.c` is an empty file with no banner to convert.
-| Template files | 2 — `template/src/generic.c`, `template/inc/generic.h` |
+| Template files | 1 — `template/src/generic.c`. `template/inc/generic.h` needs no change: it has no banner and no functions, only include guards and section markers. |
 | New `Doxyfile` | 1 |
 | `.gitignore` | one added line for the generated `doc/` directory |
 
