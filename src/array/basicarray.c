@@ -1,34 +1,30 @@
 /**
   ******************************************************************************
   *
-  * @file:      basicarray.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      basicarray.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.1
+  * @date      03/01/2022
   *
-  * @version:   v 0.0.1
-  * @cdate:     03/01/2022
-  * @history:   03/01/2022 Created.
+  * @brief     Basic array function library file.
   *
+  * @par Device
+  * Generic
   *
-  * @about:     Basic array function library file.
-  * @device:    Generic
-  *
-  * @content:
-  *     FUNCTIONS:
-  *         limitUpDw1D             : Applies limit on 1D array.
-  *         limitUpDw1Du32          : Applies limit on 1D array for u32.
-  *         limitUpDw1Di32          : Applies limit on 1D array for i32.
-  *
-  * @notes:
+  * @par History
+  * 03/01/2022 Created. @n
   *
   ******************************************************************************
   */
 
 #include "basicarray.h"
 
-/*
- * @about: It limits the input array according to upValue, dwValue. If exceed, the limits values are assigning.
+/**
+ * @brief   Clamps each element of the array in place to the range [dwValue, upValue].
+ * @param[in,out] array    Array to clamp, modified in place.
+ * @param[in]     upValue  Upper clamp value.
+ * @param[in]     dwValue  Lower clamp value.
+ * @param[in]     iSize    Number of elements in the array.
  */
 void limitUpDw1D ( float* array, float upValue, float dwValue, uint32_t iSize )
 {
@@ -51,8 +47,12 @@ void limitUpDw1D ( float* array, float upValue, float dwValue, uint32_t iSize )
     }
 }
 
-/*
- * @about: It limits the input array according to upValue, dwValue. If exceed, the limits values are assigning.
+/**
+ * @brief   Clamps each element of the unsigned 32-bit array in place to the range [dwValue, upValue].
+ * @param[in,out] array    Array to clamp, modified in place.
+ * @param[in]     upValue  Upper clamp value.
+ * @param[in]     dwValue  Lower clamp value.
+ * @param[in]     iSize    Number of elements in the array.
  */
 void limitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint32_t iSize )
 {
@@ -75,8 +75,12 @@ void limitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint3
     }
 }
 
-/*
- * @about: It limits the input array according to upValue, dwValue. If exceed, the limits values are assigning.
+/**
+ * @brief   Clamps each element of the signed 32-bit array in place to the range [dwValue, upValue].
+ * @param[in,out] array    Array to clamp, modified in place.
+ * @param[in]     upValue  Upper clamp value.
+ * @param[in]     dwValue  Lower clamp value.
+ * @param[in]     iSize    Number of elements in the array.
  */
 void limitUpDw1Di32 ( int32_t* array, int32_t upValue, int32_t dwValue, uint32_t iSize )
 {

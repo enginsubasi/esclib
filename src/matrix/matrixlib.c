@@ -1,25 +1,18 @@
 /**
   ******************************************************************************
   *
-  * @file:      matrixlib.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      matrixlib.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.1
+  * @date      23/06/2022
   *
-  * @version:   v 0.0.1
-  * @cdate:     23/06/2022
-  * @history:   23/06/2022 Created.
-  
+  * @brief     Matrix function library file based on matrix structure.
   *
+  * @par Device
+  * Generic
   *
-  * @about:     Matrix function library file based on matrix structure.
-  * @device:    Generic
-  *
-  * @content:
-  *     FUNCTIONS:
-  *
-  *
-  * @notes:
+  * @par History
+  * 23/06/2022 Created. @n
   *
   ******************************************************************************
   */
