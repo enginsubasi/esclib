@@ -1,62 +1,41 @@
 /**
   ******************************************************************************
   *
-  * @file:      basicmath.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      basicmath.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.2
+  * @date      03/06/2020
   *
-  * @version:   v 0.0.2
-  * @cdate:     03/06/2020
-  * @history:   03/06/2020 Created.
-  *             10/07/2020 Average named mean.
-  *             24/08/2020 Data type changed from double to float.
-  *             09/04/2022 absolute, absolutei32
-  *             29/07/2026 Bug fix. findMini32 compared with < instead of >, so
-  *                        it returned the maximum element.
-  *             29/07/2026 Bug fix. calculateMedian and calculateMedianu32 did
-  *                        not average the two middle elements of an even sized
-  *                        array.
-  *             29/07/2026 Zero length guards added. The find and calculate
-  *                        functions read array[ 0 ] or divided by length without
-  *                        checking it first.
+  * @brief     Basic mathematics function library file.
   *
-  * @about:     Basic mathematics function library file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         absolute            :
-  *         absolutei32         :
+  * @par History
+  * 03/06/2020 Created. @n
+  * 10/07/2020 Average named mean. @n
+  * 24/08/2020 Data type changed from double to float. @n
+  * 09/04/2022 absolute, absolutei32 @n
+  * 29/07/2026 Bug fix. findMini32 compared with < instead of >, so @n
+  *            it returned the maximum element. @n
+  * 29/07/2026 Bug fix. calculateMedian and calculateMedianu32 did @n
+  *            not average the two middle elements of an even sized @n
+  *            array. @n
+  * 29/07/2026 Zero length guards added. The find and calculate @n
+  *            functions read array[ 0 ] or divided by length without @n
+  *            checking it first. @n
   *
-  *         findMax             : Find maximum number of array elements.
-  *         findMaxu32          : Find maximum number of array elements u32.
-  *         findMaxi32          : Find maximum number of array elements i32.
-  *         findMin             : Find minimum number of array elements.
-  *         findMinu32          : Find minimum number of array elements u32.
-  *         findMini32          : Find minimum number of array elements i32.
-  *         findMinMax          : Find max. and min. numbers of array elements.
-  *         findMinMaxu32       : Find max. and min. numbers of array elements u32.
-  *
-  *         calculateSum        : Calculates sum of array.
-  *         calculateSumu32     : Calculates sum of array u32.
-  *         calculateMean       : Calculates average/mean value of array.
-  *         calculateMeanu32    : Calculates average/mean value of array u32.
-  *         calculateMedian     : Calculates median value of array.
-  *         calculateMedianu32  : Calculates median value of array u32.
-  *         calculateRange      : Calculates range of array.
-  *         calculateRangeu32   : Calculates range of array u32.
-  *
-  * @notes:
-  *     Every function returns zero for a zero length array.
+  * @note      Every function returns zero for a zero length array.
   *
   ******************************************************************************
   */
 
 #include "basicmath.h"
 
-/*
- * @about:
+/**
+ * @brief   Computes the absolute value of a floating point number.
+ * @param[in] inp  Value to take the absolute value of.
+ * @return  inp if it is non-negative, otherwise -inp.
  */
 float absolute ( float inp )
 {
@@ -74,8 +53,10 @@ float absolute ( float inp )
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief   Computes the absolute value of a signed 32-bit integer.
+ * @param[in] inp  Value to take the absolute value of.
+ * @return  inp if it is non-negative, otherwise -inp.
  */
 int32_t absolutei32 ( int32_t inp )
 {
@@ -93,8 +74,11 @@ int32_t absolutei32 ( int32_t inp )
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the largest element of the array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  The largest element, or zero when length is zero.
  */
 float findMax ( float* array, uint32_t length )
 {
@@ -121,8 +105,11 @@ float findMax ( float* array, uint32_t length )
     return ( tempMax );
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the largest element of the unsigned 32-bit array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  The largest element, or zero when length is zero.
  */
 uint32_t findMaxu32 ( uint32_t* array, uint32_t length )
 {
@@ -149,8 +136,11 @@ uint32_t findMaxu32 ( uint32_t* array, uint32_t length )
     return ( tempMax );
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the largest element of the signed 32-bit array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  The largest element, or zero when length is zero.
  */
 int32_t findMaxi32 ( int32_t* array, uint32_t length )
 {
@@ -177,8 +167,11 @@ int32_t findMaxi32 ( int32_t* array, uint32_t length )
     return ( tempMax );
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the smallest element of the array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  The smallest element, or zero when length is zero.
  */
 float findMin ( float* array, uint32_t length )
 {
@@ -205,8 +198,11 @@ float findMin ( float* array, uint32_t length )
     return ( tempMin );
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the smallest element of the unsigned 32-bit array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  The smallest element, or zero when length is zero.
  */
 uint32_t findMinu32 ( uint32_t* array, uint32_t length )
 {
@@ -233,8 +229,11 @@ uint32_t findMinu32 ( uint32_t* array, uint32_t length )
     return ( tempMin );
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the smallest element of the signed 32-bit array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  The smallest element, or zero when length is zero.
  */
 int32_t findMini32 ( int32_t* array, uint32_t length )
 {
@@ -261,8 +260,12 @@ int32_t findMini32 ( int32_t* array, uint32_t length )
     return ( tempMin );
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the smallest and largest elements of the array in one pass.
+ * @param[in]  array   Array to scan.
+ * @param[in]  length  Number of elements in the array.
+ * @param[out] min     Set to the smallest element, or zero when length is zero.
+ * @param[out] max     Set to the largest element, or zero when length is zero.
  */
 void findMinMax ( float* array, uint32_t length, float* min, float* max )
 {
@@ -297,8 +300,13 @@ void findMinMax ( float* array, uint32_t length, float* min, float* max )
     *max = tempMax;
 }
 
-/*
- * @about:
+/**
+ * @brief   Finds the smallest and largest elements of the unsigned 32-bit array,
+ *          in one pass.
+ * @param[in]  array   Array to scan.
+ * @param[in]  length  Number of elements in the array.
+ * @param[out] min     Set to the smallest element, or zero when length is zero.
+ * @param[out] max     Set to the largest element, or zero when length is zero.
  */
 void findMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32_t* max )
 {
@@ -333,8 +341,11 @@ void findMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32_t* 
     *max = tempMax;
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the sum of the array elements.
+ * @param[in] array   Array to sum.
+ * @param[in] length  Number of elements in the array.
+ * @return  Sum of the elements, or zero when length is zero.
  */
 float calculateSum ( float* array, uint32_t length )
 {
@@ -349,8 +360,11 @@ float calculateSum ( float* array, uint32_t length )
     return ( sum );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the sum of the unsigned 32-bit array elements.
+ * @param[in] array   Array to sum.
+ * @param[in] length  Number of elements in the array.
+ * @return  Sum of the elements, or zero when length is zero.
  */
 uint32_t calculateSumu32 ( uint32_t* array, uint32_t length )
 {
@@ -365,8 +379,11 @@ uint32_t calculateSumu32 ( uint32_t* array, uint32_t length )
     return ( sum );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the arithmetic mean of the array elements.
+ * @param[in] array   Array to average.
+ * @param[in] length  Number of elements in the array.
+ * @return  Arithmetic mean of the elements, or zero when length is zero.
  */
 float calculateMean ( float* array, uint32_t length )
 {
@@ -391,8 +408,11 @@ float calculateMean ( float* array, uint32_t length )
     return ( average );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the arithmetic mean of the unsigned 32-bit array elements.
+ * @param[in] array   Array to average.
+ * @param[in] length  Number of elements in the array.
+ * @return  Arithmetic mean of the elements, or zero when length is zero.
  */
 uint32_t calculateMeanu32 ( uint32_t* array, uint32_t length )
 {
@@ -417,9 +437,15 @@ uint32_t calculateMeanu32 ( uint32_t* array, uint32_t length )
     return ( average );
 }
 
-/*
- * @about:
- * @param: "array" should be a sorted array.
+/**
+ * @brief   Finds the median value of the array.
+ * @param[in] array   Sorted array to find the median of.
+ * @param[in] length  Number of elements in the array.
+ * @return  The mean of the two middle elements for an even length array,
+ *          the middle element for an odd length array, or zero when
+ *          length is zero.
+ * @note    array must be sorted in ascending order. An unsorted array
+ *          produces a wrong result without any indication of error.
  */
 float calculateMedian ( float* array, uint32_t length )
 {
@@ -442,9 +468,18 @@ float calculateMedian ( float* array, uint32_t length )
     return ( retVal );
 }
 
-/*
- * @about:
- * @param: "array" should be a sorted array.
+/**
+ * @brief   Finds the median value of the unsigned 32-bit array.
+ * @param[in] array   Sorted array to find the median of.
+ * @param[in] length  Number of elements in the array.
+ * @return  The mean of the two middle elements for an even length array,
+ *          the middle element for an odd length array, or zero when
+ *          length is zero.
+ * @note    array must be sorted in ascending order. An unsorted array
+ *          produces a wrong result without any indication of error.
+ * @note    The even length case computes low + ( ( high - low ) / 2 )
+ *          instead of ( low + high ) / 2 to avoid overflowing uint32_t
+ *          when low and high are both large.
  */
 uint32_t calculateMedianu32 ( uint32_t* array, uint32_t length )
 {
@@ -473,8 +508,12 @@ uint32_t calculateMedianu32 ( uint32_t* array, uint32_t length )
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the range (largest minus smallest element) of the array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  Difference between the largest and smallest elements, or zero
+ *          when length is zero.
  */
 float calculateRange ( float* array, uint32_t length )
 {
@@ -489,8 +528,13 @@ float calculateRange ( float* array, uint32_t length )
     return ( tempMax - tempMin );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the range (largest minus smallest element) of the
+ *          unsigned 32-bit array.
+ * @param[in] array   Array to scan.
+ * @param[in] length  Number of elements in the array.
+ * @return  Difference between the largest and smallest elements, or zero
+ *          when length is zero.
  */
 uint32_t calculateRangeu32 ( uint32_t* array, uint32_t length )
 {

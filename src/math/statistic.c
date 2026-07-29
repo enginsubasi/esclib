@@ -1,33 +1,25 @@
 /**
   ******************************************************************************
   *
-  * @file:      statistic.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      statistic.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.3
+  * @date      03/01/2020
   *
-  * @version:   v 0.0.3
-  * @cdate:     03/01/2020
-  * @history:   03/01/2020 Created.
-  *             03/01/2020 Standard deviation added.
-  *             29/07/2026 Divide by zero guards added. The pending TODO notes
-  *                        about a zero length array are resolved.
-  *             29/07/2026 variancei32 no longer routes an integer square through
-  *                        the double precision pow function.
+  * @brief     Statistic function library file.
   *
-  * @about:     Statistic function library file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         variance                : Calculates variance value of the array.
-  *         variancei32             : Calculates variance value of the array i32.
-  *         standardDeviation       : Calculates standard deviation value of the array.
-  *         standardDeviationi32    : Calculates standard deviation value of the array i32.
-  *         covariance              : Calculates covariance value of two arrays.
+  * @par History
+  * 03/01/2020 Created. @n
+  * 03/01/2020 Standard deviation added. @n
+  * 29/07/2026 Divide by zero guards added. The pending TODO notes @n
+  *            about a zero length array are resolved. @n
+  * 29/07/2026 variancei32 no longer routes an integer square through @n
+  *            the double precision pow function. @n
   *
-  * @notes:
-  *     Every function returns zero for a zero length array.
+  * @note      Every function returns zero for a zero length array.
   *
   ******************************************************************************
   */
@@ -36,8 +28,11 @@
 
 #include "statistic.h"
 
-/*
- * @about:
+/**
+ * @brief   Calculates the population variance of the array elements.
+ * @param[in] array   Array to analyze.
+ * @param[in] length  Number of elements in the array.
+ * @return  Population variance of the elements, or zero when length is zero.
  */
 float variance ( float* array, uint32_t length )
 {
@@ -73,8 +68,14 @@ float variance ( float* array, uint32_t length )
     return ( variance );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the population variance of the signed 32-bit array elements.
+ * @param[in] array   Array to analyze.
+ * @param[in] length  Number of elements in the array.
+ * @return  Population variance of the elements, or zero when length is zero.
+ * @note    All arithmetic, including the mean, is done in int32_t with
+ *          truncating integer division, so the result is less precise
+ *          than variance().
  */
 int32_t variancei32 ( int32_t* array, uint32_t length )
 {
@@ -110,8 +111,11 @@ int32_t variancei32 ( int32_t* array, uint32_t length )
     return ( variance );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the standard deviation of the array elements.
+ * @param[in] array   Array to analyze.
+ * @param[in] length  Number of elements in the array.
+ * @return  Standard deviation of the elements, or zero when length is zero.
  */
 float standardDeviation ( float* array, uint32_t length )
 {
@@ -124,8 +128,15 @@ float standardDeviation ( float* array, uint32_t length )
     return ( standardDeviation );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the standard deviation of the signed 32-bit array elements.
+ * @param[in] array   Array to analyze.
+ * @param[in] length  Number of elements in the array.
+ * @return  Standard deviation of the elements truncated to int32_t, or zero
+ *          when length is zero.
+ * @note    Built on variancei32, so it inherits that function's integer
+ *          precision loss in addition to its own truncation of the sqrt
+ *          result.
  */
 int32_t standardDeviationi32 ( int32_t* array, uint32_t length )
 {
@@ -138,8 +149,12 @@ int32_t standardDeviationi32 ( int32_t* array, uint32_t length )
     return ( standardDeviation );
 }
 
-/*
- * @about:
+/**
+ * @brief   Calculates the population covariance between two arrays of the same length.
+ * @param[in] array1  First array.
+ * @param[in] array2  Second array, same length as array1.
+ * @param[in] length  Number of elements in each array.
+ * @return  Population covariance of the two arrays, or zero when length is zero.
  */
 float covariance ( float* array1, float* array2, uint32_t length )
 {
