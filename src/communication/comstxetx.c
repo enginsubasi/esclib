@@ -34,10 +34,11 @@
  * @param[in]  txSize         Size of txBuffer in bytes.
  * @param[in]  stx            Byte that marks the start of a frame.
  * @param[in]  etx            Byte that marks the end of a frame.
- * @param[in]  rxTimeout      Total tick count a partial frame may stay
- *                            pending before it is discarded. This is not a
- *                            silence or inter-byte timeout; see
- *                            comstxetxTimeoutCounter.
+ * @param[in]  rxTimeout      Threshold that rxTimeoutCounter must exceed
+ *                            before a partial frame is discarded. Not a
+ *                            per-frame silence or inter-byte timeout; see
+ *                            comstxetxTimeoutCounter for how the counter
+ *                            accumulates across frames.
  * @param[in]  packetProcess  Called with the completed frame and its length.
  *                            The frame holds the STX byte at index 0
  *                            followed by the payload bytes; ETX itself is
@@ -148,14 +149,17 @@ void comstxetxEvaluate ( comstxetx_t* driver )
 }
 
 /**
- * @brief   Called from a periodic timer tick; discards a partial frame once
- *          it has been pending for more than rxTimeout ticks in total.
+ * @brief   Called from a periodic timer tick; increments rxTimeoutCounter
+ *          while a partial frame is pending and discards it once the
+ *          counter exceeds rxTimeout.
  * @param[in,out] driver  Framework state.
- * @note    comstxetxReceive never resets rxTimeoutCounter, so this measures
- *          total elapsed ticks since the partial frame started, not
- *          inter-byte silence. A frame that arrives steadily, one byte per
- *          tick, but takes longer than rxTimeout ticks in total will still
- *          be discarded mid-stream.
+ * @note    rxTimeoutCounter is ticks accumulated while any partial frame
+ *          was pending since the last comstxetxInit or the last timeout.
+ *          It is not cleared when a frame completes, since
+ *          comstxetxEvaluate does not touch it, so the tick budget
+ *          available to a frame depends on how long earlier frames took.
+ *          Once the counter has drifted past rxTimeout, the next partial
+ *          frame is discarded on its very first tick.
  */
 void comstxetxTimeoutCounter ( comstxetx_t* driver )
 {
