@@ -120,7 +120,7 @@ arm-none-eabi-gcc -c -Wall $(for d in inc/*/ drv/; do echo -n " -I$d"; done) /tm
 
 These are stubs awaiting design, not defects. Leave them alone unless implementing the feature is the task.
 
-- `drv/hc595_drv.c` and `drv/hc597_drv.c` — `hc595DrvLoop`, `hc595DrvInterrupt`, `hc597DrvLoop`, `hc597DrvInterrupt` are empty bodies. They are the only two `-Wunused-parameter` warnings in the tree; that warning is deliberate signal, do not silence it with a `(void)driver;` cast.
+- `drv/hc595_drv.c` and `drv/hc597_drv.c` — `hc595DrvLoop`, `hc595DrvInterrupt`, `hc597DrvLoop`, `hc597DrvInterrupt` are empty bodies. They are the only four `-Wunused-parameter` warnings in the tree; that warning is deliberate signal, do not silence it with a `(void)driver;` cast.
 - `src/communication/comsec.c` and `src/communication/comsafe.c` contain only a file banner. `inc/communication/comsec.h`, `comsafe.h`, `comgenbuf.h` and `inc/matrix/matrixlib.h` declare types but no function prototypes.
 - `rules.md` is an empty placeholder.
 
