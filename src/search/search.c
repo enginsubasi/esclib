@@ -1,47 +1,41 @@
 /**
   ******************************************************************************
   *
-  * @file:      search.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      search.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.4
+  * @date      15/09/2021
   *
-  * @version:   v 0.0.4
-  * @cdate:     15/09/2021
-  * @history:   15/09/2021 Created.
-  *             20/09/2021 linearSearch_i32 is added to the library.
-  *             20/09/2021 binarySearch_i32 is added to the library.
-  *             29/07/2026 Bug fix. A stray semicolon after the if statement of
-  *                        linearSearch made the body run unconditionally, so the
-  *                        function always reported a match at index 0.
-  *             29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF in the
-  *                        binary search functions for a zero length array.
+  * @brief     Search function library file.
   *
-  * @about:     Search function library file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         isEqual_f           : It is a help function for floating point search functions.
+  * @par History
+  * 15/09/2021 Created. @n
+  * 20/09/2021 linearSearch_i32 is added to the library. @n
+  * 20/09/2021 binarySearch_i32 is added to the library. @n
+  * 29/07/2026 Bug fix. A stray semicolon after the if statement of @n
+  *            linearSearch made the body run unconditionally, so the @n
+  *            function always reported a match at index 0. @n
+  * 29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF in the @n
+  *            binary search functions for a zero length array. @n
   *
-  *         linearSearch        : Linear search algorithm for float.
-  *         linearSearchu32     : Linear search algorithm for u32.
-  *         linearSearchi32     : Linear search algorithm for i32.
-  *         binarySearch        : Binary search algorithm for float.
-  *         binarySearchu32     : Binary search algorithm for u32.
-  *         binarySearchi32     : Binary search algorithm for i32.
-  *
-  * @notes:
-  *     Every function reports FALSE for a zero length array and leaves
-  *     foundIndex untouched.
+  * @note      Every function reports FALSE for a zero length array and leaves
+  *            foundIndex untouched.
   *
   ******************************************************************************
   */
 
 #include "search.h"
 
-/*
- * @about: isEqual function for floating point data type.
+/**
+ * @brief   Compares two floating point numbers for equality within a tolerance.
+ * @param[in] f1       First value.
+ * @param[in] f2       Second value.
+ * @param[in] epsilon  Largest absolute difference still counted as equal.
+ * @return  TRUE when the absolute difference between f1 and f2 is less than
+ *          or equal to epsilon, FALSE otherwise.
  */
 static uint8_t isEqualf ( float f1, float f2, float epsilon )
 {
@@ -59,8 +53,15 @@ static uint8_t isEqualf ( float f1, float f2, float epsilon )
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief   Searches the array element by element for a matching item.
+ * @param[in]  array       Array to search.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of the first match. Untouched when no match.
+ * @param[in]  epsilon     Largest difference still counted as equal.
+ * @return  TRUE when a match was found, FALSE otherwise, including when
+ *          length is zero.
  */
 uint8_t linearSearch ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
 {
@@ -80,8 +81,14 @@ uint8_t linearSearch ( const float* const array, uint32_t length, float item, ui
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief   Searches the unsigned 32-bit array element by element for a matching item.
+ * @param[in]  array       Array to search.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of the first match. Untouched when no match.
+ * @return  TRUE when a match was found, FALSE otherwise, including when
+ *          length is zero.
  */
 uint8_t linearSearchu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
 {
@@ -101,8 +108,14 @@ uint8_t linearSearchu32 ( const uint32_t* const array, uint32_t length, uint32_t
     return ( retVal );
 }
 
-/*
- * @about:
+/**
+ * @brief   Searches the signed 32-bit array element by element for a matching item.
+ * @param[in]  array       Array to search.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of the first match. Untouched when no match.
+ * @return  TRUE when a match was found, FALSE otherwise, including when
+ *          length is zero.
  */
 uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
 {
@@ -122,9 +135,17 @@ uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t i
     return ( retVal );
 }
 
-/*
- * @about:
- * @param: "array" should be a sorted array.
+/**
+ * @brief   Searches a sorted array for a matching item using binary search.
+ * @param[in]  array       Array to search, sorted in ascending order.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of a match. Untouched when no match.
+ * @param[in]  epsilon     Largest difference still counted as equal.
+ * @return  TRUE when a match was found, FALSE otherwise, including when
+ *          length is zero.
+ * @note    array must be sorted in ascending order. An unsorted array
+ *          produces a wrong result without any indication of error.
  */
 uint8_t binarySearch ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
 {
@@ -175,9 +196,16 @@ uint8_t binarySearch ( const float* const array, uint32_t length, float item, ui
     return ( retVal );
 }
 
-/*
- * @about:
- * @param: "array" should be a sorted array.
+/**
+ * @brief   Searches a sorted unsigned 32-bit array for a matching item using binary search.
+ * @param[in]  array       Array to search, sorted in ascending order.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of a match. Untouched when no match.
+ * @return  TRUE when a match was found, FALSE otherwise, including when
+ *          length is zero.
+ * @note    array must be sorted in ascending order. An unsorted array
+ *          produces a wrong result without any indication of error.
  */
 uint8_t binarySearchu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
 {
@@ -228,9 +256,16 @@ uint8_t binarySearchu32 ( const uint32_t* const array, uint32_t length, uint32_t
     return ( retVal );
 }
 
-/*
- * @about:
- * @param: "array" should be a sorted array.
+/**
+ * @brief   Searches a sorted signed 32-bit array for a matching item using binary search.
+ * @param[in]  array       Array to search, sorted in ascending order.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of a match. Untouched when no match.
+ * @return  TRUE when a match was found, FALSE otherwise, including when
+ *          length is zero.
+ * @note    array must be sorted in ascending order. An unsorted array
+ *          produces a wrong result without any indication of error.
  */
 uint8_t binarySearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
 {

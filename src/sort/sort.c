@@ -1,52 +1,38 @@
 /**
   ******************************************************************************
   *
-  * @file:      sort.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      sort.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.4
+  * @date      24/12/2021
   *
-  * @version:   v 0.0.4
-  * @cdate:     24/12/2021
-  * @history:   24/12/2021 Created.
-  *             26/12/2021 bubbleSort added.
-  *             20/01/2022 bubbleSort added.
-  *             29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF for a
-  *                        zero length array, which drove the loops far past the
-  *                        end of the buffer.
-  *             29/07/2026 The insertion sort inner loop no longer relies on the
-  *                        unsigned index wrapping to 0xFFFFFFFF.
+  * @brief     Sort function library file.
   *
-  * @about:     Sort function library file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         swapForSort     : Swaps the data of the two pointers.
-  *         swapForSortu32  : Swaps the data of the two pointers for u32.
-  *         swapForSorti32  : Swaps the data of the two pointers for i32.
+  * @par History
+  * 24/12/2021 Created. @n
+  * 26/12/2021 bubbleSort added. @n
+  * 20/01/2022 bubbleSort added. @n
+  * 29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF for a @n
+  *            zero length array, which drove the loops far past the @n
+  *            end of the buffer. @n
+  * 29/07/2026 The insertion sort inner loop no longer relies on the @n
+  *            unsigned index wrapping to 0xFFFFFFFF. @n
   *
-  *         selectionSort   : Sorts array elements using selection method by length.
-  *         selectionSortu32: Sorts array elements using selection method by length for u32.
-  *         selectionSorti32: Sorts array elements using selection method by length for i32.
-  *         bubbleSort      : Sorts array elements using buble method by length.
-  *         bubbleSortu32   : Sorts array elements using buble method by length for u32.
-  *         bubbleSorti32   : Sorts array elements using buble method by length for i32.
-  *         insertionSort   : Sorts array elements using interion method by length.
-  *         insertionSortu32: Sorts array elements using interion method by length for u32.
-  *         insertionSorti32: Sorts array elements using interion method by length for i32.
-  *
-  * @notes:
-  *     A zero or one element array is already sorted, so every function below
-  *     leaves it untouched.
+  * @note      A zero or one element array is already sorted, so every function
+  *            below leaves it untouched.
   *
   ******************************************************************************
   */
 
 #include "sort.h"
 
-/*
- * @about: Swaps the data of the two pointers.
+/**
+ * @brief   Swaps the values pointed to by two pointers.
+ * @param[in,out] xp  First value, replaced with the second value.
+ * @param[in,out] yp  Second value, replaced with the first value.
  */
 static void swapForSort ( float* xp, float* yp )
 {
@@ -57,8 +43,10 @@ static void swapForSort ( float* xp, float* yp )
     *yp = temp;
 }
 
-/*
- * @about: Swaps the data of the two pointers.
+/**
+ * @brief   Swaps the values pointed to by two unsigned 32-bit pointers.
+ * @param[in,out] xp  First value, replaced with the second value.
+ * @param[in,out] yp  Second value, replaced with the first value.
  */
 static void swapForSortu32 ( uint32_t* xp, uint32_t* yp )
 {
@@ -69,8 +57,10 @@ static void swapForSortu32 ( uint32_t* xp, uint32_t* yp )
     *yp = temp;
 }
 
-/*
- * @about: Swaps the data of the two pointers.
+/**
+ * @brief   Swaps the values pointed to by two signed 32-bit pointers.
+ * @param[in,out] xp  First value, replaced with the second value.
+ * @param[in,out] yp  Second value, replaced with the first value.
  */
 static void swapForSorti32 ( int32_t* xp, int32_t* yp )
 {
@@ -81,8 +71,11 @@ static void swapForSorti32 ( int32_t* xp, int32_t* yp )
     *yp = temp;
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the array into ascending order using selection sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void selectionSort ( float* array, uint32_t length )
 {
@@ -117,8 +110,11 @@ void selectionSort ( float* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the unsigned 32-bit array into ascending order using selection sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void selectionSortu32 ( uint32_t* array, uint32_t length )
 {
@@ -153,8 +149,11 @@ void selectionSortu32 ( uint32_t* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the signed 32-bit array into ascending order using selection sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void selectionSorti32 ( int32_t* array, uint32_t length )
 {
@@ -189,8 +188,11 @@ void selectionSorti32 ( int32_t* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the array into ascending order using bubble sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void bubbleSort ( float* array, uint32_t length )
 {
@@ -220,8 +222,11 @@ void bubbleSort ( float* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the unsigned 32-bit array into ascending order using bubble sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void bubbleSortu32 ( uint32_t* array, uint32_t length )
 {
@@ -251,8 +256,11 @@ void bubbleSortu32 ( uint32_t* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the signed 32-bit array into ascending order using bubble sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void bubbleSorti32 ( int32_t* array, uint32_t length )
 {
@@ -282,8 +290,11 @@ void bubbleSorti32 ( int32_t* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the array into ascending order using insertion sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void insertionSort ( float* array, uint32_t length )
 {
@@ -309,8 +320,11 @@ void insertionSort ( float* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the unsigned 32-bit array into ascending order using insertion sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void insertionSortu32 ( uint32_t* array, uint32_t length )
 {
@@ -336,8 +350,11 @@ void insertionSortu32 ( uint32_t* array, uint32_t length )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Sorts the signed 32-bit array into ascending order using insertion sort.
+ * @param[in,out] array   Array to sort, sorted in place.
+ * @param[in]     length  Number of elements in the array.
+ * @note    An array of zero or one element is left untouched.
  */
 void insertionSorti32 ( int32_t* array, uint32_t length )
 {
