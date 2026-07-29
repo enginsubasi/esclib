@@ -1,34 +1,38 @@
 /**
   ******************************************************************************
   *
-  * @file:      hc595.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      hc595_drv.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.1
+  * @date      20/11/2021
   *
-  * @version:   v 0.0.1
-  * @cdate:     20/11/2021
-  * @history:   20/11/2021 Created
+  * @brief     HC595 driver file.
   *
-  * @about:     HC595 driver file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         hc595Init           :
-  *         hc595DlyCtrl        :
-  *         hc595DrvLoop        :
-  *         hc595DrvOneShoot    :
-  *
-  * @notes:
+  * @par History
+  * 20/11/2021 Created @n
   *
   ******************************************************************************
   */
 
 #include "hc595_drv.h"
 
-/*
- * @about:
+/**
+ * @brief   Initializes the HC595 shift register driver and idles its pins.
+ * @param[out] driver     Driver state to initialize.
+ * @param[in]  dataPtr    Caller owned array shifted out on each transfer.
+ * @param[in]  dataSize   Number of bytes in dataPtr.
+ * @param[in]  dlyType    HC595_DLY_NO, HC595_DLY_MS or HC595_DLY_NOP.
+ * @param[in]  dlyCount   Delay length, in the unit chosen by dlyType.
+ * @param[in]  sckDrvFnc  Drives the shift clock pin.
+ * @param[in]  rckDrvFnc  Drives the latch clock pin.
+ * @param[in]  datDrvFnc  Drives the serial data pin.
+ * @param[in]  dlyMsFnc   Blocks for the given number of milliseconds.
+ * @param[in]  dlyNopFnc  Spins for the given number of no-op cycles.
+ * @note    Drives all three output pins low before returning, so the hardware
+ *          is in a known state.
  */
 void hc595Init ( struct HC595_Driver* driver,
                     uint8_t* dataPtr,
@@ -56,8 +60,12 @@ void hc595Init ( struct HC595_Driver* driver,
     driver->rckDrv ( FALSE );
 }
 
-/*
- * @about:
+/**
+ * @brief   Applies the delay configured for hc595DrvOneShoot's shift steps.
+ * @param[in,out] driver  Driver state.
+ * @note    When dlyType holds a value other than HC595_DLY_NO, HC595_DLY_MS
+ *          or HC595_DLY_NOP, this repairs it to HC595_DLY_MS and dlyCount to
+ *          DEF_DLY_COUNT, without delaying on this call.
  */
 static void hc595DlyCtrl ( struct HC595_Driver* driver )
 {
@@ -80,16 +88,23 @@ static void hc595DlyCtrl ( struct HC595_Driver* driver )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Not implemented.
+ * @param[in,out] driver  Driver state.
+ * @note    Reserved for a non blocking write transfer driven from the main
+ *          loop. The body is empty, which is why the compiler reports
+ *          driver as an unused parameter.
  */
 void hc595DrvLoop ( struct HC595_Driver* driver )
 {
 
 }
 
-/*
- * @about:
+/**
+ * @brief   Shifts the whole data array out least significant bit first, then
+ *          pulses the latch clock.
+ * @param[in,out] driver  Driver state; data is read and shifted out onto the
+ *                        pins driven by sckDrv and datDrv.
  */
 void hc595DrvOneShoot ( struct HC595_Driver* driver )
 {
@@ -116,8 +131,12 @@ void hc595DrvOneShoot ( struct HC595_Driver* driver )
     hc595DlyCtrl ( driver );
 }
 
-/*
- * @about:
+/**
+ * @brief   Not implemented.
+ * @param[in,out] driver  Driver state.
+ * @note    Reserved for a non blocking write transfer driven from an
+ *          interrupt. The body is empty, which is why the compiler reports
+ *          driver as an unused parameter.
  */
 void hc595DrvInterrupt ( struct HC595_Driver* driver )
 {

@@ -1,39 +1,44 @@
 /**
   ******************************************************************************
   *
-  * @file:      hc597_drv.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      hc597_drv.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.2
+  * @date      23/05/2022
   *
-  * @version:   v 0.0.2
-  * @cdate:     23/05/2022
-  * @history:   23/05/2022 Created
-  *             29/07/2026 Bug fix. hc597DrvOneShoot only filled data[ 0 ] and
-  *                        ignored driver->size, so a chain longer than one
-  *                        device could not be read.
-  *             29/07/2026 hc597Init drives the clock and load pins to a known
-  *                        state, the way hc595Init already does.
+  * @brief     HC597 driver file.
   *
-  * @about:     HC597 driver file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         hc597Init           :
-  *         hc597DlyCtrl        :
-  *         hc597DrvLoop        :
-  *         hc597DrvOneShoot    :
-  *
-  * @notes:
+  * @par History
+  * 23/05/2022 Created @n
+  * 29/07/2026 Bug fix. hc597DrvOneShoot only filled data[ 0 ] and @n
+  *            ignored driver->size, so a chain longer than one @n
+  *            device could not be read. @n
+  * 29/07/2026 hc597Init drives the clock and load pins to a known @n
+  *            state, the way hc595Init already does. @n
   *
   ******************************************************************************
   */
 
 #include "hc597_drv.h"
 
-/*
- * @about: HC597_Driver Initializer.
+/**
+ * @brief   Initializes the HC597 parallel-in shift register driver and idles
+ *          its pins.
+ * @param[out] driver     Driver state to initialize.
+ * @param[in]  dataPtr    Caller owned array filled on each transfer.
+ * @param[in]  dataSize   Number of bytes in dataPtr.
+ * @param[in]  dlyType    HC597_DLY_NO, HC597_DLY_MS or HC597_DLY_NOP.
+ * @param[in]  dlyCount   Delay length, in the unit chosen by dlyType.
+ * @param[in]  clkDrvFnc  Drives the shift clock pin.
+ * @param[in]  lodDrvFnc  Drives the parallel load pin.
+ * @param[in]  datDrvFnc  Reads the serial data pin.
+ * @param[in]  dlyMsFnc   Blocks for the given number of milliseconds.
+ * @param[in]  dlyNopFnc  Spins for the given number of no-op cycles.
+ * @note    Drives the clock pin low and the load pin high before returning.
+ *          The load pulse is active low, so this leaves the pins idle.
  */
 void hc597Init ( struct HC597_Driver* driver,
                             uint8_t* dataPtr,
@@ -62,8 +67,12 @@ void hc597Init ( struct HC597_Driver* driver,
     driver->lodDrv ( TRUE );
 }
 
-/*
- * @about:
+/**
+ * @brief   Applies the delay configured for hc597DrvOneShoot's clock steps.
+ * @param[in,out] driver  Driver state.
+ * @note    When dlyType holds a value other than HC597_DLY_NO, HC597_DLY_MS
+ *          or HC597_DLY_NOP, this repairs it to HC597_DLY_MS and dlyCount to
+ *          DEF_DLY_COUNT, without delaying on this call.
  */
 static void hc597DlyCtrl ( struct HC597_Driver* driver )
 {
@@ -86,16 +95,23 @@ static void hc597DlyCtrl ( struct HC597_Driver* driver )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Not implemented.
+ * @param[in,out] driver  Driver state.
+ * @note    Reserved for a non blocking read transfer driven from the main
+ *          loop. The body is empty, which is why the compiler reports
+ *          driver as an unused parameter.
  */
 void hc597DrvLoop ( struct HC597_Driver* driver )
 {
 
 }
 
-/*
- * @about:
+/**
+ * @brief   Latches the parallel inputs once, then clocks driver->size bytes
+ *          in, filling driver->data.
+ * @param[in,out] driver  Driver state; data is written with the bytes read
+ *                        from datDrv, clocked by clkDrv.
  */
 void hc597DrvOneShoot ( struct HC597_Driver* driver )
 {
@@ -133,8 +149,12 @@ void hc597DrvOneShoot ( struct HC597_Driver* driver )
     }
 }
 
-/*
- * @about:
+/**
+ * @brief   Not implemented.
+ * @param[in,out] driver  Driver state.
+ * @note    Reserved for a non blocking read transfer driven from an
+ *          interrupt. The body is empty, which is why the compiler reports
+ *          driver as an unused parameter.
  */
 void hc597DrvInterrupt ( struct HC597_Driver* driver )
 {

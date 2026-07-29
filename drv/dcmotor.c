@@ -1,37 +1,37 @@
 /**
   ******************************************************************************
   *
-  * @file:      dcmotor.c
-  * @author:    Engin Subasi
-  * @email:     enginsubasi@gmail.com
-  * @address:   github.com/enginsubasi
+  * @file      dcmotor.c
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @version   0.0.2
+  * @date      23/05/2022
   *
-  * @version:   v 0.0.2
-  * @cdate:     23/05/2022
-  * @history:   23/05/2022 Created
-  *             29/07/2026 The file banner named the wrong file and device. It
-  *                        was copied from the hc597 driver.
-  *             29/07/2026 The pwm callback takes float instead of double, to
-  *                        match the rest of the library. This changes the public
-  *                        API.
+  * @brief     DC motor driver file.
   *
-  * @about:     DC motor driver file.
-  * @device:    Generic
+  * @par Device
+  * Generic
   *
-  * @content:
-  *     FUNCTIONS:
-  *         dcMotorInit         :
-  *         dcMotorBridgeState  :
-  *
-  * @notes:
+  * @par History
+  * 23/05/2022 Created @n
+  * 29/07/2026 The file banner named the wrong file and device. It @n
+  *            was copied from the hc597 driver. @n
+  * 29/07/2026 The pwm callback takes float instead of double, to @n
+  *            match the rest of the library. This changes the public @n
+  *            API. @n
   *
   ******************************************************************************
   */
 
 #include "dcmotor.h"
 
-/*
- * @about:
+/**
+ * @brief   Initializes the DC motor driver and idles the bridge.
+ * @param[out] driver         Driver state to initialize.
+ * @param[in]  bridgeHighFnc  Drives the bridge high side pin.
+ * @param[in]  bridgeLowFnc   Drives the bridge low side pin.
+ * @param[in]  pwmFnc         Sets the motor drive PWM duty cycle.
+ * @note    Sets the PWM duty cycle to zero and the bridge to BRIDGE_NO
+ *          before returning.
  */
 void dcMotorInit ( struct dcmotor_t *driver,
                     void ( *bridgeHighFnc )( uint8_t ),
@@ -46,8 +46,14 @@ void dcMotorInit ( struct dcmotor_t *driver,
     dcMotorBridgeState ( driver, BRIDGE_NO );
 }
 
-/*
- * @about:
+/**
+ * @brief   Drives the bridge pins to match the requested state.
+ * @param[in,out] driver       Driver state.
+ * @param[in]     bridgeState  BRIDGE_NO to release the bridge, BRIDGE_FORWARD
+ *                             or BRIDGE_BACKWARD to drive one direction each,
+ *                             or BRIDGE_LOCK to drive both pins high. An
+ *                             unrecognised value falls back to the BRIDGE_NO
+ *                             behaviour.
  */
 void dcMotorBridgeState ( struct dcmotor_t *driver, uint8_t bridgeState )
 {
