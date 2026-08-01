@@ -68,13 +68,15 @@ Every stateful module follows the same shape, and new modules must match it:
 
 ### The Init contract
 
-**Every `Init` returns `uint8_t`** — `TRUE` on success, `FALSE` on a rejected argument — and validates before it writes anything. On `FALSE` the driver is left untouched. Check, at minimum:
+**Every driver-module `Init` returns `uint8_t`** — `TRUE` on success, `FALSE` on a rejected argument — and validates before it writes anything. On `FALSE` the driver is left untouched. Check, at minimum:
 
 - `driver != NULL` and every caller-owned pointer, using `NULL` from `<stddef.h>`, never a bare `0`.
 - Every injected callback the module will later call without checking.
 - Sizes and ranges the module's own code depends on. These are not decoration — `pidInit` rejects `ts == 0` because `pidControl` divides by it and a `nan` passes straight through the output limiter, and `comatInit` rejects `rxSize < 3` because `comatReceive` stores a byte before it compares the index against `rxSize`.
 
-Any other function that can be handed a bad argument follows the same rule: `pidChangeCoefficients` returns a status for exactly the `ts` reason above.
+**Validation happens at `Init` and nowhere else.** This is deliberate, not an oversight. `mafIteration`, `circBufAddu32`, `comatReceive`, `bininpUpdate` and `pidControl` dereference `driver` without checking it, because they run per sample or per byte, often from an ISR, and the caller already got a yes or no from `Init`. Do not add per-call NULL checks to that path. The exception is a function that takes a *new* argument capable of breaking a later invariant: `pidChangeCoefficients` returns a status because it can install a zero `ts`, and `pidChangeLimits` because it can be handed a NULL driver.
+
+`complexInit` and `complexFromPolar` are outside this contract and return `void` on purpose. `complex_t` is a value type, not a driver: it owns no caller storage and no callbacks, and the other complex functions take the same pointers unchecked. Giving one of them a status would be less consistent, not more.
 
 ### const
 
@@ -161,4 +163,9 @@ Seven test programs cover 21 modules. The three files with the most logic — `b
 
 Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run.
 
-Test `output.txt` files predate the July 2026 bug fixes. Several fixes change numeric results (`mathFindMini32`, `mathCalculateMedian`, `complexDiv`, `complexToPolar`, PID initial state), so those files are stale until regenerated on a machine with a host compiler.
+Test `output.txt` files predate the July 2026 bug fixes and are stale until regenerated on a machine with a host compiler. What moved the numbers:
+
+- July 2026 bug fixes — `mathFindMini32`, `mathCalculateMedian`, `complexDiv`, `complexToPolar`, PID initial state.
+- August 2026 — the switch from `sqrt`/`atan2`/`cos`/`sin` to the `f` variants. Single precision changes the trailing digits of `complexToPolar`, `complexFromPolar` and `statStandardDeviation`, so `Complex_Test` output will differ even where the fix itself was behaviour-neutral.
+
+Do not treat a diff against a checked-in `output.txt` as a regression until the file has been regenerated once against current source.

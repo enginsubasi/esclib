@@ -125,7 +125,19 @@ so it passes through the limiter untouched. comatInit rejects an rxSize below
 three because comatReceive stores a byte before it compares the index against
 rxSize.
 
-Any other function that can be handed a bad argument follows the same rule.
+Validation happens at Init and nowhere else. mafIteration, circBufAddu32,
+comatReceive, bininpUpdate and pidControl dereference driver without checking
+it, on purpose: they run per sample or per byte, often from an ISR, and the
+caller already got a yes or no from Init. Do not add per-call NULL checks to
+that path.
+
+The exception is a function that takes a new argument capable of breaking a
+later invariant. pidChangeCoefficients returns a status because it can install
+a zero ts, and pidChangeLimits because it can be handed a NULL driver.
+
+complexInit and complexFromPolar sit outside this contract and return void.
+complex_t is a value type, not a driver: it owns no caller storage and no
+callbacks.
 
 ### const
 A parameter the function never writes is declared const T* const. Callers on an
@@ -175,7 +187,7 @@ clears the flag it reports, so it is genuinely in,out.
       *
       * @file      maf.c
       * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-      * @version   2.1.0
+      * @version   2.2.1
       * @date      26/04/2020
       *
       * @brief     Moving average filter.
