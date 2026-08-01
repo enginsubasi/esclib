@@ -45,7 +45,7 @@ Every stateful module follows the same shape, and new modules must match it:
 - The **caller owns all storage**. The module never allocates; buffers are passed into `Init` as pointers (`mafInit(&f, buf, len, 0)`, `circBufInitu32(&b, buf, cap, BB_OVERWRITE)`). Never add `malloc`.
 - First parameter of every function is `<prefix>_t* driver`.
 - Function names are `<prefix>` + verb, always: `xxxInit`, then `xxxUpdate`/`xxxIteration`/`xxxControl`/`xxxReceive`, then `xxxGetValue`/`xxxGetOutput`.
-- Type-suffixed names when a module is width-specific: `circBufAddu32`, `variancei32`.
+- Type-suffixed names when a module is width-specific: `circBufAddu32`, `statVariancei32`.
 - Hardware and I/O are injected as **function pointers stored in the struct at Init** — see `drv/hc595_drv.h` (`sckDrv`, `rckDrv`, `datDrv`, `dlyMs`, `dlyNop`) and `inc/communication/comat.h` (`packetProcess`, `txTransmissionTrigger`). Never call a HAL directly from library code.
 - Protocol modules (`comat`, `comstxetx`) are byte-driven state machines: `xxxReceive(driver, byte)` from the ISR, `xxxEvaluate(driver)` from the main loop, `xxxTimeoutCounter(driver)` from a periodic tick.
 
@@ -124,4 +124,4 @@ These are stubs awaiting design, not defects. Leave them alone unless implementi
 - `src/communication/comsec.c` and `src/communication/comsafe.c` contain only a file banner. `inc/communication/comsec.h`, `comsafe.h`, `comgenbuf.h` and `inc/matrix/matrixlib.h` declare types but no function prototypes.
 - `rules.md` is an empty placeholder.
 
-Test `output.txt` files predate the July 2026 bug fixes. Several fixes change numeric results (`findMini32`, `calculateMedian`, `complexDiv`, `complexToPolar`, PID initial state), so those files are stale until regenerated on a machine with a host compiler.
+Test `output.txt` files predate the July 2026 bug fixes. Several fixes change numeric results (`mathFindMini32`, `mathCalculateMedian`, `complexDiv`, `complexToPolar`, PID initial state), so those files are stale until regenerated on a machine with a host compiler.

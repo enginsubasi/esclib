@@ -3,7 +3,7 @@
   *
   * @file      search.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.4
+  * @version   0.0.5
   * @date      15/09/2021
   *
   * @brief     Search function library file.
@@ -16,10 +16,14 @@
   * 20/09/2021 linearSearch_i32 is added to the library. @n
   * 20/09/2021 binarySearch_i32 is added to the library. @n
   * 29/07/2026 Bug fix. A stray semicolon after the if statement of @n
-  *            linearSearch made the body run unconditionally, so the @n
+  *            searchLinear made the body run unconditionally, so the @n
   *            function always reported a match at index 0. @n
   * 29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF in the @n
   *            binary search functions for a zero length array. @n
+  * 01/08/2026 Every function in this module carries the search prefix @n
+  *            now. The old names sat in the global namespace @n
+  *            with no library marker, which invited a clash in @n
+  *            any project that links other libraries. @n
   *
   * @note      Every function reports FALSE for a zero length array and leaves
   *            foundIndex untouched.
@@ -63,7 +67,7 @@ static uint8_t isEqualf ( float f1, float f2, float epsilon )
  * @return  TRUE when a match was found, FALSE otherwise, including when
  *          length is zero.
  */
-uint8_t linearSearch ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
+uint8_t searchLinear ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
 {
     uint8_t retVal = FALSE;
     uint32_t i = 0;
@@ -90,7 +94,7 @@ uint8_t linearSearch ( const float* const array, uint32_t length, float item, ui
  * @return  TRUE when a match was found, FALSE otherwise, including when
  *          length is zero.
  */
-uint8_t linearSearchu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
+uint8_t searchLinearu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
 {
     uint8_t retVal = FALSE;
     uint32_t i = 0;
@@ -117,7 +121,7 @@ uint8_t linearSearchu32 ( const uint32_t* const array, uint32_t length, uint32_t
  * @return  TRUE when a match was found, FALSE otherwise, including when
  *          length is zero.
  */
-uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
+uint8_t searchLineari32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
 {
     uint8_t retVal = FALSE;
     uint32_t i = 0;
@@ -147,7 +151,7 @@ uint8_t linearSearchi32 ( const int32_t* const array, uint32_t length, int32_t i
  * @note    array must be sorted in ascending order. An unsorted array
  *          produces a wrong result without any indication of error.
  */
-uint8_t binarySearch ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
+uint8_t searchBinary ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
 {
     uint8_t retVal = FALSE;
     uint32_t l = 0;
@@ -207,7 +211,7 @@ uint8_t binarySearch ( const float* const array, uint32_t length, float item, ui
  * @note    array must be sorted in ascending order. An unsorted array
  *          produces a wrong result without any indication of error.
  */
-uint8_t binarySearchu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
+uint8_t searchBinaryu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
 {
     uint8_t retVal = FALSE;
     uint32_t l = 0;
@@ -267,7 +271,7 @@ uint8_t binarySearchu32 ( const uint32_t* const array, uint32_t length, uint32_t
  * @note    array must be sorted in ascending order. An unsorted array
  *          produces a wrong result without any indication of error.
  */
-uint8_t binarySearchi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
+uint8_t searchBinaryi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
 {
     uint8_t retVal = FALSE;
     uint32_t l = 0;

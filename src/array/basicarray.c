@@ -3,7 +3,7 @@
   *
   * @file      basicarray.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.1
+  * @version   0.0.2
   * @date      03/01/2022
   *
   * @brief     Basic array function library file.
@@ -13,6 +13,10 @@
   *
   * @par History
   * 03/01/2022 Created. @n
+  * 01/08/2026 Every function in this module carries the array prefix @n
+  *            now. The old names sat in the global namespace @n
+  *            with no library marker, which invited a clash in @n
+  *            any project that links other libraries. @n
   *
   ******************************************************************************
   */
@@ -26,7 +30,7 @@
  * @param[in]     dwValue  Lower clamp value.
  * @param[in]     iSize    Number of elements in the array.
  */
-void limitUpDw1D ( float* array, float upValue, float dwValue, uint32_t iSize )
+void arrayLimitUpDw1D ( float* array, float upValue, float dwValue, uint32_t iSize )
 {
     uint32_t i = 0;
     
@@ -54,7 +58,7 @@ void limitUpDw1D ( float* array, float upValue, float dwValue, uint32_t iSize )
  * @param[in]     dwValue  Lower clamp value.
  * @param[in]     iSize    Number of elements in the array.
  */
-void limitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint32_t iSize )
+void arrayLimitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint32_t iSize )
 {
     uint32_t i = 0;
     
@@ -82,7 +86,7 @@ void limitUpDw1Du32 ( uint32_t* array, uint32_t upValue, uint32_t dwValue, uint3
  * @param[in]     dwValue  Lower clamp value.
  * @param[in]     iSize    Number of elements in the array.
  */
-void limitUpDw1Di32 ( int32_t* array, int32_t upValue, int32_t dwValue, uint32_t iSize )
+void arrayLimitUpDw1Di32 ( int32_t* array, int32_t upValue, int32_t dwValue, uint32_t iSize )
 {
     uint32_t i = 0;
     

@@ -29,15 +29,15 @@
 
 /* FUNCTION PROTOTYPES */
 
-void selectionSort ( float* array, uint32_t length );
-void selectionSortu32 ( uint32_t* array, uint32_t length );
-void selectionSorti32 ( int32_t* array, uint32_t length );
-void bubbleSort ( float* array, uint32_t length );
-void bubbleSortu32 ( uint32_t* array, uint32_t length );
-void bubbleSorti32 ( int32_t* array, uint32_t length );
-void insertionSort ( float* array, uint32_t length );
-void insertionSortu32 ( uint32_t* array, uint32_t length );
-void insertionSorti32 ( int32_t* array, uint32_t length );
+void sortSelection ( float* array, uint32_t length );
+void sortSelectionu32 ( uint32_t* array, uint32_t length );
+void sortSelectioni32 ( int32_t* array, uint32_t length );
+void sortBubble ( float* array, uint32_t length );
+void sortBubbleu32 ( uint32_t* array, uint32_t length );
+void sortBubblei32 ( int32_t* array, uint32_t length );
+void sortInsertion ( float* array, uint32_t length );
+void sortInsertionu32 ( uint32_t* array, uint32_t length );
+void sortInsertioni32 ( int32_t* array, uint32_t length );
 
 #ifdef __cplusplus
 }

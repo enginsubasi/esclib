@@ -3,7 +3,7 @@
   *
   * @file      sort.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.4
+  * @version   0.0.5
   * @date      24/12/2021
   *
   * @brief     Sort function library file.
@@ -13,13 +13,17 @@
   *
   * @par History
   * 24/12/2021 Created. @n
-  * 26/12/2021 bubbleSort added. @n
-  * 20/01/2022 bubbleSort added. @n
+  * 26/12/2021 sortBubble added. @n
+  * 20/01/2022 sortBubble added. @n
   * 29/07/2026 Bug fix. length - 1 underflowed to 0xFFFFFFFF for a @n
   *            zero length array, which drove the loops far past the @n
   *            end of the buffer. @n
   * 29/07/2026 The insertion sort inner loop no longer relies on the @n
   *            unsigned index wrapping to 0xFFFFFFFF. @n
+  * 01/08/2026 Every function in this module carries the sort prefix @n
+  *            now. The old names sat in the global namespace @n
+  *            with no library marker, which invited a clash in @n
+  *            any project that links other libraries. @n
   *
   * @note      A zero or one element array is already sorted, so every function
   *            below leaves it untouched.
@@ -77,7 +81,7 @@ static void swapForSorti32 ( int32_t* xp, int32_t* yp )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void selectionSort ( float* array, uint32_t length )
+void sortSelection ( float* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -116,7 +120,7 @@ void selectionSort ( float* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void selectionSortu32 ( uint32_t* array, uint32_t length )
+void sortSelectionu32 ( uint32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -155,7 +159,7 @@ void selectionSortu32 ( uint32_t* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void selectionSorti32 ( int32_t* array, uint32_t length )
+void sortSelectioni32 ( int32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -194,7 +198,7 @@ void selectionSorti32 ( int32_t* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void bubbleSort ( float* array, uint32_t length )
+void sortBubble ( float* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -228,7 +232,7 @@ void bubbleSort ( float* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void bubbleSortu32 ( uint32_t* array, uint32_t length )
+void sortBubbleu32 ( uint32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -262,7 +266,7 @@ void bubbleSortu32 ( uint32_t* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void bubbleSorti32 ( int32_t* array, uint32_t length )
+void sortBubblei32 ( int32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -296,7 +300,7 @@ void bubbleSorti32 ( int32_t* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void insertionSort ( float* array, uint32_t length )
+void sortInsertion ( float* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -326,7 +330,7 @@ void insertionSort ( float* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void insertionSortu32 ( uint32_t* array, uint32_t length )
+void sortInsertionu32 ( uint32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -356,7 +360,7 @@ void insertionSortu32 ( uint32_t* array, uint32_t length )
  * @param[in]     length  Number of elements in the array.
  * @note    An array of zero or one element is left untouched.
  */
-void insertionSorti32 ( int32_t* array, uint32_t length )
+void sortInsertioni32 ( int32_t* array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t j = 0;

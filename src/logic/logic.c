@@ -3,7 +3,7 @@
   *
   * @file      logic.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.1
+  * @version   0.0.2
   * @date      20/10/2021
   *
   * @brief     Basic logic function library file.
@@ -14,6 +14,10 @@
   * @par History
   * 20/10/2021 Created @n
   * 11/12/2021 D Flip-Flop is added @n
+  * 01/08/2026 Every function in this module carries the logic prefix @n
+  *            now. The old names sat in the global namespace @n
+  *            with no library marker, which invited a clash in @n
+  *            any project that links other libraries. @n
   *
   ******************************************************************************
   */
@@ -28,7 +32,7 @@
  * @return  New state of mem, i.e. TRUE or FALSE.
  * @note    When r is TRUE the output is cleared regardless of s.
  */
-uint8_t rsff ( uint8_t r, uint8_t s, uint8_t* mem )
+uint8_t logicRsff ( uint8_t r, uint8_t s, uint8_t* mem )
 {
     uint8_t retVal = FALSE;
 
@@ -59,7 +63,7 @@ uint8_t rsff ( uint8_t r, uint8_t s, uint8_t* mem )
  * @param[in,out] mem  Flip-flop's stored state; read and then updated.
  * @return  Previous state of mem, captured before it is updated to d.
  */
-uint8_t dff ( uint8_t d, uint8_t* mem )
+uint8_t logicDff ( uint8_t d, uint8_t* mem )
 {
     uint8_t retVal = FALSE;
 
