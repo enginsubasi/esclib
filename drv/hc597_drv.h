@@ -19,14 +19,14 @@
 #define FALSE 0
 #endif
 
-#define DEF_DLY_COUNT   1 // In millisecond.
+#define HC597_DEF_DLY_COUNT   1 // In millisecond.
 
 /* TYPEDEFS */
 
 /* STRUCTURES */
 
 
-struct HC597_Driver
+typedef struct
 {
     uint8_t trigger;
 
@@ -42,7 +42,7 @@ struct HC597_Driver
 
     void ( *dlyMs )( uint32_t );
     void ( *dlyNop )( uint32_t );
-};
+} hc597_t;
 
 /* ENUMS */
 
@@ -56,7 +56,7 @@ enum HC597_DLY_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void hc597Init ( struct HC597_Driver* driver,
+void hc597Init ( hc597_t* driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
@@ -66,9 +66,9 @@ void hc597Init ( struct HC597_Driver* driver,
                     uint8_t ( *datDrvFnc )( void ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
-void hc597DrvLoop ( struct HC597_Driver *driver );
-void hc597DrvOneShoot ( struct HC597_Driver *driver );
-void hc597DrvInterrupt ( struct HC597_Driver *driver );
+void hc597Loop ( hc597_t *driver );
+void hc597OneShot ( hc597_t *driver );
+void hc597Interrupt ( hc597_t *driver );
 
 #ifdef __cplusplus
 }

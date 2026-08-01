@@ -24,12 +24,12 @@
 /* STRUCTURES */
 
 
-struct dcmotor_t
+typedef struct
 {
     void ( *bridgeHigh )( uint8_t );
     void ( *bridgeLow )( uint8_t );
     void ( *pwm )( float );
-};
+} dcmotor_t;
 
 /* ENUMS */
 
@@ -44,11 +44,11 @@ enum BRIDGE_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void dcMotorInit ( struct dcmotor_t *driver,
+void dcMotorInit ( dcmotor_t *driver,
                     void ( *bridgeHighFnc )( uint8_t ),
                     void ( *bridgeLowFnc )( uint8_t ),
                     void ( *pwmFnc )( float ));
-void dcMotorBridgeState ( struct dcmotor_t *driver, uint8_t bridgeState );
+void dcMotorBridgeState ( dcmotor_t *driver, uint8_t bridgeState );
 
 #ifdef __cplusplus
 }

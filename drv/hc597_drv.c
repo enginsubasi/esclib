@@ -3,7 +3,7 @@
   *
   * @file      hc597_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      23/05/2022
   *
   * @brief     HC597 driver file.
@@ -13,11 +13,19 @@
   *
   * @par History
   * 23/05/2022 Created @n
-  * 29/07/2026 Bug fix. hc597DrvOneShoot only filled data[ 0 ] and @n
+  * 29/07/2026 Bug fix. hc597OneShot only filled data[ 0 ] and @n
   *            ignored driver->size, so a chain longer than one @n
   *            device could not be read. @n
   * 29/07/2026 hc597Init drives the clock and load pins to a known @n
   *            state, the way hc595Init already does. @n
+  * 01/08/2026 The driver struct is a typedef named after the module, @n
+  *            the way every other module in the library declares it. @n
+  *            Callers no longer write the struct keyword. @n
+  * 01/08/2026 hc597DrvLoop, hc597DrvOneShoot and hc597DrvInterrupt @n
+  *            lost the Drv infix and the OneShoot spelling, so the @n
+  *            names match the hc597 prefix used by hc597Init. @n
+  * 01/08/2026 DEF_DLY_COUNT is renamed HC597_DEF_DLY_COUNT. The old @n
+  *            name was a bare macro in the global namespace. @n
   *
   ******************************************************************************
   */
@@ -40,7 +48,7 @@
  * @note    Drives the clock pin low and the load pin high before returning.
  *          The load pulse is active low, so this leaves the pins idle.
  */
-void hc597Init ( struct HC597_Driver* driver,
+void hc597Init ( hc597_t* driver,
                             uint8_t* dataPtr,
                             uint32_t dataSize,
                             uint8_t dlyType,
@@ -68,13 +76,13 @@ void hc597Init ( struct HC597_Driver* driver,
 }
 
 /**
- * @brief   Applies the delay configured for hc597DrvOneShoot's clock steps.
+ * @brief   Applies the delay configured for hc597OneShot's clock steps.
  * @param[in,out] driver  Driver state.
  * @note    When dlyType holds a value other than HC597_DLY_NO, HC597_DLY_MS
  *          or HC597_DLY_NOP, this repairs it to HC597_DLY_MS and dlyCount to
- *          DEF_DLY_COUNT, without delaying on this call.
+ *          HC597_DEF_DLY_COUNT, without delaying on this call.
  */
-static void hc597DlyCtrl ( struct HC597_Driver* driver )
+static void hc597DlyCtrl ( hc597_t* driver )
 {
     if ( driver->dlyType == HC597_DLY_NO )
     {
@@ -91,7 +99,7 @@ static void hc597DlyCtrl ( struct HC597_Driver* driver )
     else
     {
         driver->dlyType = HC597_DLY_MS;
-        driver->dlyCount = DEF_DLY_COUNT;
+        driver->dlyCount = HC597_DEF_DLY_COUNT;
     }
 }
 
@@ -102,7 +110,7 @@ static void hc597DlyCtrl ( struct HC597_Driver* driver )
  *          loop. The body is empty, which is why the compiler reports
  *          driver as an unused parameter.
  */
-void hc597DrvLoop ( struct HC597_Driver* driver )
+void hc597Loop ( hc597_t* driver )
 {
 
 }
@@ -113,7 +121,7 @@ void hc597DrvLoop ( struct HC597_Driver* driver )
  * @param[in,out] driver  Driver state; data is written with the bytes read
  *                        from datDrv, clocked by clkDrv.
  */
-void hc597DrvOneShoot ( struct HC597_Driver* driver )
+void hc597OneShot ( hc597_t* driver )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -156,7 +164,7 @@ void hc597DrvOneShoot ( struct HC597_Driver* driver )
  *          interrupt. The body is empty, which is why the compiler reports
  *          driver as an unused parameter.
  */
-void hc597DrvInterrupt ( struct HC597_Driver* driver )
+void hc597Interrupt ( hc597_t* driver )
 {
 
 }

@@ -3,7 +3,7 @@
   *
   * @file      hc595_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.1
+  * @version   0.0.2
   * @date      20/11/2021
   *
   * @brief     HC595 driver file.
@@ -13,6 +13,14 @@
   *
   * @par History
   * 20/11/2021 Created @n
+  * 01/08/2026 The driver struct is a typedef named after the module, @n
+  *            the way every other module in the library declares it. @n
+  *            Callers no longer write the struct keyword. @n
+  * 01/08/2026 hc595DrvLoop, hc595DrvOneShoot and hc595DrvInterrupt @n
+  *            lost the Drv infix and the OneShoot spelling, so the @n
+  *            names match the hc595 prefix used by hc595Init. @n
+  * 01/08/2026 DEF_DLY_COUNT is renamed HC595_DEF_DLY_COUNT. The old @n
+  *            name was a bare macro in the global namespace. @n
   *
   ******************************************************************************
   */
@@ -34,7 +42,7 @@
  * @note    Drives all three output pins low before returning, so the hardware
  *          is in a known state.
  */
-void hc595Init ( struct HC595_Driver* driver,
+void hc595Init ( hc595_t* driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
@@ -61,14 +69,14 @@ void hc595Init ( struct HC595_Driver* driver,
 }
 
 /**
- * @brief   Applies the delay configured for hc595DrvOneShoot's shift steps
+ * @brief   Applies the delay configured for hc595OneShot's shift steps
  *          and the latch pulse that follows them.
  * @param[in,out] driver  Driver state.
  * @note    When dlyType holds a value other than HC595_DLY_NO, HC595_DLY_MS
  *          or HC595_DLY_NOP, this repairs it to HC595_DLY_MS and dlyCount to
- *          DEF_DLY_COUNT, without delaying on this call.
+ *          HC595_DEF_DLY_COUNT, without delaying on this call.
  */
-static void hc595DlyCtrl ( struct HC595_Driver* driver )
+static void hc595DlyCtrl ( hc595_t* driver )
 {
     if ( driver->dlyType == HC595_DLY_NO )
     {
@@ -85,7 +93,7 @@ static void hc595DlyCtrl ( struct HC595_Driver* driver )
     else
     {
         driver->dlyType = HC595_DLY_MS;
-        driver->dlyCount = DEF_DLY_COUNT;
+        driver->dlyCount = HC595_DEF_DLY_COUNT;
     }
 }
 
@@ -96,7 +104,7 @@ static void hc595DlyCtrl ( struct HC595_Driver* driver )
  *          loop. The body is empty, which is why the compiler reports
  *          driver as an unused parameter.
  */
-void hc595DrvLoop ( struct HC595_Driver* driver )
+void hc595Loop ( hc595_t* driver )
 {
 
 }
@@ -107,7 +115,7 @@ void hc595DrvLoop ( struct HC595_Driver* driver )
  * @param[in,out] driver  Driver state; data is read and shifted out onto the
  *                        pins driven by sckDrv and datDrv.
  */
-void hc595DrvOneShoot ( struct HC595_Driver* driver )
+void hc595OneShot ( hc595_t* driver )
 {
     uint32_t i = 0;
     uint32_t j = 0;
@@ -139,7 +147,7 @@ void hc595DrvOneShoot ( struct HC595_Driver* driver )
  *          interrupt. The body is empty, which is why the compiler reports
  *          driver as an unused parameter.
  */
-void hc595DrvInterrupt ( struct HC595_Driver* driver )
+void hc595Interrupt ( hc595_t* driver )
 {
 
 }

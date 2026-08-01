@@ -3,7 +3,7 @@
   *
   * @file      dcmotor.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      23/05/2022
   *
   * @brief     DC motor driver file.
@@ -18,6 +18,9 @@
   * 29/07/2026 The pwm callback takes float instead of double, to @n
   *            match the rest of the library. This changes the public @n
   *            API. @n
+  * 01/08/2026 The driver struct is a typedef named after the module, @n
+  *            the way every other module in the library declares it. @n
+  *            Callers no longer write the struct keyword. @n
   *
   ******************************************************************************
   */
@@ -33,7 +36,7 @@
  * @note    Sets the PWM duty cycle to zero and the bridge to BRIDGE_NO
  *          before returning.
  */
-void dcMotorInit ( struct dcmotor_t *driver,
+void dcMotorInit ( dcmotor_t *driver,
                     void ( *bridgeHighFnc )( uint8_t ),
                     void ( *bridgeLowFnc )( uint8_t ),
                     void ( *pwmFnc )( float ))
@@ -55,7 +58,7 @@ void dcMotorInit ( struct dcmotor_t *driver,
  *                             unrecognised value falls back to the BRIDGE_NO
  *                             behaviour.
  */
-void dcMotorBridgeState ( struct dcmotor_t *driver, uint8_t bridgeState )
+void dcMotorBridgeState ( dcmotor_t *driver, uint8_t bridgeState )
 {
     switch ( bridgeState )
     {

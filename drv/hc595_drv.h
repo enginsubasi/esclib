@@ -19,14 +19,14 @@
 #define FALSE 0
 #endif
 
-#define DEF_DLY_COUNT   1 // In millisecond.
+#define HC595_DEF_DLY_COUNT   1 // In millisecond.
 
 /* TYPEDEFS */
 
 /* STRUCTURES */
 
 
-struct HC595_Driver
+typedef struct
 {
     uint8_t trigger;
 
@@ -42,7 +42,7 @@ struct HC595_Driver
 
     void ( *dlyMs )( uint32_t );
     void ( *dlyNop )( uint32_t );
-};
+} hc595_t;
 
 /* ENUMS */
 
@@ -56,7 +56,7 @@ enum HC595_DLY_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void hc595Init ( struct HC595_Driver *driver,
+void hc595Init ( hc595_t *driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
@@ -66,9 +66,9 @@ void hc595Init ( struct HC595_Driver *driver,
                     void ( *datDrvFnc )( uint8_t ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
-void hc595DrvLoop ( struct HC595_Driver *driver );
-void hc595DrvOneShoot ( struct HC595_Driver *driver );
-void hc595DrvInterrupt ( struct HC595_Driver *driver );
+void hc595Loop ( hc595_t *driver );
+void hc595OneShot ( hc595_t *driver );
+void hc595Interrupt ( hc595_t *driver );
 
 #ifdef __cplusplus
 }
