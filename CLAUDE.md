@@ -160,9 +160,9 @@ These are stubs awaiting design, not defects. Leave them alone unless implementi
 
 ## Testing gap — the largest open risk
 
-Eight test programs cover 21 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
+Nine test programs cover 21 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
 
-`test/ShiftRegister_Test/` is the exception to the house test style: it asserts instead of printing values for a human to compare, so it has no `output.txt` and returns non-zero on failure. Prefer that shape for new tests.
+`test/ShiftRegister_Test/` and `test/Filter_Test/` are the exceptions to the house test style: they assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure. Prefer that shape for new tests. Both exist because a bug lived precisely where the printing tests did not look — `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
 
 Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run.
 
