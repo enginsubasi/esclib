@@ -35,19 +35,50 @@ template/inc/generic.h, template/src/generic.c         copy these to start a new
 sample/                                                standalone C examples, not part of the library
 ```
 
-Modules are **fully independent**: every `.c` includes only its own header (plus `<math.h>` where needed). No module includes another module's header. Do not introduce cross-module includes — that independence is what makes single-module copy-out work.
+Modules are **fully independent**: every `.c` includes only its own header (plus `<math.h>` and `<stddef.h>` where needed). No module includes another module's header. Do not introduce cross-module includes — that independence is what makes single-module copy-out work.
+
+## Naming: every global carries its module prefix
+
+There is no namespace in C and this library is copied into other people's projects, so **a global with no prefix is a bug waiting to happen**. Every exported function starts with its module's prefix, no exceptions:
+
+| module | prefix | module | prefix |
+|---|---|---|---|
+| `basicmath` | `math` | `basicarray` | `array` |
+| `statistic` | `stat` | `basicmatrix` | `matrix` |
+| `sort` | `sort` | `logic` | `logic` |
+| `search` | `search` | `crc16`/`crc32` | already `crc16`/`crc32` |
+
+Stateful modules use their own name (`maf`, `emaf`, `pid`, `circBuf`, `comat`, `comstxetx`, `bininp`, `hysteresis`, `complex`, `hc595`, `hc597`, `dcMotor`). Check with `nm` after adding anything:
+
+```bash
+arm-none-eabi-nm /tmp/objs/*.o | grep ' T ' | awk '{print $3}' | sort -u
+```
 
 ## The driver-struct pattern
 
 Every stateful module follows the same shape, and new modules must match it:
 
-- One `typedef struct { ... } <prefix>_t;` holding all state (`maf_t`, `pidc_t`, `circBufu32_t`, `comat_t`, `bininp_t`).
+- One `typedef struct { ... } <prefix>_t;` holding all state (`maf_t`, `pidc_t`, `circBufu32_t`, `comat_t`, `bininp_t`, `hc595_t`). Always a typedef — callers never write the `struct` keyword.
 - The **caller owns all storage**. The module never allocates; buffers are passed into `Init` as pointers (`mafInit(&f, buf, len, 0)`, `circBufInitu32(&b, buf, cap, BB_OVERWRITE)`). Never add `malloc`.
 - First parameter of every function is `<prefix>_t* driver`.
 - Function names are `<prefix>` + verb, always: `xxxInit`, then `xxxUpdate`/`xxxIteration`/`xxxControl`/`xxxReceive`, then `xxxGetValue`/`xxxGetOutput`.
 - Type-suffixed names when a module is width-specific: `circBufAddu32`, `statVariancei32`.
 - Hardware and I/O are injected as **function pointers stored in the struct at Init** — see `drv/hc595_drv.h` (`sckDrv`, `rckDrv`, `datDrv`, `dlyMs`, `dlyNop`) and `inc/communication/comat.h` (`packetProcess`, `txTransmissionTrigger`). Never call a HAL directly from library code.
 - Protocol modules (`comat`, `comstxetx`) are byte-driven state machines: `xxxReceive(driver, byte)` from the ISR, `xxxEvaluate(driver)` from the main loop, `xxxTimeoutCounter(driver)` from a periodic tick.
+
+### The Init contract
+
+**Every `Init` returns `uint8_t`** — `TRUE` on success, `FALSE` on a rejected argument — and validates before it writes anything. On `FALSE` the driver is left untouched. Check, at minimum:
+
+- `driver != NULL` and every caller-owned pointer, using `NULL` from `<stddef.h>`, never a bare `0`.
+- Every injected callback the module will later call without checking.
+- Sizes and ranges the module's own code depends on. These are not decoration — `pidInit` rejects `ts == 0` because `pidControl` divides by it and a `nan` passes straight through the output limiter, and `comatInit` rejects `rxSize < 3` because `comatReceive` stores a byte before it compares the index against `rxSize`.
+
+Any other function that can be handed a bad argument follows the same rule: `pidChangeCoefficients` returns a status for exactly the `ts` reason above.
+
+### const
+
+A parameter the function never writes is declared `const T* const`. This is not cosmetic: on an embedded target the caller's data is often in flash, and without it they must cast the qualifier away to call `crc16`, `mathFindMax` or `statVariance`. Accessors that only read take a `const` driver — except `bininpGetRisingValue`, which clears the flag it reports and so is genuinely `in,out`.
 
 ## Header contract
 
@@ -120,8 +151,14 @@ arm-none-eabi-gcc -c -Wall $(for d in inc/*/ drv/; do echo -n " -I$d"; done) /tm
 
 These are stubs awaiting design, not defects. Leave them alone unless implementing the feature is the task.
 
-- `drv/hc595_drv.c` and `drv/hc597_drv.c` — `hc595DrvLoop`, `hc595DrvInterrupt`, `hc597DrvLoop`, `hc597DrvInterrupt` are empty bodies. They are the only four `-Wunused-parameter` warnings in the tree; that warning is deliberate signal, do not silence it with a `(void)driver;` cast.
-- `src/communication/comsec.c` and `src/communication/comsafe.c` contain only a file banner. `inc/communication/comsec.h`, `comsafe.h`, `comgenbuf.h` and `inc/matrix/matrixlib.h` declare types but no function prototypes.
+- `drv/hc595_drv.c` and `drv/hc597_drv.c` — `hc595Loop`, `hc595Interrupt`, `hc597Loop`, `hc597Interrupt` are empty bodies. They are the only four `-Wunused-parameter` warnings in the tree; that warning is deliberate signal, do not silence it with a `(void)driver;` cast.
+- `src/communication/comsec.c` and `src/communication/comsafe.c` contain only a file banner. `inc/communication/comsec.h`, `comsafe.h`, `comgenbuf.h` and `inc/matrix/matrixlib.h` declare types but no function prototypes. Each of those four headers opens with a Doxygen `@warning` saying so — keep it there, it is the only thing standing between a consumer and a link error.
 - `rules.md` is an empty placeholder.
+
+## Testing gap — the largest open risk
+
+Seven test programs cover 21 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and everything under `drv/` are untested too.
+
+Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run.
 
 Test `output.txt` files predate the July 2026 bug fixes. Several fixes change numeric results (`mathFindMini32`, `mathCalculateMedian`, `complexDiv`, `complexToPolar`, PID initial state), so those files are stale until regenerated on a machine with a host compiler.

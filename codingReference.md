@@ -74,6 +74,70 @@
 ### Forbidden Operations on arrays
     Increment on the pointer ++ar;
 
+## API Rules
+
+### Naming
+Every exported function starts with its module prefix. C has no namespace and
+this library is copied into other projects, so an unprefixed global is a latent
+link clash.
+
+    math    basicmath       array   basicarray
+    stat    statistic       matrix  basicmatrix
+    sort    sort            logic   logic
+    search  search          crc16, crc32 already carry theirs
+
+Stateful modules use their own name: maf, emaf, pid, circBuf, comat, comstxetx,
+bininp, hysteresis, complex, hc595, hc597, dcMotor.
+
+Width-specific functions take a type suffix.
+
+    mathCalculateMediani32 ( array, length )
+    circBufAddu8 ( &driver, byte )
+
+### Init returns a status
+Every Init returns uint8_t, TRUE or FALSE, and validates before it writes. On
+FALSE the driver is left untouched.
+
+    uint8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputInit )
+    {
+        uint8_t retVal = FALSE;
+
+        if ( ( driver != NULL ) && ( buffer != NULL ) && ( length != 0 ) )
+        {
+            /* ... */
+            retVal = TRUE;
+        }
+        else
+        {
+            retVal = FALSE;
+        }
+
+        return ( retVal );
+    }
+
+Check the driver pointer, every caller owned pointer, every callback the module
+will later call unchecked, and any size or range the module's own code depends
+on. Use NULL from stddef.h, never a bare 0.
+
+Range checks are not decoration. pidInit rejects a zero ts because pidControl
+divides by it, and the resulting nan compares false against both output bounds,
+so it passes through the limiter untouched. comatInit rejects an rxSize below
+three because comatReceive stores a byte before it compares the index against
+rxSize.
+
+Any other function that can be handed a bad argument follows the same rule.
+
+### const
+A parameter the function never writes is declared const T* const. Callers on an
+embedded target often hold their data in flash, and without this they have to
+cast the qualifier away.
+
+    uint16_t crc16 ( const uint8_t* const array, uint32_t size );
+    float mathFindMax ( const float* const array, uint32_t length );
+
+Accessors that only read take a const driver. bininpGetRisingValue does not: it
+clears the flag it reports, so it is genuinely in,out.
+
 ## Doxygen Comments
 
 ### Function comment block
