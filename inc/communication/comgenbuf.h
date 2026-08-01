@@ -1,3 +1,13 @@
+/**
+ * @file
+ * @brief   Placeholder. The comgenbuf module is not implemented.
+ *
+ * @warning There is no comgenbuf.c at all. This header declares types and nothing
+ *          else. Including it compiles, so nothing warns you here, but
+ *          calling anything from this module fails at link time. Treat
+ *          it as a reserved name, not as a module you can use.
+ */
+
 #ifndef COMGENBUF_H_
 #define COMGENBUF_H_
 

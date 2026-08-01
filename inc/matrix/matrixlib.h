@@ -1,3 +1,13 @@
+/**
+ * @file
+ * @brief   Placeholder. The matrixlib module is not implemented.
+ *
+ * @warning matrixlib.c holds only a file banner. This header declares types and nothing
+ *          else. Including it compiles, so nothing warns you here, but
+ *          calling anything from this module fails at link time. Treat
+ *          it as a reserved name, not as a module you can use.
+ */
+
 #ifndef MATRIXLIB_H_
 #define MATRIXLIB_H_
 

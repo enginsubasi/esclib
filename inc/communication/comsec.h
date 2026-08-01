@@ -1,3 +1,13 @@
+/**
+ * @file
+ * @brief   Placeholder. The comsec module is not implemented.
+ *
+ * @warning comsec.c is an empty file. This header declares types and nothing
+ *          else. Including it compiles, so nothing warns you here, but
+ *          calling anything from this module fails at link time. Treat
+ *          it as a reserved name, not as a module you can use.
+ */
+
 #ifndef COMSEC_H_
 #define COMSEC_H_
 
