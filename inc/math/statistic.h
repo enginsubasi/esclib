@@ -29,11 +29,11 @@
 
 /* FUNCTION PROTOTYPES */
 
-float statVariance ( float* array, uint32_t length );
-int32_t statVariancei32 ( int32_t* array, uint32_t length );
-float statStandardDeviation ( float* array, uint32_t length );
-int32_t statStandardDeviationi32 ( int32_t* array, uint32_t length );
-float statCovariance ( float* array1, float* array2, uint32_t length );
+float statVariance ( const float* const array, uint32_t length );
+int32_t statVariancei32 ( const int32_t* const array, uint32_t length );
+float statStandardDeviation ( const float* const array, uint32_t length );
+int32_t statStandardDeviationi32 ( const int32_t* const array, uint32_t length );
+float statCovariance ( const float* const array1, const float* const array2, uint32_t length );
 
 #ifdef __cplusplus
 }

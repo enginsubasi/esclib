@@ -3,7 +3,7 @@
   *
   * @file      circBuf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      29/03/2022
   *
   * @brief     Circular buffer implementation.
@@ -16,6 +16,10 @@
   * 29/07/2026 Bug fix. NULL was used without including stddef.h. @n
   * 01/08/2026 circBufInitu32 held its status in an int8_t local while @n
   *            declaring a uint8_t return type. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
+  * 01/08/2026 The accessors that only read take a const driver. @n
   *
   ******************************************************************************
   */
@@ -66,7 +70,7 @@ uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capaci
  * @param[in] driver  Buffer state.
  * @return  Number of words currently stored, from 0 up to capacity.
  */
-uint32_t circBufGetLengthu32 ( circBufu32_t* driver )
+uint32_t circBufGetLengthu32 ( const circBufu32_t* const driver )
 {
     uint32_t retVal = 0;
 
@@ -91,7 +95,7 @@ uint32_t circBufGetLengthu32 ( circBufu32_t* driver )
  * @param[in] driver  Buffer state.
  * @return  BS_EMPTY, BS_NOTEMPTY or BS_FULL depending on the buffer's current fill state.
  */
-uint8_t circBufGetStatusu32 ( circBufu32_t* driver )
+uint8_t circBufGetStatusu32 ( const circBufu32_t* const driver )
 {
     return ( driver->status );
 }

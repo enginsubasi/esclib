@@ -3,7 +3,7 @@
   *
   * @file      pid.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      23/07/2020
   *
   * @brief     PID control.
@@ -24,6 +24,10 @@
   *            zero there produced a nan that passed straight through @n
   *            the output limiter, since nan compares false against @n
   *            both bounds. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
+  * 01/08/2026 The accessors that only read take a const driver. @n
   *
   ******************************************************************************
   */
@@ -281,7 +285,7 @@ void pidControl ( pidc_t* driver, float error )
  * @param[in] driver  Controller state.
  * @return  Current PID output value, already clamped to the configured limits.
  */
-float pidGetOutput ( pidc_t* driver )
+float pidGetOutput ( const pidc_t* const driver )
 {
     return ( driver->output );
 }

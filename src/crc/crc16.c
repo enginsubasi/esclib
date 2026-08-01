@@ -3,7 +3,7 @@
   *
   * @file      crc16.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.0.1
+  * @version   1.0.2
   * @date      25/02/2020
   *
   * @brief     CRC16 Calculation functions.
@@ -16,6 +16,9 @@
   * 10/07/2020 Naming changed. @n
   * 13/09/2020 Bug fix. @n
   * 18/09/2020 Bux fix. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
   *
   ******************************************************************************
   */
@@ -30,7 +33,7 @@
  * @note    Trades 512 bytes of table space for speed. Use crc16Alt when
  *          code size matters more than throughput.
  */
-uint16_t crc16 ( uint8_t* array, uint32_t size )
+uint16_t crc16 ( const uint8_t* const array, uint32_t size )
 {
     static const uint16_t CRCTable[ ] = {
            0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,
@@ -90,7 +93,7 @@ uint16_t crc16 ( uint8_t* array, uint32_t size )
  *          costs 8 conditional shifts instead of one table lookup. Use
  *          crc16 when throughput matters more than code size.
  */
-uint16_t crc16Alt ( uint8_t* array, uint32_t size )
+uint16_t crc16Alt ( const uint8_t* const array, uint32_t size )
 {
     uint32_t i = 0;         // Array index counter.
     uint8_t j = 0;          // Bit shift counter.

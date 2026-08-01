@@ -53,8 +53,8 @@ enum BUFFERBEHAVIOUR
 /* FUNCTION PROTOTYPES */
 
 uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity, uint8_t behaviour );
-uint32_t circBufGetLengthu32 ( circBufu32_t* driver );
-uint8_t circBufGetStatusu32 ( circBufu32_t* driver );
+uint32_t circBufGetLengthu32 ( const circBufu32_t* const driver );
+uint8_t circBufGetStatusu32 ( const circBufu32_t* const driver );
 uint8_t circBufAddu32 ( circBufu32_t* driver, uint32_t data );
 uint8_t circBufReadu32 ( circBufu32_t* driver, uint32_t* data );
 

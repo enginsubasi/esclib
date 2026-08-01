@@ -3,7 +3,7 @@
   *
   * @file      maf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   2.2.0
+  * @version   2.2.1
   * @date      26/04/2020
   *
   * @brief     Moving average filter.
@@ -22,6 +22,10 @@
   *            and reject a NULL driver, not only a NULL buffer. @n
   * 01/08/2026 Pointer checks use NULL from stddef.h, matching the @n
   *            wording the documentation already used. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
+  * 01/08/2026 The accessors that only read take a const driver. @n
   *
   ******************************************************************************
   */
@@ -100,7 +104,7 @@ void mafIteration ( maf_t* driver, float newData )
  * @param[in] driver  Filter state.
  * @return  Current filtered output value.
  */
-float mafGetOutput ( maf_t* driver )
+float mafGetOutput ( const maf_t* const driver )
 {
     return ( driver->output );
 }
@@ -175,7 +179,7 @@ void mafIterationu32 ( mafu32_t* driver, uint32_t newData )
  * @param[in] driver  Filter state.
  * @return  Current filtered output value.
  */
-uint32_t mafGetOutputu32 ( mafu32_t* driver )
+uint32_t mafGetOutputu32 ( const mafu32_t* const driver )
 {
     return ( driver->output );
 }

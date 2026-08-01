@@ -3,7 +3,7 @@
   *
   * @file      basicmath.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      03/06/2020
   *
   * @brief     Basic mathematics function library file.
@@ -28,6 +28,9 @@
   *            now. The old names sat in the global namespace @n
   *            with no library marker, which invited a clash in @n
   *            any project that links other libraries. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
   *
   * @note      Every function returns zero for a zero length array.
   *
@@ -84,7 +87,7 @@ int32_t mathAbsolutei32 ( int32_t inp )
  * @param[in] length  Number of elements in the array.
  * @return  The largest element, or zero when length is zero.
  */
-float mathFindMax ( float* array, uint32_t length )
+float mathFindMax ( const float* const array, uint32_t length )
 {
     uint32_t i = 0;
     float tempMax = 0;
@@ -115,7 +118,7 @@ float mathFindMax ( float* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  The largest element, or zero when length is zero.
  */
-uint32_t mathFindMaxu32 ( uint32_t* array, uint32_t length )
+uint32_t mathFindMaxu32 ( const uint32_t* const array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t tempMax = 0;
@@ -146,7 +149,7 @@ uint32_t mathFindMaxu32 ( uint32_t* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  The largest element, or zero when length is zero.
  */
-int32_t mathFindMaxi32 ( int32_t* array, uint32_t length )
+int32_t mathFindMaxi32 ( const int32_t* const array, uint32_t length )
 {
     uint32_t i = 0;
     int32_t tempMax = 0;
@@ -177,7 +180,7 @@ int32_t mathFindMaxi32 ( int32_t* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  The smallest element, or zero when length is zero.
  */
-float mathFindMin ( float* array, uint32_t length )
+float mathFindMin ( const float* const array, uint32_t length )
 {
     uint32_t i = 0;
     float tempMin = 0;
@@ -208,7 +211,7 @@ float mathFindMin ( float* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  The smallest element, or zero when length is zero.
  */
-uint32_t mathFindMinu32 ( uint32_t* array, uint32_t length )
+uint32_t mathFindMinu32 ( const uint32_t* const array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t tempMin = 0;
@@ -239,7 +242,7 @@ uint32_t mathFindMinu32 ( uint32_t* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  The smallest element, or zero when length is zero.
  */
-int32_t mathFindMini32 ( int32_t* array, uint32_t length )
+int32_t mathFindMini32 ( const int32_t* const array, uint32_t length )
 {
     uint32_t i = 0;
     int32_t tempMin = 0;
@@ -271,7 +274,7 @@ int32_t mathFindMini32 ( int32_t* array, uint32_t length )
  * @param[out] min     Set to the smallest element, or zero when length is zero.
  * @param[out] max     Set to the largest element, or zero when length is zero.
  */
-void mathFindMinMax ( float* array, uint32_t length, float* min, float* max )
+void mathFindMinMax ( const float* const array, uint32_t length, float* min, float* max )
 {
     uint32_t i = 0;
     float tempMin = 0;
@@ -312,7 +315,7 @@ void mathFindMinMax ( float* array, uint32_t length, float* min, float* max )
  * @param[out] min     Set to the smallest element, or zero when length is zero.
  * @param[out] max     Set to the largest element, or zero when length is zero.
  */
-void mathFindMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32_t* max )
+void mathFindMinMaxu32 ( const uint32_t* const array, uint32_t length, uint32_t* min, uint32_t* max )
 {
     uint32_t i = 0;
     uint32_t tempMin = 0;
@@ -351,7 +354,7 @@ void mathFindMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32
  * @param[in] length  Number of elements in the array.
  * @return  Sum of the elements, or zero when length is zero.
  */
-float mathCalculateSum ( float* array, uint32_t length )
+float mathCalculateSum ( const float* const array, uint32_t length )
 {
     uint32_t i = 0;
     float sum = 0;
@@ -370,7 +373,7 @@ float mathCalculateSum ( float* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  Sum of the elements, or zero when length is zero.
  */
-uint32_t mathCalculateSumu32 ( uint32_t* array, uint32_t length )
+uint32_t mathCalculateSumu32 ( const uint32_t* const array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t sum = 0;
@@ -389,7 +392,7 @@ uint32_t mathCalculateSumu32 ( uint32_t* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  Arithmetic mean of the elements, or zero when length is zero.
  */
-float mathCalculateMean ( float* array, uint32_t length )
+float mathCalculateMean ( const float* const array, uint32_t length )
 {
     uint32_t i = 0;
     float sum = 0;
@@ -418,7 +421,7 @@ float mathCalculateMean ( float* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  Arithmetic mean of the elements, or zero when length is zero.
  */
-uint32_t mathCalculateMeanu32 ( uint32_t* array, uint32_t length )
+uint32_t mathCalculateMeanu32 ( const uint32_t* const array, uint32_t length )
 {
     uint32_t i = 0;
     uint32_t sum = 0;
@@ -451,7 +454,7 @@ uint32_t mathCalculateMeanu32 ( uint32_t* array, uint32_t length )
  * @note    array must be sorted in ascending order. An unsorted array
  *          produces a wrong result without any indication of error.
  */
-float mathCalculateMedian ( float* array, uint32_t length )
+float mathCalculateMedian ( const float* const array, uint32_t length )
 {
     float retVal = 0;
 
@@ -485,7 +488,7 @@ float mathCalculateMedian ( float* array, uint32_t length )
  *          instead of ( low + high ) / 2 to avoid overflowing uint32_t
  *          when low and high are both large.
  */
-uint32_t mathCalculateMedianu32 ( uint32_t* array, uint32_t length )
+uint32_t mathCalculateMedianu32 ( const uint32_t* const array, uint32_t length )
 {
     uint32_t retVal = 0;
     uint32_t low = 0;
@@ -519,7 +522,7 @@ uint32_t mathCalculateMedianu32 ( uint32_t* array, uint32_t length )
  * @return  Difference between the largest and smallest elements, or zero
  *          when length is zero.
  */
-float mathCalculateRange ( float* array, uint32_t length )
+float mathCalculateRange ( const float* const array, uint32_t length )
 {
     float tempMin = 0;
     float tempMax = 0;
@@ -540,7 +543,7 @@ float mathCalculateRange ( float* array, uint32_t length )
  * @return  Difference between the largest and smallest elements, or zero
  *          when length is zero.
  */
-uint32_t mathCalculateRangeu32 ( uint32_t* array, uint32_t length )
+uint32_t mathCalculateRangeu32 ( const uint32_t* const array, uint32_t length )
 {
     uint32_t tempMin = 0;
     uint32_t tempMax = 0;

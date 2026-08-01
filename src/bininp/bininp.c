@@ -3,7 +3,7 @@
   *
   * @file      bininp.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.1.0
+  * @version   1.1.1
   * @date      05/10/2020
   *
   * @brief     Binary input read and filtering.
@@ -24,6 +24,10 @@
   * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
   *            returning void, and validates its arguments. The @n
   *            library used three different conventions for this. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
+  * 01/08/2026 The accessors that only read take a const driver. @n
   *
   ******************************************************************************
   */
@@ -113,7 +117,7 @@ void bininpUpdate ( bininp_t* driver, uint8_t newData )
  * @param[in] driver  Binary input state.
  * @return  TRUE or FALSE, the current debounced output value.
  */
-uint8_t bininpGetValue ( bininp_t* driver )
+uint8_t bininpGetValue ( const bininp_t* const driver )
 {
     return ( driver->output );
 }

@@ -40,7 +40,7 @@ typedef struct
 
 uint8_t bininpInit ( bininp_t* driver, uint32_t filterCount );
 void bininpUpdate ( bininp_t* driver, uint8_t newData );
-uint8_t bininpGetValue ( bininp_t* driver );
+uint8_t bininpGetValue ( const bininp_t* const driver );
 uint8_t bininpGetRisingValue ( bininp_t* driver );
 
 #ifdef __cplusplus

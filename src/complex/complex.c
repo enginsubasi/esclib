@@ -3,7 +3,7 @@
   *
   * @file      complex.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      09/08/2022
   *
   * @brief     Complex number library.
@@ -23,6 +23,9 @@
   *            replaced with their float counterparts. Every operand @n
   *            here is a float, so the double versions forced a @n
   *            promotion and ran in software on a single precision FPU. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
   *
   ******************************************************************************
   */
@@ -58,7 +61,7 @@ void complexInit ( complex_t* cprm1, float re, float im )
  * @param[in]  cprm2   Second addend.
  * @param[out] result  Sum of cprm1 and cprm2.
  */
-void complexSum ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
+void complexSum ( const complex_t* const cprm1, const complex_t* const cprm2, complex_t* result )
 {
     result->re = ( cprm1->re + cprm2->re );
     result->im = ( cprm1->im + cprm2->im );
@@ -70,7 +73,7 @@ void complexSum ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  * @param[in]  cprm2   Subtrahend.
  * @param[out] result  cprm1 minus cprm2.
  */
-void complexSub ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
+void complexSub ( const complex_t* const cprm1, const complex_t* const cprm2, complex_t* result )
 {
     result->re = ( cprm1->re - cprm2->re );
     result->im = ( cprm1->im - cprm2->im );
@@ -86,7 +89,7 @@ void complexSub ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  *          calling complexMul with result equal to cprm1 or cprm2 produces
  *          a wrong result.
  */
-void complexMul ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
+void complexMul ( const complex_t* const cprm1, const complex_t* const cprm2, complex_t* result )
 {
     result->re = ( cprm1->re * cprm2->re ) - ( cprm1->im * cprm2->im );
     result->im = ( cprm1->re * cprm2->im ) + ( cprm1->im * cprm2->re ) ;
@@ -104,7 +107,7 @@ void complexMul ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  *          calling complexDiv with result equal to cprm1 or cprm2 produces
  *          a wrong result.
  */
-void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
+void complexDiv ( const complex_t* const cprm1, const complex_t* const cprm2, complex_t* result )
 {
     float denominator = 0;
 
@@ -129,7 +132,7 @@ void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  * @param[out] a     Angle of prm1.
  * @note    The angle is in degrees, not radians.
  */
-void complexToPolar ( complex_t* prm1, float* r, float* a )
+void complexToPolar ( const complex_t* const prm1, float* r, float* a )
 {
     // sqrtf never returns a negative value, so the magnitude needs no sign fix.
     *r = sqrtf ( ( prm1->re * prm1->re ) + ( prm1->im * prm1->im ) );

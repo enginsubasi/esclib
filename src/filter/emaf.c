@@ -3,7 +3,7 @@
   *
   * @file      emaf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   2.1.0
+  * @version   2.1.1
   * @date      22/04/2020
   *
   * @brief     Exponential moving average filter.
@@ -19,6 +19,10 @@
   *            a NULL driver in addition to an out of range alpha. @n
   * 01/08/2026 Pointer checks use NULL from stddef.h, matching the @n
   *            wording the documentation already used. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
+  * 01/08/2026 The accessors that only read take a const driver. @n
   *
   ******************************************************************************
   */
@@ -70,7 +74,7 @@ void emafIteration ( emaf_t* driver, float newData )
  * @param[in] driver  Filter state.
  * @return  Current filtered output value.
  */
-float emafGetOutput ( emaf_t* driver )
+float emafGetOutput ( const emaf_t* const driver )
 {
     return ( driver->output );
 }

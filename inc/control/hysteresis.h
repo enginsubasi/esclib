@@ -38,7 +38,7 @@ typedef struct
 
 uint8_t hysteresisInit ( hysteresis_t* driver, float upValue, float downValue );
 void hysteresisControl ( hysteresis_t* driver, float input );
-uint8_t hysteresisGetOutput ( hysteresis_t* driver );
+uint8_t hysteresisGetOutput ( const hysteresis_t* const driver );
 
 #ifdef __cplusplus
 }

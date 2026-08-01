@@ -29,8 +29,8 @@
 
 /* FUNCTION PROTOTYPES */
 
-uint16_t crc16 ( uint8_t* array, uint32_t size );
-uint16_t crc16Alt ( uint8_t* array, uint32_t size );
+uint16_t crc16 ( const uint8_t* const array, uint32_t size );
+uint16_t crc16Alt ( const uint8_t* const array, uint32_t size );
 
 #ifdef __cplusplus
 }

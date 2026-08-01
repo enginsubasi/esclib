@@ -32,28 +32,28 @@
 float mathAbsolute ( float inp );
 int32_t mathAbsolutei32 ( int32_t inp );
 
-float mathFindMax ( float* array, uint32_t length );
-uint32_t mathFindMaxu32 ( uint32_t* array, uint32_t length );
-int32_t mathFindMaxi32 ( int32_t* array, uint32_t length );
+float mathFindMax ( const float* const array, uint32_t length );
+uint32_t mathFindMaxu32 ( const uint32_t* const array, uint32_t length );
+int32_t mathFindMaxi32 ( const int32_t* const array, uint32_t length );
 
-float mathFindMin ( float* array, uint32_t length );
-uint32_t mathFindMinu32 ( uint32_t* array, uint32_t length );
-int32_t mathFindMini32 ( int32_t* array, uint32_t length );
+float mathFindMin ( const float* const array, uint32_t length );
+uint32_t mathFindMinu32 ( const uint32_t* const array, uint32_t length );
+int32_t mathFindMini32 ( const int32_t* const array, uint32_t length );
 
-void mathFindMinMax ( float* array, uint32_t length, float* min, float* max );
-void mathFindMinMaxu32 ( uint32_t* array, uint32_t length, uint32_t* min, uint32_t* max );
+void mathFindMinMax ( const float* const array, uint32_t length, float* min, float* max );
+void mathFindMinMaxu32 ( const uint32_t* const array, uint32_t length, uint32_t* min, uint32_t* max );
 
-float mathCalculateSum ( float* array, uint32_t length );
-uint32_t mathCalculateSumu32 ( uint32_t* array, uint32_t length );
+float mathCalculateSum ( const float* const array, uint32_t length );
+uint32_t mathCalculateSumu32 ( const uint32_t* const array, uint32_t length );
 
-float mathCalculateMean ( float* array, uint32_t length );
-uint32_t mathCalculateMeanu32 ( uint32_t* array, uint32_t length );
+float mathCalculateMean ( const float* const array, uint32_t length );
+uint32_t mathCalculateMeanu32 ( const uint32_t* const array, uint32_t length );
 
-float mathCalculateMedian ( float* array, uint32_t length );
-uint32_t mathCalculateMedianu32 ( uint32_t* array, uint32_t length );
+float mathCalculateMedian ( const float* const array, uint32_t length );
+uint32_t mathCalculateMedianu32 ( const uint32_t* const array, uint32_t length );
 
-float mathCalculateRange ( float* array, uint32_t length );
-uint32_t mathCalculateRangeu32 ( uint32_t* array, uint32_t length );
+float mathCalculateRange ( const float* const array, uint32_t length );
+uint32_t mathCalculateRangeu32 ( const uint32_t* const array, uint32_t length );
 
 #ifdef __cplusplus
 }

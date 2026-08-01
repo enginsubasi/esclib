@@ -38,7 +38,7 @@ typedef struct
 
 uint8_t emafInit ( emaf_t* driver, float alpha, float outputInit );
 void emafIteration ( emaf_t* driver, float newData );
-float emafGetOutput ( emaf_t* driver );
+float emafGetOutput ( const emaf_t* const driver );
 
 #ifdef __cplusplus
 }

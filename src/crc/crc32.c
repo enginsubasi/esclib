@@ -3,7 +3,7 @@
   *
   * @file      crc32.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.0.0
+  * @version   1.0.1
   * @date      10/07/2020
   *
   * @brief     CRC Calculation functions.
@@ -14,6 +14,9 @@
   * @par History
   * 10/07/2020 Created. @n
   * 18/09/2020 Bux fix. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
   *
   ******************************************************************************
   */
@@ -30,7 +33,7 @@
  *          CRC-32/ISO-HDLC, which reflects and XORs the result, so
  *          comparing against that will produce a different value.
  */
-uint32_t crc32 ( uint8_t* array, uint32_t size )
+uint32_t crc32 ( const uint8_t* const array, uint32_t size )
 { 
     static const uint32_t crc32Table[ ] =
     {

@@ -3,7 +3,7 @@
   *
   * @file      hysteresis.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      16/07/2020
   *
   * @brief     Hysteresis control.
@@ -20,6 +20,10 @@
   *            library used three different conventions for this. @n
   * 01/08/2026 hysteresisInit rejects an upValue below downValue, @n
   *            which would leave no band for the output to hold in. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
+  * 01/08/2026 The accessors that only read take a const driver. @n
   *
   ******************************************************************************
   */
@@ -91,7 +95,7 @@ void hysteresisControl ( hysteresis_t* driver, float input )
  * @param[in] driver  Controller state.
  * @return  TRUE or FALSE depending on which threshold was last crossed.
  */
-uint8_t hysteresisGetOutput ( hysteresis_t* driver )
+uint8_t hysteresisGetOutput ( const hysteresis_t* const driver )
 {
     return ( driver->output );
 }

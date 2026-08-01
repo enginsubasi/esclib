@@ -3,7 +3,7 @@
   *
   * @file      statistic.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.5
+  * @version   0.0.6
   * @date      03/01/2020
   *
   * @brief     Statistic function library file.
@@ -27,6 +27,9 @@
   *            any project that links other libraries. @n
   * 01/08/2026 The accumulator locals are named retVal, the way the @n
   *            rest of the library names a single exit value. @n
+  * 01/08/2026 Parameters that are only read are declared const, so a @n
+  *            caller can pass data it holds in flash without casting @n
+  *            the qualifier away. @n
   *
   * @note      Every function returns zero for a zero length array.
   *
@@ -43,7 +46,7 @@
  * @param[in] length  Number of elements in the array.
  * @return  Population variance of the elements, or zero when length is zero.
  */
-float statVariance ( float* array, uint32_t length )
+float statVariance ( const float* const array, uint32_t length )
 {
     uint32_t i = 0;
     float sum = 0;
@@ -86,7 +89,7 @@ float statVariance ( float* array, uint32_t length )
  *          truncating integer division, so the result is less precise
  *          than statVariance().
  */
-int32_t statVariancei32 ( int32_t* array, uint32_t length )
+int32_t statVariancei32 ( const int32_t* const array, uint32_t length )
 {
     uint32_t i = 0;
     int32_t sum = 0;
@@ -126,7 +129,7 @@ int32_t statVariancei32 ( int32_t* array, uint32_t length )
  * @param[in] length  Number of elements in the array.
  * @return  Standard deviation of the elements, or zero when length is zero.
  */
-float statStandardDeviation ( float* array, uint32_t length )
+float statStandardDeviation ( const float* const array, uint32_t length )
 {
     float retVal = 0;
 
@@ -147,7 +150,7 @@ float statStandardDeviation ( float* array, uint32_t length )
  *          precision loss in addition to its own truncation of the sqrt
  *          result.
  */
-int32_t statStandardDeviationi32 ( int32_t* array, uint32_t length )
+int32_t statStandardDeviationi32 ( const int32_t* const array, uint32_t length )
 {
     int32_t retVal = 0;
 
@@ -165,7 +168,7 @@ int32_t statStandardDeviationi32 ( int32_t* array, uint32_t length )
  * @param[in] length  Number of elements in each array.
  * @return  Population covariance of the two arrays, or zero when length is zero.
  */
-float statCovariance ( float* array1, float* array2, uint32_t length )
+float statCovariance ( const float* const array1, const float* const array2, uint32_t length )
 {
     uint32_t i = 0;
     float sum1 = 0, sum2 = 0;

@@ -65,7 +65,7 @@ uint8_t pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, fl
 uint8_t pidChangeLimits ( pidc_t* driver, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
                         float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit );
 void pidControl ( pidc_t* driver, float error );
-float pidGetOutput ( pidc_t* driver );
+float pidGetOutput ( const pidc_t* const driver );
 
 #ifdef __cplusplus
 }
