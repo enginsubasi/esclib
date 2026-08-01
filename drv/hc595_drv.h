@@ -19,8 +19,6 @@
 #define FALSE 0
 #endif
 
-#define HC595_DEF_DLY_COUNT   1 // In millisecond.
-
 /* TYPEDEFS */
 
 /* STRUCTURES */

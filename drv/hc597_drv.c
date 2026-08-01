@@ -3,7 +3,7 @@
   *
   * @file      hc597_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.2.0
+  * @version   0.2.1
   * @date      23/05/2022
   *
   * @brief     HC597 driver file.
@@ -54,6 +54,10 @@
   *            OneShot: Start refuses while BUSY or BLOCKING, and @n
   *            Interrupt steps only on BUSY. OneShot returns a status @n
   *            instead of void. @n
+  * 02/08/2026 HC597_DEF_DLY_COUNT is removed. Its only reader was @n
+  *            the branch that repaired an unknown dlyType mid @n
+  *            transfer, and Init rejects that case now, so the @n
+  *            macro had no reader left. @n
   *
   ******************************************************************************
   */
