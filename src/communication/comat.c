@@ -3,7 +3,7 @@
   *
   * @file      comat.c
   * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      20/02/2020
   *
   * @brief     AT communication framework.
@@ -21,6 +21,11 @@
   *            pointer while the prototype and the call site passed @n
   *            it by value. The member now takes it by value. @n
   * 29/07/2026 Bug fix. comatInit did not initialize txIndex. @n
+  * 01/08/2026 Bug fix. rxTimeoutCounter was cleared only when the @n
+  *            timeout fired, so it kept counting across completed @n
+  *            frames and progressively shrank the budget left to @n
+  *            later frames. It is now cleared everywhere rxIndex @n
+  *            returns to zero. @n
   *
   ******************************************************************************
   */
@@ -34,12 +39,12 @@
  * @param[in]  txBuffer               Caller owned transmit buffer.
  * @param[in]  rxSize                 Size of rxBuffer in bytes.
  * @param[in]  txSize                 Size of txBuffer in bytes.
- * @param[in]  rxTimeout              Threshold that rxTimeoutCounter must
- *                                    exceed before a partial frame is
- *                                    discarded. Not a per-frame silence or
- *                                    inter-byte timeout; see
- *                                    comatTimeoutCounter for how the
- *                                    counter accumulates across frames.
+ * @param[in]  rxTimeout              Number of comatTimeoutCounter ticks a
+ *                                    partial frame may stay pending. It is
+ *                                    discarded once the tick count exceeds
+ *                                    this value, so the budget is
+ *                                    rxTimeout + 1 ticks. This is a whole
+ *                                    frame timeout, not an inter-byte one.
  * @param[in]  packetProcess          Called with a complete frame. Receives the
  *                                    byte count by value and writes the reply
  *                                    length through txInd.
@@ -119,6 +124,7 @@ void comatReceive ( comat_t* driver, uint8_t data )
             {
                 // Terminate buffering
                 driver->rxIndex = 0;
+                driver->rxTimeoutCounter = 0;
             }
         }
         else
@@ -135,6 +141,7 @@ void comatReceive ( comat_t* driver, uint8_t data )
             {
                 // Terminate buffering
                 driver->rxIndex = 0;
+                driver->rxTimeoutCounter = 0;
             }
         }
     }
@@ -155,6 +162,7 @@ void comatEvaluate ( comat_t* driver )
         driver->rxIndex = 0;
         driver->rxReadyToEvaluate = FALSE;
         driver->txIndex = 0;
+        driver->rxTimeoutCounter = 0;
     }
 }
 
@@ -163,13 +171,14 @@ void comatEvaluate ( comat_t* driver )
  *          while a partial frame is pending and discards it once the
  *          counter exceeds rxTimeout.
  * @param[in,out] driver  Framework state.
- * @note    rxTimeoutCounter is ticks accumulated while any partial frame
- *          was pending since the last comatInit or the last timeout. It is
- *          not cleared when a frame completes, since comatEvaluate does
- *          not touch it, so the tick budget available to a frame depends
- *          on how long earlier frames took. Once the counter has drifted
- *          past rxTimeout, the next partial frame is discarded on its very
- *          first tick.
+ * @note    rxTimeoutCounter counts ticks for the current partial frame
+ *          only. It is cleared wherever rxIndex returns to zero, so every
+ *          frame starts with the full rxTimeout budget. Incoming bytes do
+ *          not reset it, which makes this a whole frame timeout rather
+ *          than an inter-byte one.
+ * @note    The counter only advances while a partial frame is pending. It
+ *          stands still while no frame is being assembled and while a
+ *          completed frame waits for comatEvaluate.
  */
 void comatTimeoutCounter ( comat_t* driver )
 {
