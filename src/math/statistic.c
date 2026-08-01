@@ -3,7 +3,7 @@
   *
   * @file      statistic.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      03/01/2020
   *
   * @brief     Statistic function library file.
@@ -18,6 +18,9 @@
   *            about a zero length array are resolved. @n
   * 29/07/2026 variancei32 no longer routes an integer square through @n
   *            the double precision pow function. @n
+  * 01/08/2026 The double precision sqrt calls are replaced with @n
+  *            sqrtf, so the module no longer pulls in the software @n
+  *            double routines on a single precision FPU. @n
   *
   * @note      Every function returns zero for a zero length array.
   *
@@ -123,7 +126,7 @@ float standardDeviation ( float* array, uint32_t length )
 
     standardDeviation = variance ( array, length );
 
-    standardDeviation = sqrt ( standardDeviation ); // Dep. math.h
+    standardDeviation = sqrtf ( standardDeviation ); // Dep. math.h
 
     return ( standardDeviation );
 }
@@ -144,7 +147,7 @@ int32_t standardDeviationi32 ( int32_t* array, uint32_t length )
 
     standardDeviation = variancei32 ( array, length );
 
-    standardDeviation = sqrt ( standardDeviation ); // Dep. math.h
+    standardDeviation = ( int32_t ) sqrtf ( ( float ) standardDeviation ); // Dep. math.h
 
     return ( standardDeviation );
 }

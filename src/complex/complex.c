@@ -3,7 +3,7 @@
   *
   * @file      complex.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      09/08/2022
   *
   * @brief     Complex number library.
@@ -19,6 +19,10 @@
   *            zero when re is zero and loses the quadrant when re is @n
   *            negative. Replaced with atan2. @n
   * 29/07/2026 M_PI fallback added. It is not a standard C99 macro. @n
+  * 01/08/2026 The double precision sqrt, atan2, cos and sin calls are @n
+  *            replaced with their float counterparts. Every operand @n
+  *            here is a float, so the double versions forced a @n
+  *            promotion and ran in software on a single precision FPU. @n
   *
   ******************************************************************************
   */
@@ -30,6 +34,11 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
+// Single precision copy of pi. The module works in float throughout, so using
+// the double M_PI directly would promote every expression that touches it back
+// to double and pull in the software double routines on a single precision FPU.
+#define COMPLEX_PI ( ( float ) M_PI )
 
 /**
  * @brief   Initializes a complex number from its real and imaginary parts.
@@ -122,11 +131,11 @@ void complexDiv ( complex_t* cprm1, complex_t* cprm2, complex_t* result )
  */
 void complexToPolar ( complex_t* prm1, float* r, float* a )
 {
-    // sqrt never returns a negative value, so the magnitude needs no sign fix.
-    *r = sqrt ( ( prm1->re * prm1->re ) + ( prm1->im * prm1->im ) );
+    // sqrtf never returns a negative value, so the magnitude needs no sign fix.
+    *r = sqrtf ( ( prm1->re * prm1->re ) + ( prm1->im * prm1->im ) );
 
-    // atan2 keeps the quadrant and tolerates a zero real part.
-    *a = ( atan2 ( prm1->im, prm1->re ) * 180 ) / M_PI;
+    // atan2f keeps the quadrant and tolerates a zero real part.
+    *a = ( atan2f ( prm1->im, prm1->re ) * 180.0f ) / COMPLEX_PI;
 }
 
 /**
@@ -138,6 +147,6 @@ void complexToPolar ( complex_t* prm1, float* r, float* a )
  */
 void complexFromPolar ( complex_t* prm1, float r, float a )
 {
-    prm1->re = r * cos ( ( a * M_PI ) / 180 );
-    prm1->im = r * sin ( ( a * M_PI ) / 180 );
+    prm1->re = r * cosf ( ( a * COMPLEX_PI ) / 180.0f );
+    prm1->im = r * sinf ( ( a * COMPLEX_PI ) / 180.0f );
 }
