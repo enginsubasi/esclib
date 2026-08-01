@@ -24,7 +24,7 @@
   * 01/08/2026 Every function in this module carries the stat prefix @n
   *            now. The old names sat in the global namespace @n
   *            with no library marker, which invited a clash in @n
-  *            any project that links other libraries. @n
+  *            any project that links other libraries. @n
   * 01/08/2026 The accumulator locals are named retVal, the way the @n
   *            rest of the library names a single exit value. @n
   * 01/08/2026 Parameters that are only read are declared const, so a @n

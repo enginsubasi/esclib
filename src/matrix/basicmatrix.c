@@ -26,7 +26,7 @@
   * 01/08/2026 Every function in this module carries the matrix prefix @n
   *            now. The old names sat in the global namespace @n
   *            with no library marker, which invited a clash in @n
-  *            any project that links other libraries. @n
+  *            any project that links other libraries. @n
   * 01/08/2026 threshold1D gains its u8, u32 and i32 variants and @n
   *            limitUpDw2D its u32 and i32 ones. Both were float only @n
   *            while threshold2D already had the full set. @n

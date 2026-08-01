@@ -23,7 +23,7 @@
   * 01/08/2026 Every function in this module carries the search prefix @n
   *            now. The old names sat in the global namespace @n
   *            with no library marker, which invited a clash in @n
-  *            any project that links other libraries. @n
+  *            any project that links other libraries. @n
   *
   * @note      Every function reports FALSE for a zero length array and leaves
   *            foundIndex untouched.

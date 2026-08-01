@@ -16,7 +16,7 @@
   * 01/08/2026 Every function in this module carries the array prefix @n
   *            now. The old names sat in the global namespace @n
   *            with no library marker, which invited a clash in @n
-  *            any project that links other libraries. @n
+  *            any project that links other libraries. @n
   *
   ******************************************************************************
   */

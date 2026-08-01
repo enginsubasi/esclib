@@ -27,7 +27,7 @@
   * 01/08/2026 Every function in this module carries the math prefix @n
   *            now. The old names sat in the global namespace @n
   *            with no library marker, which invited a clash in @n
-  *            any project that links other libraries. @n
+  *            any project that links other libraries. @n
   * 01/08/2026 Parameters that are only read are declared const, so a @n
   *            caller can pass data it holds in flash without casting @n
   *            the qualifier away. @n

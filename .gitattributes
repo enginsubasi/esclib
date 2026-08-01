@@ -1,0 +1,11 @@
+# Store every text file with LF in the repository and check it out with the
+# platform's own endings. Without this the stored endings follow whichever
+# machine happened to write the file, and a one line edit shows up as a whole
+# file rewrite in the diff.
+* text=auto
+
+*.c     text
+*.h     text
+*.md    text
+*.txt   text
+*.cbp   text
