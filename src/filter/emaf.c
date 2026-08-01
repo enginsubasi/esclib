@@ -3,7 +3,7 @@
   *
   * @file      emaf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   3.0.0
+  * @version   3.0.1
   * @date      22/04/2020
   *
   * @brief     Exponential moving average filter.
@@ -38,6 +38,11 @@
   *            That covers zero and everything below roughly 1e-7, @n
   *            which float loses outright, leaving a filter that could @n
   *            never respond while reporting a successful init. @n
+  * 02/08/2026 Bug fix. emafGetOutputu32 cast the float accumulator @n
+  *            straight to uint32_t. A float carries 24 significant @n
+  *            bits, so every input above 4294967167 rounds up to @n
+  *            4294967296 on the way in, and casting that back is @n
+  *            undefined behaviour. The read clamps now. @n
   *
   ******************************************************************************
   */
@@ -166,11 +171,33 @@ void emafIterationu32 ( emafu32_t* driver, uint32_t newData )
  * @brief   Gets the current output of the unsigned 32-bit exponential moving
  *          average filter.
  * @param[in] driver  Filter state.
- * @return  Current filtered value, rounded down to uint32_t.
+ * @return  Current filtered value, rounded down to uint32_t and clamped to
+ *          0xFFFFFFFF.
  * @note    Only this function truncates. The accumulator it reads keeps its
  *          fraction, so repeated calls do not drag the filter down.
+ * @note    The clamp is not defensive padding. A float carries 24 significant
+ *          bits, so every uint32_t above 4294967167 rounds up to 4294967296
+ *          on its way into the accumulator, which is one past the range.
+ *          Converting that back with a plain cast is undefined behaviour, and
+ *          those inputs are reachable: a free running 32-bit counter or a
+ *          sensor reporting 0xFFFFFFFF as its error value both land there.
+ * @note    The accumulator cannot go the other way. alpha and 1 - alpha are
+ *          both in [0, 1] and every input is unsigned, so a blend of
+ *          non-negative terms stays non-negative and needs no lower clamp.
  */
 uint32_t emafGetOutputu32 ( const emafu32_t* const driver )
 {
-    return ( ( uint32_t ) driver->accumulator );
+    uint32_t retVal = 0;
+
+    // 4294967296.0f is exactly 2^32 and is representable, unlike 0xFFFFFFFF.
+    if ( driver->accumulator >= 4294967296.0f )
+    {
+        retVal = 0xFFFFFFFFu;
+    }
+    else
+    {
+        retVal = ( uint32_t ) driver->accumulator;
+    }
+
+    return ( retVal );
 }

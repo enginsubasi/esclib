@@ -89,6 +89,33 @@ static void emafu32DeadBandCase ( void )
             ( uint8_t ) ( ( out > 90u ) && ( out < 100u ) ) );
 }
 
+/*
+ * A float rounds every uint32_t above 4294967167 up to 4294967296, which is
+ * one past the range, so converting it back with a plain cast would be
+ * undefined behaviour. emafGetOutputu32 clamps instead.
+ */
+static void emafu32RangeCase ( void )
+{
+    emafu32_t driver;
+
+    printf ( "emafu32 top of range\n" );
+
+    check ( "Init with alpha 1", emafInitu32 ( &driver, 1.0f, 0 ) );
+
+    emafIterationu32 ( &driver, 0xFFFFFFFFu );
+    check ( "the largest input clamps instead of wrapping",
+            ( uint8_t ) ( emafGetOutputu32 ( &driver ) == 0xFFFFFFFFu ) );
+
+    emafIterationu32 ( &driver, 4294967167u );
+    check ( "the largest input that survives float is not clamped early",
+            ( uint8_t ) ( emafGetOutputu32 ( &driver ) < 0xFFFFFFFFu ) );
+
+    check ( "Init with alpha 1 again", emafInitu32 ( &driver, 1.0f, 0 ) );
+    emafIterationu32 ( &driver, 16777216u );
+    check ( "an input at the float mantissa limit is exact",
+            ( uint8_t ) ( emafGetOutputu32 ( &driver ) == 16777216u ) );
+}
+
 /* ------------------------------------------------------ emaf, alpha range */
 
 static void emafAlphaCase ( void )
@@ -211,6 +238,8 @@ static void mafDriftCase ( void )
 int main ( void )
 {
     emafu32DeadBandCase ( );
+    printf ( "\n" );
+    emafu32RangeCase ( );
     printf ( "\n" );
     emafAlphaCase ( );
     printf ( "\n" );
