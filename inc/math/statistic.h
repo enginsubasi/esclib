@@ -31,9 +31,12 @@
 
 float statVariance ( const float* const array, uint32_t length );
 int32_t statVariancei32 ( const int32_t* const array, uint32_t length );
+uint32_t statVarianceu32 ( const uint32_t* const array, uint32_t length );
 float statStandardDeviation ( const float* const array, uint32_t length );
 int32_t statStandardDeviationi32 ( const int32_t* const array, uint32_t length );
+uint32_t statStandardDeviationu32 ( const uint32_t* const array, uint32_t length );
 float statCovariance ( const float* const array1, const float* const array2, uint32_t length );
+int32_t statCovariancei32 ( const int32_t* const array1, const int32_t* const array2, uint32_t length );
 
 #ifdef __cplusplus
 }

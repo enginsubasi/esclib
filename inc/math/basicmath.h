@@ -42,18 +42,23 @@ int32_t mathFindMini32 ( const int32_t* const array, uint32_t length );
 
 void mathFindMinMax ( const float* const array, uint32_t length, float* min, float* max );
 void mathFindMinMaxu32 ( const uint32_t* const array, uint32_t length, uint32_t* min, uint32_t* max );
+void mathFindMinMaxi32 ( const int32_t* const array, uint32_t length, int32_t* min, int32_t* max );
 
 float mathCalculateSum ( const float* const array, uint32_t length );
 uint32_t mathCalculateSumu32 ( const uint32_t* const array, uint32_t length );
+int32_t mathCalculateSumi32 ( const int32_t* const array, uint32_t length );
 
 float mathCalculateMean ( const float* const array, uint32_t length );
 uint32_t mathCalculateMeanu32 ( const uint32_t* const array, uint32_t length );
+int32_t mathCalculateMeani32 ( const int32_t* const array, uint32_t length );
 
 float mathCalculateMedian ( const float* const array, uint32_t length );
 uint32_t mathCalculateMedianu32 ( const uint32_t* const array, uint32_t length );
+int32_t mathCalculateMediani32 ( const int32_t* const array, uint32_t length );
 
 float mathCalculateRange ( const float* const array, uint32_t length );
 uint32_t mathCalculateRangeu32 ( const uint32_t* const array, uint32_t length );
+int32_t mathCalculateRangei32 ( const int32_t* const array, uint32_t length );
 
 #ifdef __cplusplus
 }
