@@ -66,7 +66,8 @@ enum HC595_STATE
 {
     HC595_IDLE          = 0,
     HC595_BUSY          = 1,
-    HC595_DONE          = 2
+    HC595_DONE          = 2,
+    HC595_BLOCKING      = 3
 };
 
 enum HC595_PHASE
@@ -88,7 +89,7 @@ uint8_t hc595Init ( hc595_t *driver,
                     void ( *datDrvFnc )( uint8_t ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
-void hc595OneShot ( hc595_t *driver );
+uint8_t hc595OneShot ( hc595_t *driver );
 uint8_t hc595Start ( hc595_t *driver );
 void hc595Interrupt ( hc595_t *driver );
 uint8_t hc595GetState ( const hc595_t* const driver );

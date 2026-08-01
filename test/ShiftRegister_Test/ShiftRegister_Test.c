@@ -128,9 +128,44 @@ static void rckWrite ( uint8_t level )
     recordEvent ( 'R', level );
 }
 
+/* Set while a blocking transfer is running, so the checks below can observe
+   the driver from inside it. A pin callback is the only place that runs while
+   hc595OneShot still holds the driver. */
+static hc595_t* probeDriver = NULL;
+static uint8_t probeArmed = FALSE;
+static uint8_t probeFired = FALSE;
+static uint8_t probeSawBlocking = FALSE;
+static uint8_t probeStartRefused = FALSE;
+static uint8_t probeInterruptInert = FALSE;
+
 static void datWrite ( uint8_t level )
 {
+    uint32_t before = 0;
+
     recordEvent ( 'D', level );
+
+    if ( ( probeArmed == TRUE ) && ( probeFired == FALSE ) )
+    {
+        probeFired = TRUE;
+
+        if ( hc595GetState ( probeDriver ) == HC595_BLOCKING )
+        {
+            probeSawBlocking = TRUE;
+        }
+
+        if ( hc595Start ( probeDriver ) == FALSE )
+        {
+            probeStartRefused = TRUE;
+        }
+
+        before = eventCount;
+        hc595Interrupt ( probeDriver );
+
+        if ( eventCount == before )
+        {
+            probeInterruptInert = TRUE;
+        }
+    }
 }
 
 static void hc595Case ( void )
@@ -157,7 +192,7 @@ static void hc595Case ( void )
        capture buffer. Drop it so only the transfer itself is compared. */
     resetCapture ( );
 
-    hc595OneShot ( &driver );
+    check ( "OneShot runs and reports success", hc595OneShot ( &driver ) );
     keepAsReference ( );
 
     resetCapture ( );
@@ -225,7 +260,7 @@ static void hc597Case ( void )
 
     resetCapture ( );
 
-    hc597OneShot ( &driver );
+    check ( "OneShot runs and reports success", hc597OneShot ( &driver ) );
     keepAsReference ( );
 
     for ( i = 0; i < CHAIN_SIZE; ++i )
@@ -295,11 +330,64 @@ static void initRejectionCase ( void )
                             sckWrite, rckWrite, datWrite, NULL, NULL ) == FALSE ) );
 }
 
+/* --------------------------------------------------- one mode at a time */
+
+static void modeExclusionCase ( void )
+{
+    hc595_t driver;
+    uint8_t data[ CHAIN_SIZE ];
+    uint32_t steps = 0;
+
+    data[ 0 ] = 0x11;
+    data[ 1 ] = 0x22;
+    data[ 2 ] = 0x33;
+
+    printf ( "mode exclusion\n" );
+
+    check ( "Init succeeds",
+            hc595Init ( &driver, data, CHAIN_SIZE, HC595_DLY_NO, 0,
+                        sckWrite, rckWrite, datWrite, NULL, NULL ) );
+
+    /* A stepped transfer has to lock the blocking one out. */
+    check ( "Start arms", hc595Start ( &driver ) );
+    check ( "OneShot is refused while a stepped transfer runs",
+            ( uint8_t ) ( hc595OneShot ( &driver ) == FALSE ) );
+
+    while ( ( hc595GetState ( &driver ) == HC595_BUSY ) && ( steps < MAX_EVENTS ) )
+    {
+        hc595Interrupt ( &driver );
+        ++steps;
+    }
+
+    /* And the blocking one has to lock the stepped mode out. The probe runs
+       from inside a pin callback, which is the only code that executes while
+       OneShot still holds the driver. */
+    resetCapture ( );
+    probeDriver = &driver;
+    probeArmed = TRUE;
+    probeFired = FALSE;
+
+    check ( "OneShot runs when the driver is free", hc595OneShot ( &driver ) );
+
+    probeArmed = FALSE;
+
+    check ( "the probe ran", probeFired );
+    check ( "state is HC595_BLOCKING during OneShot", probeSawBlocking );
+    check ( "Start is refused during OneShot", probeStartRefused );
+    check ( "Interrupt drives no pin during OneShot", probeInterruptInert );
+    check ( "state is HC595_DONE after OneShot",
+            ( uint8_t ) ( hc595GetState ( &driver ) == HC595_DONE ) );
+    check ( "Start is accepted again once OneShot has finished",
+            hc595Start ( &driver ) );
+}
+
 int main ( void )
 {
     hc595Case ( );
     printf ( "\n" );
     hc597Case ( );
+    printf ( "\n" );
+    modeExclusionCase ( );
     printf ( "\n" );
     initRejectionCase ( );
 

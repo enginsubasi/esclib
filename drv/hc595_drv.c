@@ -3,7 +3,7 @@
   *
   * @file      hc595_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.2.0
   * @date      20/11/2021
   *
   * @brief     HC595 driver file.
@@ -42,6 +42,13 @@
   *            NULLs. An unknown dlyType is rejected by Init instead of @n
   *            being repaired mid transfer, which is what makes that @n
   *            safe. @n
+  * 02/08/2026 OneShot and the interrupt mode drive the same pins but @n
+  *            nothing arbitrated between them, so calling one while @n
+  *            the other ran put two bit streams on the wire with no @n
+  *            error reported. A BLOCKING state now marks a running @n
+  *            OneShot: Start refuses while BUSY or BLOCKING, and @n
+  *            Interrupt steps only on BUSY. OneShot returns a status @n
+  *            instead of void. @n
   *
   ******************************************************************************
   */
@@ -191,30 +198,56 @@ static void hc595DlyCtrl ( hc595_t* driver )
  *          pulses the latch clock.
  * @param[in,out] driver  Driver state; data is read and shifted out onto the
  *                        pins driven by sckDrv and datDrv.
+ * @return  TRUE when the transfer ran, FALSE when driver is NULL or the other
+ *          transfer mode holds the driver.
+ * @note    Blocks for the whole transfer and paces itself with the delay
+ *          callbacks. hc595Start with hc595Interrupt is the non blocking
+ *          alternative.
+ * @note    The two modes drive the same pins, so only one of them may hold a
+ *          driver at a time. This claims the driver as HC595_BLOCKING before
+ *          the first pin move, which makes hc595Interrupt step nothing and
+ *          hc595Start refuse until the transfer ends.
  */
-void hc595OneShot ( hc595_t* driver )
+uint8_t hc595OneShot ( hc595_t* driver )
 {
+    uint8_t retVal = FALSE;
     uint32_t i = 0;
     uint32_t j = 0;
 
-    for ( i = 0; i < driver->size; ++i )
+    if ( ( driver != NULL ) && ( driver->state != HC595_BUSY ) &&
+            ( driver->state != HC595_BLOCKING ) )
     {
-        for ( j = 0; j < 8; ++j )
-        {
-            driver->datDrv ( ( driver->data[ i ] >> j ) & 0x01 );
-            hc595DlyCtrl ( driver );
+        driver->state = HC595_BLOCKING;
 
-            driver->sckDrv ( TRUE );
-            hc595DlyCtrl ( driver );
-            driver->sckDrv ( FALSE );
-            hc595DlyCtrl ( driver );
+        for ( i = 0; i < driver->size; ++i )
+        {
+            for ( j = 0; j < 8; ++j )
+            {
+                driver->datDrv ( ( driver->data[ i ] >> j ) & 0x01 );
+                hc595DlyCtrl ( driver );
+
+                driver->sckDrv ( TRUE );
+                hc595DlyCtrl ( driver );
+                driver->sckDrv ( FALSE );
+                hc595DlyCtrl ( driver );
+            }
         }
+
+        driver->rckDrv ( TRUE );
+        hc595DlyCtrl ( driver );
+        driver->rckDrv ( FALSE );
+        hc595DlyCtrl ( driver );
+
+        driver->state = HC595_DONE;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
     }
 
-    driver->rckDrv ( TRUE );
-    hc595DlyCtrl ( driver );
-    driver->rckDrv ( FALSE );
-    hc595DlyCtrl ( driver );
+    return ( retVal );
 }
 
 /**
@@ -288,20 +321,24 @@ static void hc595LatchStep ( hc595_t* driver )
 /**
  * @brief   Requests a non blocking transfer of the whole data array.
  * @param[in,out] driver  Driver state.
- * @return  TRUE when the transfer was armed, FALSE when driver is NULL or a
- *          transfer is already running.
+ * @return  TRUE when the transfer was armed, FALSE when driver is NULL, a
+ *          transfer is already running, or hc595OneShot holds the driver.
  * @note    A running transfer is never interrupted and never queued behind.
  *          Poll hc595GetState and call again once it reports HC595_DONE.
  * @note    Writes state last, on purpose. Until that write lands
  *          hc595Interrupt sees a state other than HC595_BUSY and returns
  *          without reading any of the indices set above it, so this is safe to
  *          call from any context, including another interrupt.
+ * @note    Refuses while the driver is HC595_BLOCKING. Arming a stepped
+ *          transfer underneath a running hc595OneShot would put two bit
+ *          streams on the same pins.
  */
 uint8_t hc595Start ( hc595_t* driver )
 {
     uint8_t retVal = FALSE;
 
-    if ( ( driver != NULL ) && ( driver->state != HC595_BUSY ) )
+    if ( ( driver != NULL ) && ( driver->state != HC595_BUSY ) &&
+            ( driver->state != HC595_BLOCKING ) )
     {
         driver->phase = HC595_PHASE_SHIFT;
         driver->byteIndex = 0;
@@ -352,8 +389,9 @@ void hc595Interrupt ( hc595_t* driver )
 /**
  * @brief   Gets the state of the interrupt driven transfer.
  * @param[in] driver  Driver state.
- * @return  HC595_IDLE before the first transfer, HC595_BUSY while one is
- *          running, HC595_DONE once one has finished.
+ * @return  HC595_IDLE before the first transfer, HC595_BUSY while a stepped
+ *          one is running, HC595_BLOCKING while hc595OneShot holds the driver,
+ *          HC595_DONE once either has finished.
  * @note    HC595_DONE stands until the next hc595Start. Clearing it here would
  *          let a caller that polls one pass late miss the completion outright.
  */

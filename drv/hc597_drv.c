@@ -3,7 +3,7 @@
   *
   * @file      hc597_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.2.0
   * @date      23/05/2022
   *
   * @brief     HC597 driver file.
@@ -47,6 +47,13 @@
   *            NULLs. An unknown dlyType is rejected by Init instead of @n
   *            being repaired mid transfer, which is what makes that @n
   *            safe. @n
+  * 02/08/2026 OneShot and the interrupt mode drive the same pins but @n
+  *            nothing arbitrated between them, so calling one while @n
+  *            the other ran put two bit streams on the wire with no @n
+  *            error reported. A BLOCKING state now marks a running @n
+  *            OneShot: Start refuses while BUSY or BLOCKING, and @n
+  *            Interrupt steps only on BUSY. OneShot returns a status @n
+  *            instead of void. @n
   *
   ******************************************************************************
   */
@@ -196,41 +203,67 @@ static void hc597DlyCtrl ( hc597_t* driver )
  *          in least significant bit first, filling driver->data.
  * @param[in,out] driver  Driver state; data is written with the bytes read
  *                        from datDrv, clocked by clkDrv.
+ * @return  TRUE when the transfer ran, FALSE when driver is NULL or the other
+ *          transfer mode holds the driver.
+ * @note    Blocks for the whole transfer and paces itself with the delay
+ *          callback. hc597Start with hc597Interrupt is the non blocking
+ *          alternative.
+ * @note    The two modes drive the same pins, so only one of them may hold a
+ *          driver at a time. This claims the driver as HC597_BLOCKING before
+ *          the first pin move, which makes hc597Interrupt step nothing and
+ *          hc597Start refuse until the transfer ends.
  */
-void hc597OneShot ( hc597_t* driver )
+uint8_t hc597OneShot ( hc597_t* driver )
 {
+    uint8_t retVal = FALSE;
     uint32_t i = 0;
     uint32_t j = 0;
 
-    // Latch the parallel inputs of the whole chain once.
-    driver->clkDrv ( TRUE );
-    driver->clkDrv ( FALSE );
-
-    driver->lodDrv ( FALSE );
-    driver->lodDrv ( TRUE );
-
-    for ( i = 0; i < driver->size; ++i )
+    if ( ( driver != NULL ) && ( driver->state != HC597_BUSY ) &&
+            ( driver->state != HC597_BLOCKING ) )
     {
-        driver->data[ i ] = 0;
+        driver->state = HC597_BLOCKING;
 
-        for ( j = 0; j < 8; ++j )
+        // Latch the parallel inputs of the whole chain once.
+        driver->clkDrv ( TRUE );
+        driver->clkDrv ( FALSE );
+
+        driver->lodDrv ( FALSE );
+        driver->lodDrv ( TRUE );
+
+        for ( i = 0; i < driver->size; ++i )
         {
-            hc597DlyCtrl ( driver );
+            driver->data[ i ] = 0;
 
-            // Any non zero read is one bit, so it is normalized here.
-            if ( driver->datDrv ( ) != FALSE )
+            for ( j = 0; j < 8; ++j )
             {
-                driver->data[ i ] |= ( uint8_t ) ( 1u << j );
-            }
-            else
-            {
-                /* Intentionally blank. */
-            }
+                hc597DlyCtrl ( driver );
 
-            driver->clkDrv ( TRUE );
-            driver->clkDrv ( FALSE );
+                // Any non zero read is one bit, so it is normalized here.
+                if ( driver->datDrv ( ) != FALSE )
+                {
+                    driver->data[ i ] |= ( uint8_t ) ( 1u << j );
+                }
+                else
+                {
+                    /* Intentionally blank. */
+                }
+
+                driver->clkDrv ( TRUE );
+                driver->clkDrv ( FALSE );
+            }
         }
+
+        driver->state = HC597_DONE;
+
+        retVal = TRUE;
     }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**
@@ -307,20 +340,24 @@ static void hc597ShiftStep ( hc597_t* driver )
 /**
  * @brief   Requests a non blocking read of the whole chain into the data array.
  * @param[in,out] driver  Driver state.
- * @return  TRUE when the transfer was armed, FALSE when driver is NULL or a
- *          transfer is already running.
+ * @return  TRUE when the transfer was armed, FALSE when driver is NULL, a
+ *          transfer is already running, or hc597OneShot holds the driver.
  * @note    A running transfer is never interrupted and never queued behind.
  *          Poll hc597GetState and call again once it reports HC597_DONE.
  * @note    Writes state last, on purpose. Until that write lands
  *          hc597Interrupt sees a state other than HC597_BUSY and returns
  *          without reading any of the indices set above it, so this is safe to
  *          call from any context, including another interrupt.
+ * @note    Refuses while the driver is HC597_BLOCKING. Arming a stepped
+ *          transfer underneath a running hc597OneShot would clock the same
+ *          chain from two places into the same buffer.
  */
 uint8_t hc597Start ( hc597_t* driver )
 {
     uint8_t retVal = FALSE;
 
-    if ( ( driver != NULL ) && ( driver->state != HC597_BUSY ) )
+    if ( ( driver != NULL ) && ( driver->state != HC597_BUSY ) &&
+            ( driver->state != HC597_BLOCKING ) )
     {
         driver->phase = HC597_PHASE_PROLOGUE;
         driver->byteIndex = 0;
@@ -371,9 +408,10 @@ void hc597Interrupt ( hc597_t* driver )
 /**
  * @brief   Gets the state of the interrupt driven transfer.
  * @param[in] driver  Driver state.
- * @return  HC597_IDLE before the first transfer, HC597_BUSY while one is
- *          running, HC597_DONE once one has finished and the data array holds
- *          the values read from the chain.
+ * @return  HC597_IDLE before the first transfer, HC597_BUSY while a stepped
+ *          one is running, HC597_BLOCKING while hc597OneShot holds the driver,
+ *          HC597_DONE once either has finished and the data array holds the
+ *          values read from the chain.
  * @note    HC597_DONE stands until the next hc597Start. Clearing it here would
  *          let a caller that polls one pass late miss the completion outright.
  */

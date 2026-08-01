@@ -67,7 +67,8 @@ enum HC597_STATE
 {
     HC597_IDLE          = 0,
     HC597_BUSY          = 1,
-    HC597_DONE          = 2
+    HC597_DONE          = 2,
+    HC597_BLOCKING      = 3
 };
 
 enum HC597_PHASE
@@ -89,7 +90,7 @@ uint8_t hc597Init ( hc597_t* driver,
                     uint8_t ( *datDrvFnc )( void ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
-void hc597OneShot ( hc597_t *driver );
+uint8_t hc597OneShot ( hc597_t *driver );
 uint8_t hc597Start ( hc597_t *driver );
 void hc597Interrupt ( hc597_t *driver );
 uint8_t hc597GetState ( const hc597_t* const driver );
