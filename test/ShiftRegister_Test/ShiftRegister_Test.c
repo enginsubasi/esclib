@@ -330,6 +330,136 @@ static void initRejectionCase ( void )
                             sckWrite, rckWrite, datWrite, NULL, NULL ) == FALSE ) );
 }
 
+/* ------------------------------------------------------- the delay paths */
+
+static uint32_t dlyMsCalls = 0;
+static uint32_t dlyMsTotal = 0;
+static uint32_t dlyNopCalls = 0;
+static uint32_t dlyNopTotal = 0;
+
+static void dlyMsStub ( uint32_t count )
+{
+    ++dlyMsCalls;
+    dlyMsTotal += count;
+}
+
+static void dlyNopStub ( uint32_t count )
+{
+    ++dlyNopCalls;
+    dlyNopTotal += count;
+}
+
+static void resetDelayCounts ( void )
+{
+    dlyMsCalls = 0;
+    dlyMsTotal = 0;
+    dlyNopCalls = 0;
+    dlyNopTotal = 0;
+}
+
+/*
+ * Everything else in this file runs with HC595_DLY_NO, which never reaches a
+ * delay callback, so the DLY_MS and DLY_NOP branches were untested.
+ *
+ * The counts are also the sharpest statement of the design rule. A step
+ * boundary sits wherever OneShot delays, so the number of delays OneShot
+ * issues has to equal the number of steps the interrupt mode takes. hc597 is
+ * one step longer because its prologue is a step that OneShot performs
+ * without delaying inside it.
+ */
+static void delayPathCase ( void )
+{
+    hc595_t drv5;
+    hc597_t drv7;
+    uint8_t data5[ CHAIN_SIZE ];
+    uint8_t data7[ CHAIN_SIZE ];
+    uint32_t steps = 0;
+
+    data5[ 0 ] = 0x0F;
+    data5[ 1 ] = 0xF0;
+    data5[ 2 ] = 0x55;
+
+    printf ( "delay paths\n" );
+
+    resetDelayCounts ( );
+    check ( "hc595 Init with HC595_DLY_MS and only a dlyMs callback",
+            hc595Init ( &drv5, data5, CHAIN_SIZE, HC595_DLY_MS, 7u,
+                        sckWrite, rckWrite, datWrite, dlyMsStub, NULL ) );
+    check ( "Init itself takes no delay", ( uint8_t ) ( dlyMsCalls == 0u ) );
+
+    resetCapture ( );
+    check ( "OneShot runs", hc595OneShot ( &drv5 ) );
+    check ( "dlyMs is called once per delay point",
+            ( uint8_t ) ( dlyMsCalls == ( ( 24u * CHAIN_SIZE ) + 2u ) ) );
+    check ( "every call receives the configured dlyCount",
+            ( uint8_t ) ( dlyMsTotal == ( dlyMsCalls * 7u ) ) );
+    check ( "dlyNop is never reached with HC595_DLY_MS",
+            ( uint8_t ) ( dlyNopCalls == 0u ) );
+
+    steps = 0;
+    check ( "Start arms", hc595Start ( &drv5 ) );
+
+    while ( ( hc595GetState ( &drv5 ) == HC595_BUSY ) && ( steps < MAX_EVENTS ) )
+    {
+        hc595Interrupt ( &drv5 );
+        ++steps;
+    }
+
+    check ( "the interrupt mode takes one step per delay OneShot issues",
+            ( uint8_t ) ( steps == dlyMsCalls ) );
+    check ( "and the interrupt mode reaches no delay callback at all",
+            ( uint8_t ) ( ( dlyMsCalls == ( ( 24u * CHAIN_SIZE ) + 2u ) ) &&
+                          ( dlyNopCalls == 0u ) ) );
+
+    resetDelayCounts ( );
+    check ( "hc595 Init with HC595_DLY_NOP and only a dlyNop callback",
+            hc595Init ( &drv5, data5, CHAIN_SIZE, HC595_DLY_NOP, 3u,
+                        sckWrite, rckWrite, datWrite, NULL, dlyNopStub ) );
+
+    resetCapture ( );
+    check ( "OneShot runs", hc595OneShot ( &drv5 ) );
+    check ( "dlyNop is called once per delay point",
+            ( uint8_t ) ( dlyNopCalls == ( ( 24u * CHAIN_SIZE ) + 2u ) ) );
+    check ( "every call receives the configured dlyCount",
+            ( uint8_t ) ( dlyNopTotal == ( dlyNopCalls * 3u ) ) );
+    check ( "dlyMs is never reached with HC595_DLY_NOP",
+            ( uint8_t ) ( dlyMsCalls == 0u ) );
+
+    resetDelayCounts ( );
+    check ( "hc597 Init with HC597_DLY_MS",
+            hc597Init ( &drv7, data7, CHAIN_SIZE, HC597_DLY_MS, 5u,
+                        clkWrite, lodWrite, datRead, dlyMsStub, NULL ) );
+
+    resetCapture ( );
+    check ( "OneShot runs", hc597OneShot ( &drv7 ) );
+    check ( "dlyMs is called once per bit and never in the prologue",
+            ( uint8_t ) ( dlyMsCalls == ( 8u * CHAIN_SIZE ) ) );
+    check ( "every call receives the configured dlyCount",
+            ( uint8_t ) ( dlyMsTotal == ( dlyMsCalls * 5u ) ) );
+
+    steps = 0;
+    check ( "Start arms", hc597Start ( &drv7 ) );
+
+    while ( ( hc597GetState ( &drv7 ) == HC597_BUSY ) && ( steps < MAX_EVENTS ) )
+    {
+        hc597Interrupt ( &drv7 );
+        ++steps;
+    }
+
+    check ( "the interrupt mode takes one step more than OneShot takes delays",
+            ( uint8_t ) ( steps == ( dlyMsCalls + 1u ) ) );
+
+    resetDelayCounts ( );
+    check ( "hc595 Init with HC595_DLY_NO and no delay callbacks",
+            hc595Init ( &drv5, data5, CHAIN_SIZE, HC595_DLY_NO, 0u,
+                        sckWrite, rckWrite, datWrite, NULL, NULL ) );
+
+    resetCapture ( );
+    check ( "OneShot runs", hc595OneShot ( &drv5 ) );
+    check ( "neither delay callback is reached with HC595_DLY_NO",
+            ( uint8_t ) ( ( dlyMsCalls == 0u ) && ( dlyNopCalls == 0u ) ) );
+}
+
 /* --------------------------------------------------- one mode at a time */
 
 static void modeExclusionCase ( void )
@@ -386,6 +516,8 @@ int main ( void )
     hc595Case ( );
     printf ( "\n" );
     hc597Case ( );
+    printf ( "\n" );
+    delayPathCase ( );
     printf ( "\n" );
     modeExclusionCase ( );
     printf ( "\n" );
