@@ -28,13 +28,22 @@
 
 typedef struct
 {
-    uint8_t trigger;
-
     uint8_t* data;
     uint32_t size;
 
     uint8_t dlyType;
     uint32_t dlyCount;
+
+    /*
+     * Shared between hc595Start on the caller side and hc595Interrupt on the
+     * interrupt side. Declared volatile so the writes stay ordered with
+     * respect to each other and neither side caches state in a register.
+     */
+    volatile uint8_t state;
+    volatile uint8_t phase;
+    volatile uint32_t byteIndex;
+    volatile uint8_t bitIndex;
+    volatile uint8_t stepIndex;
 
     void ( *sckDrv )( uint8_t );
     void ( *rckDrv )( uint8_t );
@@ -53,6 +62,19 @@ enum HC595_DLY_TYPE
     HC595_DLY_NOP       = 2
 };
 
+enum HC595_STATE
+{
+    HC595_IDLE          = 0,
+    HC595_BUSY          = 1,
+    HC595_DONE          = 2
+};
+
+enum HC595_PHASE
+{
+    HC595_PHASE_SHIFT   = 0,
+    HC595_PHASE_LATCH   = 1
+};
+
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
@@ -66,9 +88,10 @@ uint8_t hc595Init ( hc595_t *driver,
                     void ( *datDrvFnc )( uint8_t ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
-void hc595Loop ( hc595_t *driver );
 void hc595OneShot ( hc595_t *driver );
+uint8_t hc595Start ( hc595_t *driver );
 void hc595Interrupt ( hc595_t *driver );
+uint8_t hc595GetState ( const hc595_t* const driver );
 
 #ifdef __cplusplus
 }

@@ -3,7 +3,7 @@
   *
   * @file      hc597_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.4
+  * @version   0.1.0
   * @date      23/05/2022
   *
   * @brief     HC597 driver file.
@@ -31,6 +31,22 @@
   *            library used three different conventions for this. @n
   * 01/08/2026 The trigger field is cleared by Init. It belongs to the @n
   *            unwritten loop mode but was left uninitialized. @n
+  * 01/08/2026 The interrupt driven mode is implemented. Start arms a @n
+  *            transfer, Interrupt advances it one step per call and @n
+  *            takes its timing from the call period, so nothing here @n
+  *            blocks or delays. A step boundary sits wherever OneShot @n
+  *            delayed, which is what keeps the pin order identical. @n
+  * 01/08/2026 The Loop entry point is removed. Start rejects a running @n
+  *            transfer, which was the only thing a deferred arming @n
+  *            step would have bought. @n
+  * 01/08/2026 The trigger field is replaced by state, phase and the @n
+  *            step indices, all volatile since the caller and the @n
+  *            interrupt both touch them. @n
+  * 01/08/2026 A delay callback is required only when dlyType selects @n
+  *            it, so an interrupt driven caller passes DLY_NO and two @n
+  *            NULLs. An unknown dlyType is rejected by Init instead of @n
+  *            being repaired mid transfer, which is what makes that @n
+  *            safe. @n
   *
   ******************************************************************************
   */
@@ -52,14 +68,22 @@
  * @param[in]  datDrvFnc  Reads the serial data pin.
  * @param[in]  dlyMsFnc   Blocks for the given number of milliseconds.
  * @param[in]  dlyNopFnc  Spins for the given number of no-op cycles.
- * @return  TRUE on success, FALSE when driver, dataPtr or any of the five
- *          callbacks is NULL, or when dataSize is zero.
+ * @return  TRUE on success, FALSE when driver, dataPtr or one of the three
+ *          pin callbacks is NULL, when dataSize is zero, when dlyType is not
+ *          one of the three known values, or when dlyType selects a delay
+ *          callback that was passed as NULL.
  * @note    Drives the clock pin low and the load pin high before returning.
  *          The load pulse is active low, so this leaves the pins idle.
- * @note    Every callback is required, including the two delay functions.
- *          This function calls two of them before it returns and the
- *          transfer routines call the rest without checking, so a NULL here
- *          would surface as a crash rather than a status.
+ * @note    The three pin callbacks are always required. This function calls
+ *          two of them before it returns and the transfer routines call them
+ *          without checking, so a NULL there would surface as a crash rather
+ *          than a status.
+ * @note    The delay callbacks are only reachable through dlyType, so each is
+ *          required only when dlyType selects it. A caller that drives the
+ *          chain from hc597Interrupt alone takes its timing from the interrupt
+ *          period and passes HC597_DLY_NO with both delay callbacks NULL.
+ * @note    An unknown dlyType is rejected here rather than repaired during a
+ *          transfer, which is what makes the NULL delay callbacks safe.
  */
 uint8_t hc597Init ( hc597_t* driver,
                             uint8_t* dataPtr,
@@ -73,10 +97,44 @@ uint8_t hc597Init ( hc597_t* driver,
                             void ( *dlyNopFnc )( uint32_t ) )
 {
     uint8_t retVal = FALSE;
+    uint8_t dlyOk = FALSE;
+
+    // Only the delay callback that dlyType actually selects has to be present.
+    if ( dlyType == HC597_DLY_NO )
+    {
+        dlyOk = TRUE;
+    }
+    else if ( dlyType == HC597_DLY_MS )
+    {
+        if ( dlyMsFnc != NULL )
+        {
+            dlyOk = TRUE;
+        }
+        else
+        {
+            dlyOk = FALSE;
+        }
+    }
+    else if ( dlyType == HC597_DLY_NOP )
+    {
+        if ( dlyNopFnc != NULL )
+        {
+            dlyOk = TRUE;
+        }
+        else
+        {
+            dlyOk = FALSE;
+        }
+    }
+    else
+    {
+        // Unknown dlyType.
+        dlyOk = FALSE;
+    }
 
     if ( ( driver != NULL ) && ( dataPtr != NULL ) && ( dataSize != 0 ) &&
             ( clkDrvFnc != NULL ) && ( lodDrvFnc != NULL ) && ( datDrvFnc != NULL ) &&
-            ( dlyMsFnc != NULL ) && ( dlyNopFnc != NULL ) )
+            ( dlyOk == TRUE ) )
     {
         driver->data = dataPtr;
         driver->size = dataSize;
@@ -89,9 +147,11 @@ uint8_t hc597Init ( hc597_t* driver,
         driver->dlyMs = dlyMsFnc;
         driver->dlyNop = dlyNopFnc;
 
-        // Belongs to the loop and interrupt modes, which are not written yet.
-        // Cleared anyway so the struct holds no uninitialized state.
-        driver->trigger = FALSE;
+        // Interrupt driven transfer state.
+        driver->state = HC597_IDLE;
+        driver->phase = HC597_PHASE_PROLOGUE;
+        driver->byteIndex = 0;
+        driver->bitIndex = 0;
 
         // Idle state. The load pulse is active low, so it idles high.
         driver->clkDrv ( FALSE );
@@ -110,17 +170,14 @@ uint8_t hc597Init ( hc597_t* driver,
 /**
  * @brief   Applies the delay configured for hc597OneShot's clock steps.
  * @param[in,out] driver  Driver state.
- * @note    When dlyType holds a value other than HC597_DLY_NO, HC597_DLY_MS
- *          or HC597_DLY_NOP, this repairs it to HC597_DLY_MS and dlyCount to
- *          HC597_DEF_DLY_COUNT, without delaying on this call.
+ * @note    Only the branch that dlyType selects calls a delay callback, and
+ *          hc597Init rejects a dlyType outside the three known values. That
+ *          is what lets a caller leave the unused delay callbacks NULL: no
+ *          value of dlyType can reach a callback that was not supplied.
  */
 static void hc597DlyCtrl ( hc597_t* driver )
 {
-    if ( driver->dlyType == HC597_DLY_NO )
-    {
-        // Intentionally blank.
-    }
-    else if ( driver->dlyType == HC597_DLY_NOP )
+    if ( driver->dlyType == HC597_DLY_NOP )
     {
         driver->dlyNop ( driver->dlyCount );
     }
@@ -130,21 +187,8 @@ static void hc597DlyCtrl ( hc597_t* driver )
     }
     else
     {
-        driver->dlyType = HC597_DLY_MS;
-        driver->dlyCount = HC597_DEF_DLY_COUNT;
+        // HC597_DLY_NO. No delay, and no call through an absent callback.
     }
-}
-
-/**
- * @brief   Not implemented.
- * @param[in,out] driver  Driver state.
- * @note    Reserved for a non blocking read transfer driven from the main
- *          loop. The body is empty, which is why the compiler reports
- *          driver as an unused parameter.
- */
-void hc597Loop ( hc597_t* driver )
-{
-
 }
 
 /**
@@ -190,13 +234,150 @@ void hc597OneShot ( hc597_t* driver )
 }
 
 /**
- * @brief   Not implemented.
+ * @brief   Performs the prologue step that latches the parallel inputs.
  * @param[in,out] driver  Driver state.
- * @note    Reserved for a non blocking read transfer driven from an
- *          interrupt. The body is empty, which is why the compiler reports
- *          driver as an unused parameter.
+ * @note    One step for the whole prologue, because hc597OneShot takes no
+ *          delay anywhere inside it.
+ */
+static void hc597PrologueStep ( hc597_t* driver )
+{
+    driver->clkDrv ( TRUE );
+    driver->clkDrv ( FALSE );
+
+    driver->lodDrv ( FALSE );
+    driver->lodDrv ( TRUE );
+
+    driver->phase = HC597_PHASE_SHIFT;
+}
+
+/**
+ * @brief   Performs one step of the shift phase, reading a single bit.
+ * @param[in,out] driver  Driver state.
+ * @note    One step per bit, matching the single delay hc597OneShot takes per
+ *          bit. The clock pulse stays inside the step because hc597OneShot
+ *          does not delay between its two edges either.
+ * @note    Moves the driver to HC597_DONE after the last bit of the last byte.
+ */
+static void hc597ShiftStep ( hc597_t* driver )
+{
+    if ( driver->bitIndex == 0 )
+    {
+        driver->data[ driver->byteIndex ] = 0;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    // Any non zero read is one bit, so it is normalized here.
+    if ( driver->datDrv ( ) != FALSE )
+    {
+        driver->data[ driver->byteIndex ] |= ( uint8_t ) ( 1u << driver->bitIndex );
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    driver->clkDrv ( TRUE );
+    driver->clkDrv ( FALSE );
+
+    ++driver->bitIndex;
+
+    if ( driver->bitIndex >= 8 )
+    {
+        driver->bitIndex = 0;
+        ++driver->byteIndex;
+
+        if ( driver->byteIndex >= driver->size )
+        {
+            driver->state = HC597_DONE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+}
+
+/**
+ * @brief   Requests a non blocking read of the whole chain into the data array.
+ * @param[in,out] driver  Driver state.
+ * @return  TRUE when the transfer was armed, FALSE when driver is NULL or a
+ *          transfer is already running.
+ * @note    A running transfer is never interrupted and never queued behind.
+ *          Poll hc597GetState and call again once it reports HC597_DONE.
+ * @note    Writes state last, on purpose. Until that write lands
+ *          hc597Interrupt sees a state other than HC597_BUSY and returns
+ *          without reading any of the indices set above it, so this is safe to
+ *          call from any context, including another interrupt.
+ */
+uint8_t hc597Start ( hc597_t* driver )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( driver->state != HC597_BUSY ) )
+    {
+        driver->phase = HC597_PHASE_PROLOGUE;
+        driver->byteIndex = 0;
+        driver->bitIndex = 0;
+
+        driver->state = HC597_BUSY;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Advances a running transfer by one step. Call at a fixed rate.
+ * @param[in,out] driver  Driver state.
+ * @note    This is the non blocking alternative to hc597OneShot. It never
+ *          delays and never loops: the interrupt period supplies the timing
+ *          that hc597OneShot gets from its delay callback.
+ * @note    A full transfer takes ( 8 * size ) + 1 calls.
+ * @note    The data array is written across the whole transfer. Read it only
+ *          once hc597GetState reports HC597_DONE.
+ * @note    Costs one state read and a comparison when no transfer is running.
  */
 void hc597Interrupt ( hc597_t* driver )
 {
+    if ( driver->state == HC597_BUSY )
+    {
+        if ( driver->phase == HC597_PHASE_PROLOGUE )
+        {
+            hc597PrologueStep ( driver );
+        }
+        else
+        {
+            hc597ShiftStep ( driver );
+        }
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+}
 
+/**
+ * @brief   Gets the state of the interrupt driven transfer.
+ * @param[in] driver  Driver state.
+ * @return  HC597_IDLE before the first transfer, HC597_BUSY while one is
+ *          running, HC597_DONE once one has finished and the data array holds
+ *          the values read from the chain.
+ * @note    HC597_DONE stands until the next hc597Start. Clearing it here would
+ *          let a caller that polls one pass late miss the completion outright.
+ */
+uint8_t hc597GetState ( const hc597_t* const driver )
+{
+    return ( driver->state );
 }

@@ -28,13 +28,23 @@
 
 typedef struct
 {
-    uint8_t trigger;
-
     uint8_t* data;
     uint32_t size;
 
     uint8_t dlyType;
     uint32_t dlyCount;
+
+    /*
+     * Shared between hc597Start on the caller side and hc597Interrupt on the
+     * interrupt side. Declared volatile so the writes stay ordered with
+     * respect to each other and neither side caches state in a register.
+     * There is no stepIndex here: hc597 spends one step per bit, because
+     * hc597OneShot takes only one delay per bit.
+     */
+    volatile uint8_t state;
+    volatile uint8_t phase;
+    volatile uint32_t byteIndex;
+    volatile uint8_t bitIndex;
 
     void ( *clkDrv )( uint8_t );
     void ( *lodDrv )( uint8_t );
@@ -53,6 +63,19 @@ enum HC597_DLY_TYPE
     HC597_DLY_NOP       = 2
 };
 
+enum HC597_STATE
+{
+    HC597_IDLE          = 0,
+    HC597_BUSY          = 1,
+    HC597_DONE          = 2
+};
+
+enum HC597_PHASE
+{
+    HC597_PHASE_PROLOGUE = 0,
+    HC597_PHASE_SHIFT    = 1
+};
+
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
@@ -66,9 +89,10 @@ uint8_t hc597Init ( hc597_t* driver,
                     uint8_t ( *datDrvFnc )( void ),
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) );
-void hc597Loop ( hc597_t *driver );
 void hc597OneShot ( hc597_t *driver );
+uint8_t hc597Start ( hc597_t *driver );
 void hc597Interrupt ( hc597_t *driver );
+uint8_t hc597GetState ( const hc597_t* const driver );
 
 #ifdef __cplusplus
 }

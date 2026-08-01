@@ -65,6 +65,7 @@ Every stateful module follows the same shape, and new modules must match it:
 - Type-suffixed names when a module is width-specific: `circBufAddu32`, `statVariancei32`.
 - Hardware and I/O are injected as **function pointers stored in the struct at Init** — see `drv/hc595_drv.h` (`sckDrv`, `rckDrv`, `datDrv`, `dlyMs`, `dlyNop`) and `inc/communication/comat.h` (`packetProcess`, `txTransmissionTrigger`). Never call a HAL directly from library code.
 - Protocol modules (`comat`, `comstxetx`) are byte-driven state machines: `xxxReceive(driver, byte)` from the ISR, `xxxEvaluate(driver)` from the main loop, `xxxTimeoutCounter(driver)` from a periodic tick.
+- The shift-register drivers (`hc595`, `hc597`) offer two mutually exclusive transfer modes on the same driver struct. `xxxOneShot(driver)` blocks and paces itself with the injected delay callbacks. `xxxStart(driver)` then `xxxInterrupt(driver)` from a fixed-rate ISR does the same transfer without blocking or delaying — one step per call, so the interrupt period *is* the timing. `xxxGetState(driver)` reports `IDLE`/`BUSY`/`DONE`. A step boundary sits exactly where `OneShot` delays, which is what makes the two modes drive the pins in an identical order; `test/ShiftRegister_Test/` asserts that. Adding a delay to `xxxInterrupt` would defeat the entire point.
 
 ### The Init contract
 
@@ -134,7 +135,7 @@ Commit messages are terse and prefixed: `+` for additions, `*` for fixes/updates
 
 ## Verification
 
-Every `.c` under `src/` and `drv/` compiles clean under `-Wall -Wextra`, and every `test/` program links. Check the whole tree with:
+Every `.c` under `src/` and `drv/` compiles clean under `-Wall -Wextra` — **zero warnings, no exceptions** — and every `test/` program links. A new warning is a regression, not background noise. Check the whole tree with:
 
 ```bash
 for f in src/*/*.c drv/*.c; do m=$(basename $(dirname "$f")); inc="inc/$m"; [ -d "$inc" ] || inc="drv"; \
@@ -153,13 +154,14 @@ arm-none-eabi-gcc -c -Wall $(for d in inc/*/ drv/; do echo -n " -I$d"; done) /tm
 
 These are stubs awaiting design, not defects. Leave them alone unless implementing the feature is the task.
 
-- `drv/hc595_drv.c` and `drv/hc597_drv.c` — `hc595Loop`, `hc595Interrupt`, `hc597Loop`, `hc597Interrupt` are empty bodies. They are the only four `-Wunused-parameter` warnings in the tree; that warning is deliberate signal, do not silence it with a `(void)driver;` cast.
 - `src/communication/comsec.c` and `src/communication/comsafe.c` contain only a file banner. `inc/communication/comsec.h`, `comsafe.h`, `comgenbuf.h` and `inc/matrix/matrixlib.h` declare types but no function prototypes. Each of those four headers opens with a Doxygen `@warning` saying so — keep it there, it is the only thing standing between a consumer and a link error.
 - `rules.md` is an empty placeholder.
 
 ## Testing gap — the largest open risk
 
-Seven test programs cover 21 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and everything under `drv/` are untested too.
+Eight test programs cover 21 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
+
+`test/ShiftRegister_Test/` is the exception to the house test style: it asserts instead of printing values for a human to compare, so it has no `output.txt` and returns non-zero on failure. Prefer that shape for new tests.
 
 Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run.
 
