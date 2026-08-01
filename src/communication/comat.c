@@ -2,7 +2,7 @@
   ******************************************************************************
   *
   * @file      comat.c
-  * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
   * @version   0.0.3
   * @date      20/02/2020
   *

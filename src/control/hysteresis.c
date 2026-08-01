@@ -2,7 +2,7 @@
   ******************************************************************************
   *
   * @file      hysteresis.c
-  * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
   * @version   0.0.1
   * @date      16/07/2020
   *

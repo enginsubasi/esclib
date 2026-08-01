@@ -2,7 +2,7 @@
   ******************************************************************************
   *
   * @file      comstxetx.c
-  * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
   * @version   0.0.3
   * @date      26/08/2020
   *

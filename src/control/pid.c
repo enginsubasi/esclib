@@ -2,7 +2,7 @@
   ******************************************************************************
   *
   * @file      pid.c
-  * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
   * @version   0.0.1
   * @date      23/07/2020
   *

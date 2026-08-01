@@ -2,7 +2,7 @@
   ******************************************************************************
   *
   * @file      circBuf.c
-  * @author    Engin Subaşı <enginsubasi@gmail.com>, github.com/enginsubasi
+  * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
   * @version   0.0.2
   * @date      29/03/2022
   *
