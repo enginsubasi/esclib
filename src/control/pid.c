@@ -3,7 +3,7 @@
   *
   * @file      pid.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.1
+  * @version   0.0.2
   * @date      23/07/2020
   *
   * @brief     PID control.
@@ -16,9 +16,19 @@
   * 24/08/2020 Data type changed from double to float. @n
   * 29/07/2026 Bug fix. pidInit left error, lastError, partP, partI @n
   *            and partD uninitialized. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
+  * 01/08/2026 pidInit and pidChangeCoefficients reject a zero ts. @n
+  *            pidControl divides the error difference by ts, and a @n
+  *            zero there produced a nan that passed straight through @n
+  *            the output limiter, since nan compares false against @n
+  *            both bounds. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "pid.h"
 
@@ -37,43 +47,61 @@
  * @param[in]  dPartMinLimit      Lower clamp for partD, in error units, applied before the kd multiply.
  * @param[in]  pidOutputMaxLimit  Upper clamp for the controller output.
  * @param[in]  pidOutputMinLimit  Lower clamp for the controller output; also the initial output value.
+ * @return  TRUE on success, FALSE when driver is NULL or ts is zero.
+ * @note    ts is rejected when zero because pidControl divides the error
+ *          difference by it. Nothing else in the module guards that divide,
+ *          so this check and the one in pidChangeCoefficients are what keep
+ *          the derivative term finite.
  */
-void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
+uint8_t pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
                 float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
 {
-    driver->output = pidOutputMinLimit;
+    uint8_t retVal = FALSE;
 
-    // Error memory. Without this the first derivative term would use garbage.
-    driver->error = 0;
-    driver->lastError = 0;
+    if ( ( driver != NULL ) && ( ts != 0 ) )
+    {
+        driver->output = pidOutputMinLimit;
 
-    // Term accumulators. partI integrates, so it must start from a known value.
-    driver->partP = 0;
-    driver->partI = 0;
-    driver->partD = 0;
+        // Error memory. Without this the first derivative term would use garbage.
+        driver->error = 0;
+        driver->lastError = 0;
 
-    // Coefficients.
-    driver->kp = kp;
-    driver->ki = ki;
-    driver->kd = kd;
+        // Term accumulators. partI integrates, so it must start from a known value.
+        driver->partP = 0;
+        driver->partI = 0;
+        driver->partD = 0;
 
-    driver->ts = ts;
+        // Coefficients.
+        driver->kp = kp;
+        driver->ki = ki;
+        driver->kd = kd;
 
-    // Limits of proportional part.
-    driver->pMax = pPartMaxLimit;
-    driver->pMin = pPartMinLimit;
+        driver->ts = ts;
 
-    // Limits of integral part.
-    driver->iMax = iPartMaxLimit;
-    driver->iMin = iPartMinLimit;
-    
-    // Limits of derivative part.
-    driver->dMax = dPartMaxLimit;
-    driver->dMin = dPartMinLimit;
+        // Limits of proportional part.
+        driver->pMax = pPartMaxLimit;
+        driver->pMin = pPartMinLimit;
 
-    // Limits of PID output value.
-    driver->pidMax = pidOutputMaxLimit;
-    driver->pidMin = pidOutputMinLimit;
+        // Limits of integral part.
+        driver->iMax = iPartMaxLimit;
+        driver->iMin = iPartMinLimit;
+
+        // Limits of derivative part.
+        driver->dMax = dPartMaxLimit;
+        driver->dMin = dPartMinLimit;
+
+        // Limits of PID output value.
+        driver->pidMax = pidOutputMaxLimit;
+        driver->pidMin = pidOutputMinLimit;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**
@@ -83,15 +111,31 @@ void pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPa
  * @param[in]     ki      New integral gain.
  * @param[in]     kd      New derivative gain.
  * @param[in]     ts      New sample time used by the integral and derivative terms.
+ * @return  TRUE on success, FALSE when driver is NULL or ts is zero.
+ * @note    On FALSE nothing is written, so the controller keeps the gains
+ *          and the sample time it already had.
  */
-void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, float ts )
+uint8_t pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, float ts )
 {
-    // Coefficients.
-    driver->kp = kp;
-    driver->ki = ki;
-    driver->kd = kd;
+    uint8_t retVal = FALSE;
 
-    driver->ts = ts;
+    if ( ( driver != NULL ) && ( ts != 0 ) )
+    {
+        // Coefficients.
+        driver->kp = kp;
+        driver->ki = ki;
+        driver->kd = kd;
+
+        driver->ts = ts;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**
@@ -105,25 +149,41 @@ void pidChangeCoefficients ( pidc_t* driver, float kp, float ki, float kd, float
  * @param[in]     dPartMinLimit      New lower clamp for partD, in error units, applied before the kd multiply.
  * @param[in]     pidOutputMaxLimit  New upper clamp for the controller output.
  * @param[in]     pidOutputMinLimit  New lower clamp for the controller output.
+ * @return  TRUE on success, FALSE when driver is NULL.
+ * @note    On FALSE nothing is written, so the controller keeps the limits
+ *          it already had.
  */
-void pidChangeLimits ( pidc_t* driver, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
+uint8_t pidChangeLimits ( pidc_t* driver, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
                         float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
 {
-    // Limits of proportional part.
-    driver->pMax = pPartMaxLimit;
-    driver->pMin = pPartMinLimit;
+    uint8_t retVal = FALSE;
 
-    // Limits of integral part.
-    driver->iMax = iPartMaxLimit;
-    driver->iMin = iPartMinLimit;
-    
-    // Limits of derivative part.
-    driver->dMax = dPartMaxLimit;
-    driver->dMin = dPartMinLimit;
+    if ( driver != NULL )
+    {
+        // Limits of proportional part.
+        driver->pMax = pPartMaxLimit;
+        driver->pMin = pPartMinLimit;
 
-    // Limits of PID output value.
-    driver->pidMax = pidOutputMaxLimit;
-    driver->pidMin = pidOutputMinLimit;
+        // Limits of integral part.
+        driver->iMax = iPartMaxLimit;
+        driver->iMin = iPartMinLimit;
+
+        // Limits of derivative part.
+        driver->dMax = dPartMaxLimit;
+        driver->dMin = dPartMinLimit;
+
+        // Limits of PID output value.
+        driver->pidMax = pidOutputMaxLimit;
+        driver->pidMin = pidOutputMinLimit;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**
@@ -133,6 +193,10 @@ void pidChangeLimits ( pidc_t* driver, float pPartMaxLimit, float pPartMinLimit,
  *                        measurement, not the raw measurement itself.
  * @note    The result is stored in driver and read back with pidGetOutput;
  *          this function does not return it directly.
+ * @note    The derivative term divides by driver->ts. That divide is safe
+ *          because pidInit and pidChangeCoefficients both refuse a zero ts,
+ *          so ts cannot be zero on a controller that was initialized
+ *          successfully.
  */
 void pidControl ( pidc_t* driver, float error )
 {

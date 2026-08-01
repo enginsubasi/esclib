@@ -3,7 +3,7 @@
   *
   * @file      comat.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      20/02/2020
   *
   * @brief     AT communication framework.
@@ -26,11 +26,24 @@
   *            frames and progressively shrank the budget left to @n
   *            later frames. It is now cleared everywhere rxIndex @n
   *            returns to zero. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
+  * 01/08/2026 comatInit rejects an rxSize below three. comatReceive @n
+  *            stores a byte before it compares the index against @n
+  *            rxSize, so a shorter buffer took a write past its end. @n
   *
   ******************************************************************************
   */
 
+#include <stddef.h>
+
 #include "comat.h"
+
+// comatReceive writes rxBuffer[ rxIndex ] and only afterwards checks the
+// index against rxSize, so the smallest buffer that never takes a write past
+// its end is one that can hold 'A', 'T' and one more byte.
+#define COMAT_MIN_RX_SIZE   3
 
 /**
  * @brief   Initializes the AT command framework.
@@ -49,46 +62,68 @@
  *                                    byte count by value and writes the reply
  *                                    length through txInd.
  * @param[in]  txTransmissionTrigger  Called to start transmitting the reply.
+ * @return  TRUE on success, FALSE when a pointer is NULL, txSize is zero or
+ *          rxSize is below three.
  * @note    Both buffers are zero filled here and are not copied. They must
  *          outlive the driver.
+ * @note    Both callbacks are required. comatEvaluate calls them without
+ *          checking, so a NULL here would only surface as a crash on the
+ *          first complete frame.
+ * @note    rxSize must hold at least 'A', 'T' and one further byte.
+ *          comatReceive stores a byte before it compares the index against
+ *          rxSize, so a shorter buffer would take a write past its end.
  */
-void comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
+uint8_t comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
                                 uint32_t rxSize, uint32_t txSize,
                                 uint32_t rxTimeout,
                                 void (*packetProcess) ( uint8_t* rxBuf, uint32_t rxInd, uint8_t* txBuf, uint32_t* txInd ),
                                 void (*txTransmissionTrigger) ( uint8_t* txBuf, uint32_t txInd ) )
 {
+    uint8_t retVal = FALSE;
     uint32_t i = 0;
-    
-    // Function assignment.
-    driver->packetProcess = packetProcess;
-    driver->txTransmissionTrigger = txTransmissionTrigger;
-    
-    // Parameter settings.
-    driver->rxBuffer = rxBuffer;
-    driver->txBuffer = txBuffer;
-    
-    driver->rxSize = rxSize;
-    driver->txSize = txSize;
-    
-    driver->rxTimeoutCounter = 0;
-    driver->rxTimeout = rxTimeout;
-    
-    // Initialize to zero and FALSE
-    driver->rxIndex = 0;
-    driver->txIndex = 0;
-    driver->rxReadyToEvaluate = FALSE;
-    
-    // Fill with zero
-    for ( i = 0; i < driver->rxSize; ++i )
+
+    if ( ( driver != NULL ) && ( rxBuffer != NULL ) && ( txBuffer != NULL ) &&
+            ( rxSize >= COMAT_MIN_RX_SIZE ) && ( txSize != 0 ) &&
+            ( packetProcess != NULL ) && ( txTransmissionTrigger != NULL ) )
     {
-        driver->rxBuffer[ i ] = 0;
+        // Function assignment.
+        driver->packetProcess = packetProcess;
+        driver->txTransmissionTrigger = txTransmissionTrigger;
+
+        // Parameter settings.
+        driver->rxBuffer = rxBuffer;
+        driver->txBuffer = txBuffer;
+
+        driver->rxSize = rxSize;
+        driver->txSize = txSize;
+
+        driver->rxTimeoutCounter = 0;
+        driver->rxTimeout = rxTimeout;
+
+        // Initialize to zero and FALSE
+        driver->rxIndex = 0;
+        driver->txIndex = 0;
+        driver->rxReadyToEvaluate = FALSE;
+
+        // Fill with zero
+        for ( i = 0; i < driver->rxSize; ++i )
+        {
+            driver->rxBuffer[ i ] = 0;
+        }
+
+        for ( i = 0; i < driver->txSize; ++i )
+        {
+            driver->txBuffer[ i ] = 0;
+        }
+
+        retVal = TRUE;
     }
-    
-    for ( i = 0; i < driver->txSize; ++i )
+    else
     {
-        driver->txBuffer[ i ] = 0;
+        retVal = FALSE;
     }
+
+    return ( retVal );
 }
 
 /**

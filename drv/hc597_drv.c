@@ -3,7 +3,7 @@
   *
   * @file      hc597_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      23/05/2022
   *
   * @brief     HC597 driver file.
@@ -26,9 +26,16 @@
   *            names match the hc597 prefix used by hc597Init. @n
   * 01/08/2026 DEF_DLY_COUNT is renamed HC597_DEF_DLY_COUNT. The old @n
   *            name was a bare macro in the global namespace. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
+  * 01/08/2026 The trigger field is cleared by Init. It belongs to the @n
+  *            unwritten loop mode but was left uninitialized. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "hc597_drv.h"
 
@@ -45,10 +52,16 @@
  * @param[in]  datDrvFnc  Reads the serial data pin.
  * @param[in]  dlyMsFnc   Blocks for the given number of milliseconds.
  * @param[in]  dlyNopFnc  Spins for the given number of no-op cycles.
+ * @return  TRUE on success, FALSE when driver, dataPtr or any of the five
+ *          callbacks is NULL, or when dataSize is zero.
  * @note    Drives the clock pin low and the load pin high before returning.
  *          The load pulse is active low, so this leaves the pins idle.
+ * @note    Every callback is required, including the two delay functions.
+ *          This function calls two of them before it returns and the
+ *          transfer routines call the rest without checking, so a NULL here
+ *          would surface as a crash rather than a status.
  */
-void hc597Init ( hc597_t* driver,
+uint8_t hc597Init ( hc597_t* driver,
                             uint8_t* dataPtr,
                             uint32_t dataSize,
                             uint8_t dlyType,
@@ -59,20 +72,39 @@ void hc597Init ( hc597_t* driver,
                             void ( *dlyMsFnc )( uint32_t ),
                             void ( *dlyNopFnc )( uint32_t ) )
 {
-    driver->data = dataPtr;
-    driver->size = dataSize;
-    driver->dlyType = dlyType;
-    driver->dlyCount = dlyCount;
+    uint8_t retVal = FALSE;
 
-    driver->clkDrv = clkDrvFnc;
-    driver->lodDrv = lodDrvFnc;
-    driver->datDrv = datDrvFnc;
-    driver->dlyMs = dlyMsFnc;
-    driver->dlyNop = dlyNopFnc;
+    if ( ( driver != NULL ) && ( dataPtr != NULL ) && ( dataSize != 0 ) &&
+            ( clkDrvFnc != NULL ) && ( lodDrvFnc != NULL ) && ( datDrvFnc != NULL ) &&
+            ( dlyMsFnc != NULL ) && ( dlyNopFnc != NULL ) )
+    {
+        driver->data = dataPtr;
+        driver->size = dataSize;
+        driver->dlyType = dlyType;
+        driver->dlyCount = dlyCount;
 
-    // Idle state. The load pulse is active low, so it idles high.
-    driver->clkDrv ( FALSE );
-    driver->lodDrv ( TRUE );
+        driver->clkDrv = clkDrvFnc;
+        driver->lodDrv = lodDrvFnc;
+        driver->datDrv = datDrvFnc;
+        driver->dlyMs = dlyMsFnc;
+        driver->dlyNop = dlyNopFnc;
+
+        // Belongs to the loop and interrupt modes, which are not written yet.
+        // Cleared anyway so the struct holds no uninitialized state.
+        driver->trigger = FALSE;
+
+        // Idle state. The load pulse is active low, so it idles high.
+        driver->clkDrv ( FALSE );
+        driver->lodDrv ( TRUE );
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**

@@ -3,7 +3,7 @@
   *
   * @file      comstxetx.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      26/08/2020
   *
   * @brief     Basic STX, ETX communication framework.
@@ -24,11 +24,24 @@
   *            frames and progressively shrank the budget left to @n
   *            later frames. It is now cleared everywhere rxIndex @n
   *            returns to zero. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
+  * 01/08/2026 comstxetxInit rejects an rxSize below two, for the same @n
+  *            write past the end that comatInit now rejects, and an @n
+  *            stx equal to etx, which can never frame anything. @n
   *
   ******************************************************************************
   */
   
+#include <stddef.h>
+
 #include "comstxetx.h"
+
+// comstxetxReceive writes rxBuffer[ rxIndex ] and only afterwards checks the
+// index against rxSize, so the smallest buffer that never takes a write past
+// its end is one that can hold the STX byte and one payload byte.
+#define COMSTXETX_MIN_RX_SIZE   2
 
 /**
  * @brief   Initializes the STX, ETX communication framework.
@@ -50,43 +63,70 @@
  *                            not stored, unlike comatReceive, which stores
  *                            every byte of its frame including the leading
  *                            'A', 'T' and the trailing CR LF.
+ * @return  TRUE on success, FALSE when a pointer is NULL, txSize is zero,
+ *          rxSize is below two or stx equals etx.
  * @note    Both buffers are zero filled here and are not copied. They must
  *          outlive the driver.
+ * @note    packetProcess is required. comstxetxEvaluate calls it without
+ *          checking, so a NULL here would only surface as a crash on the
+ *          first complete frame.
+ * @note    rxSize must hold at least the STX byte and one payload byte.
+ *          comstxetxReceive stores a byte before it compares the index
+ *          against rxSize, so a shorter buffer would take a write past its
+ *          end.
+ * @note    stx equal to etx is rejected. The same byte cannot both open a
+ *          frame and close it, since the receive state machine tests for
+ *          etx only once a frame is already open, which would make every
+ *          frame end empty.
  */
-void comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) )
+uint8_t comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) )
 {
+    uint8_t retVal = FALSE;
     uint32_t i = 0;
-    
-    // Function assignment.
-    driver->packetProcess = packetProcess;
-    
-    // Parameter settings.
-    driver->rxBuffer = rxBuffer;
-    driver->txBuffer = txBuffer;
-    
-    driver->rxSize = rxSize;
-    driver->txSize = txSize;
-    
-    driver->stx = stx;
-    driver->etx = etx;
-    
-    driver->rxTimeoutCounter = 0;
-    driver->rxTimeout = rxTimeout;
-    
-    // Initialize to zero and FALSE
-    driver->rxIndex = 0;
-    driver->rxReadyToEvaluate = FALSE;
-    
-    // Fill with zero
-    for ( i = 0; i < driver->rxSize; ++i )
+
+    if ( ( driver != NULL ) && ( rxBuffer != NULL ) && ( txBuffer != NULL ) &&
+            ( rxSize >= COMSTXETX_MIN_RX_SIZE ) && ( txSize != 0 ) &&
+            ( stx != etx ) && ( packetProcess != NULL ) )
     {
-        driver->rxBuffer[ i ] = 0;
+        // Function assignment.
+        driver->packetProcess = packetProcess;
+
+        // Parameter settings.
+        driver->rxBuffer = rxBuffer;
+        driver->txBuffer = txBuffer;
+
+        driver->rxSize = rxSize;
+        driver->txSize = txSize;
+
+        driver->stx = stx;
+        driver->etx = etx;
+
+        driver->rxTimeoutCounter = 0;
+        driver->rxTimeout = rxTimeout;
+
+        // Initialize to zero and FALSE
+        driver->rxIndex = 0;
+        driver->rxReadyToEvaluate = FALSE;
+
+        // Fill with zero
+        for ( i = 0; i < driver->rxSize; ++i )
+        {
+            driver->rxBuffer[ i ] = 0;
+        }
+
+        for ( i = 0; i < driver->txSize; ++i )
+        {
+            driver->txBuffer[ i ] = 0;
+        }
+
+        retVal = TRUE;
     }
-    
-    for ( i = 0; i < driver->txSize; ++i )
+    else
     {
-        driver->txBuffer[ i ] = 0;
+        retVal = FALSE;
     }
+
+    return ( retVal );
 }
 
 /**

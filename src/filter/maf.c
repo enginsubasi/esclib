@@ -3,7 +3,7 @@
   *
   * @file      maf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   2.1.0
+  * @version   2.2.0
   * @date      26/04/2020
   *
   * @brief     Moving average filter.
@@ -18,9 +18,15 @@
   * 29/07/2026 The u32 variants declared by maf.h are implemented. @n
   *            They were missing, which broke linking for any caller @n
   *            that used them. @n
+  * 01/08/2026 mafInit and mafInitu32 return uint8_t rather than int8_t @n
+  *            and reject a NULL driver, not only a NULL buffer. @n
+  * 01/08/2026 Pointer checks use NULL from stddef.h, matching the @n
+  *            wording the documentation already used. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "maf.h"
 
@@ -30,15 +36,15 @@
  * @param[out] buffer      Caller owned sample buffer of at least length entries.
  * @param[in]  length      Number of samples in the averaging window.
  * @param[in]  outputInit  Value the whole window is preloaded with.
- * @return  TRUE on success, FALSE when length is zero or buffer is NULL.
+ * @return  TRUE on success, FALSE when a pointer is NULL or length is zero.
  * @note    The buffer is not copied. It must outlive the filter.
  */
-int8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputInit )
+uint8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputInit )
 {
-    int8_t retVal = FALSE;
+    uint8_t retVal = FALSE;
     uint32_t i = 0;
 
-    if ( ( length != 0 ) && ( buffer != 0 ) )
+    if ( ( driver != NULL ) && ( buffer != NULL ) && ( length != 0 ) )
     {
         driver->buffer = buffer;
         driver->length = length;
@@ -105,15 +111,15 @@ float mafGetOutput ( maf_t* driver )
  * @param[out] buffer      Caller owned sample buffer of at least length entries.
  * @param[in]  length      Number of samples in the averaging window.
  * @param[in]  outputInit  Value the whole window is preloaded with.
- * @return  TRUE on success, FALSE when length is zero or buffer is NULL.
+ * @return  TRUE on success, FALSE when a pointer is NULL or length is zero.
  * @note    The buffer is not copied. It must outlive the filter.
  */
-int8_t mafInitu32 ( mafu32_t* driver, uint32_t* buffer, uint32_t length, uint32_t outputInit )
+uint8_t mafInitu32 ( mafu32_t* driver, uint32_t* buffer, uint32_t length, uint32_t outputInit )
 {
-    int8_t retVal = FALSE;
+    uint8_t retVal = FALSE;
     uint32_t i = 0;
 
-    if ( ( length != 0 ) && ( buffer != 0 ) )
+    if ( ( driver != NULL ) && ( buffer != NULL ) && ( length != 0 ) )
     {
         driver->buffer = buffer;
         driver->length = length;

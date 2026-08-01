@@ -38,7 +38,7 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void bininpInit ( bininp_t* driver, uint32_t filterCount );
+uint8_t bininpInit ( bininp_t* driver, uint32_t filterCount );
 void bininpUpdate ( bininp_t* driver, uint8_t newData );
 uint8_t bininpGetValue ( bininp_t* driver );
 uint8_t bininpGetRisingValue ( bininp_t* driver );

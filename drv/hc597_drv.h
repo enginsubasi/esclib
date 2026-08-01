@@ -56,7 +56,7 @@ enum HC597_DLY_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void hc597Init ( hc597_t* driver,
+uint8_t hc597Init ( hc597_t* driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,

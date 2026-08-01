@@ -36,7 +36,7 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-int8_t emafInit ( emaf_t* driver, float alpha, float outputInit );
+uint8_t emafInit ( emaf_t* driver, float alpha, float outputInit );
 void emafIteration ( emaf_t* driver, float newData );
 float emafGetOutput ( emaf_t* driver );
 

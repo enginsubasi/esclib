@@ -3,7 +3,7 @@
   *
   * @file      hysteresis.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.1
+  * @version   0.0.2
   * @date      16/07/2020
   *
   * @brief     Hysteresis control.
@@ -15,9 +15,16 @@
   * 16/07/2020 Created. @n
   * 24/08/2020 Data type changed from double to float. @n
   * 24/08/2020 Naming changes. Comments added. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
+  * 01/08/2026 hysteresisInit rejects an upValue below downValue, @n
+  *            which would leave no band for the output to hold in. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "hysteresis.h"
 
@@ -26,13 +33,34 @@
  * @param[out] driver     Controller state to initialize.
  * @param[in]  upValue    Threshold above which the output switches TRUE.
  * @param[in]  downValue  Threshold below which the output switches FALSE.
+ * @return  TRUE on success, FALSE when driver is NULL or upValue is below
+ *          downValue.
  * @note    The output is initialized to FALSE.
+ * @note    upValue below downValue is rejected because it leaves no band
+ *          for the output to hold in. Every input would then satisfy one of
+ *          the two thresholds and the controller would behave as a plain
+ *          comparator rather than a hysteresis. Equal values are allowed and
+ *          give exactly that comparator, which is a legitimate degenerate
+ *          setting.
  */
-void hysteresisInit ( hysteresis_t* driver, float upValue, float downValue )
+uint8_t hysteresisInit ( hysteresis_t* driver, float upValue, float downValue )
 {
-    driver->output = FALSE;
-    driver->up = upValue;
-    driver->dw = downValue;
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( upValue >= downValue ) )
+    {
+        driver->output = FALSE;
+        driver->up = upValue;
+        driver->dw = downValue;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**

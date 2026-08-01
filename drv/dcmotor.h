@@ -44,7 +44,7 @@ enum BRIDGE_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void dcMotorInit ( dcmotor_t *driver,
+uint8_t dcMotorInit ( dcmotor_t *driver,
                     void ( *bridgeHighFnc )( uint8_t ),
                     void ( *bridgeLowFnc )( uint8_t ),
                     void ( *pwmFnc )( float ));

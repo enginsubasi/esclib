@@ -56,7 +56,7 @@ enum HC595_DLY_TYPE
 /* EXTERNS */
 
 /* FUNCTION PROTOTYPES */
-void hc595Init ( hc595_t *driver,
+uint8_t hc595Init ( hc595_t *driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,

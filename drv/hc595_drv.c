@@ -3,7 +3,7 @@
   *
   * @file      hc595_drv.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      20/11/2021
   *
   * @brief     HC595 driver file.
@@ -21,9 +21,16 @@
   *            names match the hc595 prefix used by hc595Init. @n
   * 01/08/2026 DEF_DLY_COUNT is renamed HC595_DEF_DLY_COUNT. The old @n
   *            name was a bare macro in the global namespace. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
+  * 01/08/2026 The trigger field is cleared by Init. It belongs to the @n
+  *            unwritten loop mode but was left uninitialized. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "hc595_drv.h"
 
@@ -39,10 +46,16 @@
  * @param[in]  datDrvFnc  Drives the serial data pin.
  * @param[in]  dlyMsFnc   Blocks for the given number of milliseconds.
  * @param[in]  dlyNopFnc  Spins for the given number of no-op cycles.
+ * @return  TRUE on success, FALSE when driver, dataPtr or any of the five
+ *          callbacks is NULL, or when dataSize is zero.
  * @note    Drives all three output pins low before returning, so the hardware
  *          is in a known state.
+ * @note    Every callback is required, including the two delay functions.
+ *          This function calls three of them before it returns and the
+ *          transfer routines call the rest without checking, so a NULL here
+ *          would surface as a crash rather than a status.
  */
-void hc595Init ( hc595_t* driver,
+uint8_t hc595Init ( hc595_t* driver,
                     uint8_t* dataPtr,
                     uint32_t dataSize,
                     uint8_t dlyType,
@@ -53,19 +66,38 @@ void hc595Init ( hc595_t* driver,
                     void ( *dlyMsFnc )( uint32_t ),
                     void ( *dlyNopFnc )( uint32_t ) )
 {
-    driver->data = dataPtr;
-    driver->size = dataSize;
-    driver->dlyType = dlyType;
-    driver->dlyCount = dlyCount;
-    driver->sckDrv = sckDrvFnc;
-    driver->rckDrv = rckDrvFnc;
-    driver->datDrv = datDrvFnc;
-    driver->dlyMs = dlyMsFnc;
-    driver->dlyNop = dlyNopFnc;
+    uint8_t retVal = FALSE;
 
-    driver->datDrv ( FALSE );
-    driver->sckDrv ( FALSE );
-    driver->rckDrv ( FALSE );
+    if ( ( driver != NULL ) && ( dataPtr != NULL ) && ( dataSize != 0 ) &&
+            ( sckDrvFnc != NULL ) && ( rckDrvFnc != NULL ) && ( datDrvFnc != NULL ) &&
+            ( dlyMsFnc != NULL ) && ( dlyNopFnc != NULL ) )
+    {
+        driver->data = dataPtr;
+        driver->size = dataSize;
+        driver->dlyType = dlyType;
+        driver->dlyCount = dlyCount;
+        driver->sckDrv = sckDrvFnc;
+        driver->rckDrv = rckDrvFnc;
+        driver->datDrv = datDrvFnc;
+        driver->dlyMs = dlyMsFnc;
+        driver->dlyNop = dlyNopFnc;
+
+        // Belongs to the loop and interrupt modes, which are not written yet.
+        // Cleared anyway so the struct holds no uninitialized state.
+        driver->trigger = FALSE;
+
+        driver->datDrv ( FALSE );
+        driver->sckDrv ( FALSE );
+        driver->rckDrv ( FALSE );
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**

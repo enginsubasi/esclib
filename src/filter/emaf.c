@@ -3,7 +3,7 @@
   *
   * @file      emaf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   2.0.0
+  * @version   2.1.0
   * @date      22/04/2020
   *
   * @brief     Exponential moving average filter.
@@ -15,9 +15,15 @@
   * 22/04/2020 Created @n
   * 07/06/2020 Naming style changed @n
   * 24/08/2020 Data type changed from double to float. @n
+  * 01/08/2026 emafInit returns uint8_t rather than int8_t and rejects @n
+  *            a NULL driver in addition to an out of range alpha. @n
+  * 01/08/2026 Pointer checks use NULL from stddef.h, matching the @n
+  *            wording the documentation already used. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "emaf.h"
 
@@ -26,13 +32,14 @@
  * @param[out] driver      Filter state to initialize.
  * @param[in]  alpha       Smoothing factor in the range [0, 1]; higher values weight new samples more.
  * @param[in]  outputInit  Initial output value.
- * @return  TRUE on success, FALSE when alpha is outside the [0, 1] range.
+ * @return  TRUE on success, FALSE when driver is NULL or alpha is outside
+ *          the [0, 1] range.
  */
-int8_t emafInit ( emaf_t* driver, float alpha, float outputInit )
+uint8_t emafInit ( emaf_t* driver, float alpha, float outputInit )
 {
-    int8_t retVal = FALSE;
+    uint8_t retVal = FALSE;
 
-    if ( ( alpha >= 0 ) && ( alpha <= 1 ) )
+    if ( ( driver != NULL ) && ( alpha >= 0 ) && ( alpha <= 1 ) )
     {
         driver->alpha = alpha;
         driver->alphan = 1 - alpha;

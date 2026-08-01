@@ -53,7 +53,7 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
+uint8_t comatInit ( comat_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
                                 uint32_t rxSize, uint32_t txSize,
                                 uint32_t rxTimeout,
                                 void (*packetProcess) ( uint8_t* rxBuf, uint32_t rxInd, uint8_t* txBuf, uint32_t* txInd ),

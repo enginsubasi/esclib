@@ -3,7 +3,7 @@
   *
   * @file      bininp.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.0.0
+  * @version   1.1.0
   * @date      05/10/2020
   *
   * @brief     Binary input read and filtering.
@@ -21,9 +21,14 @@
   *            edge is now detected in bininpUpdate. @n
   * 29/07/2026 Bug fix. bininpInit only assigned filterCount and left @n
   *            filterCounter, output and rising uninitialized. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "bininp.h"
 
@@ -34,14 +39,28 @@
  *                          accepted as the filtered output only once it has
  *                          persisted for more than filterCount consecutive
  *                          bininpUpdate calls, i.e. filterCount + 1 calls.
+ * @return  TRUE on success, FALSE when driver is NULL.
  */
-void bininpInit ( bininp_t* driver, uint32_t filterCount )
+uint8_t bininpInit ( bininp_t* driver, uint32_t filterCount )
 {
-    driver->filterCount = filterCount;
-    driver->filterCounter = 0;
+    uint8_t retVal = FALSE;
 
-    driver->output = FALSE;
-    driver->rising = FALSE;
+    if ( driver != NULL )
+    {
+        driver->filterCount = filterCount;
+        driver->filterCounter = 0;
+
+        driver->output = FALSE;
+        driver->rising = FALSE;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**

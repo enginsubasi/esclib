@@ -36,7 +36,7 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
-void hysteresisInit ( hysteresis_t* driver, float upValue, float downValue );
+uint8_t hysteresisInit ( hysteresis_t* driver, float upValue, float downValue );
 void hysteresisControl ( hysteresis_t* driver, float input );
 uint8_t hysteresisGetOutput ( hysteresis_t* driver );
 

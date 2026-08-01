@@ -3,7 +3,7 @@
   *
   * @file      circBuf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      29/03/2022
   *
   * @brief     Circular buffer implementation.
@@ -14,6 +14,8 @@
   * @par History
   * 29/03/2022 Created. @n
   * 29/07/2026 Bug fix. NULL was used without including stddef.h. @n
+  * 01/08/2026 circBufInitu32 held its status in an int8_t local while @n
+  *            declaring a uint8_t return type. @n
   *
   ******************************************************************************
   */
@@ -33,7 +35,7 @@
  */
 uint8_t circBufInitu32 ( circBufu32_t* driver, uint32_t* buffer, uint32_t capacity, uint8_t behaviour )
 {
-    int8_t retVal = FALSE;
+    uint8_t retVal = FALSE;
 
     if ( ( driver != NULL ) && ( buffer != NULL ) && ( capacity != 0 ) )
     {

@@ -3,7 +3,7 @@
   *
   * @file      dcmotor.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.3
+  * @version   0.0.4
   * @date      23/05/2022
   *
   * @brief     DC motor driver file.
@@ -21,9 +21,16 @@
   * 01/08/2026 The driver struct is a typedef named after the module, @n
   *            the way every other module in the library declares it. @n
   *            Callers no longer write the struct keyword. @n
+  * 01/08/2026 Init reports its outcome as a uint8_t status instead of @n
+  *            returning void, and validates its arguments. The @n
+  *            library used three different conventions for this. @n
+  * 01/08/2026 The pwm callback is given a float literal instead of a @n
+  *            cast double zero. @n
   *
   ******************************************************************************
   */
+
+#include <stddef.h>
 
 #include "dcmotor.h"
 
@@ -33,20 +40,39 @@
  * @param[in]  bridgeHighFnc  Drives the bridge high side pin.
  * @param[in]  bridgeLowFnc   Drives the bridge low side pin.
  * @param[in]  pwmFnc         Sets the motor drive PWM duty cycle.
+ * @return  TRUE on success, FALSE when driver or any of the three callbacks
+ *          is NULL.
  * @note    Sets the PWM duty cycle to zero and the bridge to BRIDGE_NO
  *          before returning.
+ * @note    Every callback is required. This function calls all three before
+ *          it returns, so a NULL here would surface as a crash rather than a
+ *          status.
  */
-void dcMotorInit ( dcmotor_t *driver,
+uint8_t dcMotorInit ( dcmotor_t *driver,
                     void ( *bridgeHighFnc )( uint8_t ),
                     void ( *bridgeLowFnc )( uint8_t ),
                     void ( *pwmFnc )( float ))
 {
-    driver->bridgeHigh = bridgeHighFnc;
-    driver->bridgeLow = bridgeLowFnc;
-    driver->pwm = pwmFnc;
+    uint8_t retVal = FALSE;
 
-    driver->pwm ( ( float ) 0.0 );
-    dcMotorBridgeState ( driver, BRIDGE_NO );
+    if ( ( driver != NULL ) && ( bridgeHighFnc != NULL ) &&
+            ( bridgeLowFnc != NULL ) && ( pwmFnc != NULL ) )
+    {
+        driver->bridgeHigh = bridgeHighFnc;
+        driver->bridgeLow = bridgeLowFnc;
+        driver->pwm = pwmFnc;
+
+        driver->pwm ( 0.0f );
+        dcMotorBridgeState ( driver, BRIDGE_NO );
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
 }
 
 /**
