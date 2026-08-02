@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The `filter/` group is the largest and each module there answers a different problem, so pick by what is wrong with the signal rather than by habit: `maf`/`emaf` smooth, `median` rejects impulses outright, `biquad` shapes a response in hertz (and is the only way to notch mains hum), `slew` bounds the rate of change, `deadband` holds the output still until the input really moves, and `alphabeta` estimates position *and* velocity. `emaf` also carries an integer-only variant, `emafIniti32`/`emafIterationi32`, for parts with no FPU — it is a width variant of `emaf` rather than a module of its own, so the float code shares the file with it.
 
+`sort` and `search` pair up and the choice within each is the same kind of decision. Among the sorts, `sortInsertion` wins on short or nearly-sorted arrays and is stable, `sortHeap` is the only one with an O(N log N) *guarantee* and stays in place without recursing, and `sortSelection`/`sortBubble` are there for teaching rather than for speed. Every sort produces ascending order; `sortReverse` turns that into descending in one pass, which is why there is no descending variant of each. Among the searches, `searchBinary` answers whether a value is present, `searchLowerBound`/`searchUpperBound` answer where it belongs — the insertion point, and their difference is the number of duplicates — and `searchClosest` answers which entry to read, which is what a calibration or linearisation table actually needs. All of the binary ones require ascending order and give a confident wrong answer without it, so `sortIsSorted` exists to check that precondition cheaply.
+
 There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself.
 
 ## Building and testing
@@ -162,9 +164,11 @@ These are stubs awaiting design, not defects. Leave them alone unless implementi
 
 ## Testing gap — the largest open risk
 
-Ten test programs cover 27 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
+Eleven test programs cover 27 modules. `basicmath.c` is the file with the most logic still carrying **no test at all**, and it is also one of the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
 
-`test/ShiftRegister_Test/`, `test/Filter_Test/` and `test/FilterSet_Test/` are the exceptions to the house test style: they assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure. Prefer that shape for new tests. The first two exist because a bug lived precisely where the printing tests did not look — `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
+`test/ShiftRegister_Test/`, `test/Filter_Test/`, `test/FilterSet_Test/` and `test/SortSearch_Test/` are the exceptions to the house test style: they assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure. Prefer that shape for new tests. The first two exist because a bug lived precisely where the printing tests did not look — `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
+
+`SortSearch_Test` covers both modules end to end, including the three bugs the July 2026 audit fixed there: the stray semicolon that made `searchLinear` report a match at index 0 for anything, and the `length - 1` underflow in `sortSelection` and in the binary searches. Each has a check aimed at it, so a regression fails rather than passes quietly.
 
 Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run.
 

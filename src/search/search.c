@@ -3,7 +3,7 @@
   *
   * @file      search.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.5
+  * @version   0.1.0
   * @date      15/09/2021
   *
   * @brief     Search function library file.
@@ -24,9 +24,23 @@
   *            now. The old names sat in the global namespace @n
   *            with no library marker, which invited a clash in @n
   *            any project that links other libraries. @n
+  * 02/08/2026 searchLowerBound and searchUpperBound added for the @n
+  *            three types. They answer where an item belongs rather @n
+  *            than whether it is present, which is what a caller @n
+  *            keeping an array sorted by hand needs, and what @n
+  *            searchBinary could not say. @n
+  * 02/08/2026 searchClosest added for the three types. A calibration @n
+  *            or linearisation table wants the nearest entry, not an @n
+  *            exact one, and on float data an exact match is close to @n
+  *            useless in the first place. @n
   *
-  * @note      Every function reports FALSE for a zero length array and leaves
-  *            foundIndex untouched.
+  * @note      Every function that reports a status returns FALSE for a zero
+  *            length array and leaves foundIndex untouched.
+  *
+  * @note      searchLowerBound and searchUpperBound return an index rather
+  *            than a status, because their answer always exists. For a zero
+  *            length array that answer is 0, which is at once one past the
+  *            end and the only position an insert can go.
   *
   ******************************************************************************
   */
@@ -311,6 +325,464 @@ uint8_t searchBinaryi32 ( const int32_t* const array, uint32_t length, int32_t i
                 }
             }
         }
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the position of the first element that is not below the item.
+ * @param[in] array   Array to search, sorted in ascending order.
+ * @param[in] length  Number of elements in the array.
+ * @param[in] item    Value to place.
+ * @return  Index of the first element greater than or equal to item, or length
+ *          when every element is below it.
+ * @note    No status to check. The answer always exists, and length is a
+ *          meaningful part of the range rather than an error: it says the item
+ *          belongs past the last element.
+ * @note    The returned index is where an insert has to go to leave the array
+ *          sorted, whether or not the item is already present. That makes this
+ *          the function to reach for when a sorted table is built up a value at
+ *          a time.
+ * @note    With duplicates this lands on the first of them, which searchBinary
+ *          does not promise. searchUpperBound lands one past the last, so the
+ *          difference between the two is how many times the item occurs.
+ * @note    The window is half open, low inclusive and high exclusive, so high
+ *          never has to step below low and the unsigned indices cannot
+ *          underflow.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ * @note    epsilon plays no part here, unlike searchBinary. The question is
+ *          which side of the item an element falls on, not whether it is near
+ *          enough to count as equal.
+ */
+uint32_t searchLowerBound ( const float* const array, uint32_t length, float item )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( array[ mid ] < item )
+        {
+            low = mid + 1u;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+
+    retVal = low;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the position of the first unsigned 32-bit element that is not
+ *          below the item.
+ * @param[in] array   Array to search, sorted in ascending order.
+ * @param[in] length  Number of elements in the array.
+ * @param[in] item    Value to place.
+ * @return  Index of the first element greater than or equal to item, or length
+ *          when every element is below it.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint32_t searchLowerBoundu32 ( const uint32_t* const array, uint32_t length, uint32_t item )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( array[ mid ] < item )
+        {
+            low = mid + 1u;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+
+    retVal = low;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the position of the first signed 32-bit element that is not
+ *          below the item.
+ * @param[in] array   Array to search, sorted in ascending order.
+ * @param[in] length  Number of elements in the array.
+ * @param[in] item    Value to place.
+ * @return  Index of the first element greater than or equal to item, or length
+ *          when every element is below it.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint32_t searchLowerBoundi32 ( const int32_t* const array, uint32_t length, int32_t item )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( array[ mid ] < item )
+        {
+            low = mid + 1u;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+
+    retVal = low;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the position one past the last element that is not above the item.
+ * @param[in] array   Array to search, sorted in ascending order.
+ * @param[in] length  Number of elements in the array.
+ * @param[in] item    Value to place.
+ * @return  Index of the first element strictly greater than item, or length
+ *          when no element is.
+ * @note    Differs from searchLowerBound in one comparison: this one steps past
+ *          an element equal to the item, the other stops on it. So for an item
+ *          that is not present the two agree, and for one that is they bracket
+ *          its run.
+ * @note    searchUpperBound minus searchLowerBound is how many times the item
+ *          occurs, and costs two binary searches rather than a scan.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint32_t searchUpperBound ( const float* const array, uint32_t length, float item )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( array[ mid ] > item )
+        {
+            high = mid;
+        }
+        else
+        {
+            low = mid + 1u;
+        }
+    }
+
+    retVal = low;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the position one past the last unsigned 32-bit element that is
+ *          not above the item.
+ * @param[in] array   Array to search, sorted in ascending order.
+ * @param[in] length  Number of elements in the array.
+ * @param[in] item    Value to place.
+ * @return  Index of the first element strictly greater than item, or length
+ *          when no element is.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint32_t searchUpperBoundu32 ( const uint32_t* const array, uint32_t length, uint32_t item )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( array[ mid ] > item )
+        {
+            high = mid;
+        }
+        else
+        {
+            low = mid + 1u;
+        }
+    }
+
+    retVal = low;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the position one past the last signed 32-bit element that is
+ *          not above the item.
+ * @param[in] array   Array to search, sorted in ascending order.
+ * @param[in] length  Number of elements in the array.
+ * @param[in] item    Value to place.
+ * @return  Index of the first element strictly greater than item, or length
+ *          when no element is.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint32_t searchUpperBoundi32 ( const int32_t* const array, uint32_t length, int32_t item )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( array[ mid ] > item )
+        {
+            high = mid;
+        }
+        else
+        {
+            low = mid + 1u;
+        }
+    }
+
+    retVal = low;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the element nearest to the item, whether or not it matches.
+ * @param[in]  array       Array to search, sorted in ascending order.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of the nearest element. Untouched when the
+ *                         array is empty.
+ * @return  TRUE when an index was produced, FALSE only when length is zero.
+ * @note    This is the lookup a calibration or linearisation table actually
+ *          wants. searchBinary answers whether a value is present, which for
+ *          float data is rarely the question and rarely yes; this answers which
+ *          entry to read, which always has a sensible answer.
+ * @note    An item outside the table clamps to the nearer end rather than
+ *          failing, so a reading past the ends of a calibration table gives the
+ *          first or last entry instead of nothing.
+ * @note    Where two entries are equally near, the lower index wins, which
+ *          keeps the result steady as a reading dithers around the midpoint
+ *          between them. Where several entries hold that same nearest value,
+ *          the first of them is reported, so the answer depends on the contents
+ *          of the table and not on the shape of the search that walked it.
+ * @note    Costs one binary search, or two when the answer is at or below the
+ *          item, since the second one walks back to the first entry holding the
+ *          value the first search landed on. Still O(log N).
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint8_t searchClosest ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex )
+{
+    uint8_t retVal = FALSE;
+    uint32_t pos = 0;
+    float distBelow = 0;
+    float distAbove = 0;
+
+    if ( length != 0 )
+    {
+        pos = searchLowerBound ( array, length, item );
+
+        if ( pos == 0 )
+        {
+            // The item sits at or below the first element, and index 0 is
+            // already the first entry holding that value.
+            ( *foundIndex ) = 0;
+        }
+        else if ( pos == length )
+        {
+            // The item sits above every element, so the last one is nearest.
+            // It can be the tail of a run of equal values, so step back to the
+            // head of that run.
+            ( *foundIndex ) = searchLowerBound ( array, length, array[ length - 1u ] );
+        }
+        else
+        {
+            // The item falls between the two neighbours of pos, so that
+            // array[pos - 1] is below it and array[pos] is at or above it.
+            distBelow = item - array[ pos - 1u ];
+            distAbove = array[ pos ] - item;
+
+            if ( distAbove < distBelow )
+            {
+                // pos is where searchLowerBound stopped, so no earlier element
+                // can hold this value and pos is already the first of its run.
+                ( *foundIndex ) = pos;
+            }
+            else
+            {
+                ( *foundIndex ) = searchLowerBound ( array, length, array[ pos - 1u ] );
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the unsigned 32-bit element nearest to the item, whether or
+ *          not it matches.
+ * @param[in]  array       Array to search, sorted in ascending order.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of the nearest element. Untouched when the
+ *                         array is empty.
+ * @return  TRUE when an index was produced, FALSE only when length is zero.
+ * @note    Where two entries are equally near, the lower index wins, and where
+ *          several hold that nearest value, the first of them is reported.
+ * @note    Neither subtraction can underflow. array[pos - 1] is strictly below
+ *          the item and array[pos] is at or above it, which is exactly what
+ *          searchLowerBound guarantees about the position it returns.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint8_t searchClosestu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex )
+{
+    uint8_t retVal = FALSE;
+    uint32_t pos = 0;
+    uint32_t distBelow = 0;
+    uint32_t distAbove = 0;
+
+    if ( length != 0 )
+    {
+        pos = searchLowerBoundu32 ( array, length, item );
+
+        if ( pos == 0 )
+        {
+            ( *foundIndex ) = 0;
+        }
+        else if ( pos == length )
+        {
+            ( *foundIndex ) = searchLowerBoundu32 ( array, length, array[ length - 1u ] );
+        }
+        else
+        {
+            distBelow = item - array[ pos - 1u ];
+            distAbove = array[ pos ] - item;
+
+            if ( distAbove < distBelow )
+            {
+                ( *foundIndex ) = pos;
+            }
+            else
+            {
+                ( *foundIndex ) = searchLowerBoundu32 ( array, length, array[ pos - 1u ] );
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the signed 32-bit element nearest to the item, whether or not
+ *          it matches.
+ * @param[in]  array       Array to search, sorted in ascending order.
+ * @param[in]  length      Number of elements in the array.
+ * @param[in]  item        Value to look for.
+ * @param[out] foundIndex  Index of the nearest element. Untouched when the
+ *                         array is empty.
+ * @return  TRUE when an index was produced, FALSE only when length is zero.
+ * @note    Where two entries are equally near, the lower index wins, and where
+ *          several hold that nearest value, the first of them is reported.
+ * @note    The two distances are computed on the values cast to uint32_t, not
+ *          subtracted as signed. The gap between two int32_t values can reach
+ *          just under 2 to the 32nd, which overflows a signed subtraction and
+ *          is undefined; an unsigned one wraps by definition and lands on the
+ *          exact distance. An item of INT32_MAX against an element of INT32_MIN
+ *          is the case that breaks the naive form.
+ * @note    array must be sorted in ascending order. An unsorted array produces
+ *          a wrong result without any indication of error.
+ */
+uint8_t searchClosesti32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex )
+{
+    uint8_t retVal = FALSE;
+    uint32_t pos = 0;
+    uint32_t distBelow = 0;
+    uint32_t distAbove = 0;
+
+    if ( length != 0 )
+    {
+        pos = searchLowerBoundi32 ( array, length, item );
+
+        if ( pos == 0 )
+        {
+            ( *foundIndex ) = 0;
+        }
+        else if ( pos == length )
+        {
+            ( *foundIndex ) = searchLowerBoundi32 ( array, length, array[ length - 1u ] );
+        }
+        else
+        {
+            distBelow = ( uint32_t ) item - ( uint32_t ) array[ pos - 1u ];
+            distAbove = ( uint32_t ) array[ pos ] - ( uint32_t ) item;
+
+            if ( distAbove < distBelow )
+            {
+                ( *foundIndex ) = pos;
+            }
+            else
+            {
+                ( *foundIndex ) = searchLowerBoundi32 ( array, length, array[ pos - 1u ] );
+            }
+        }
+
+        retVal = TRUE;
     }
     else
     {

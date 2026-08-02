@@ -35,6 +35,15 @@ uint8_t searchLineari32 ( const int32_t* const array, uint32_t length, int32_t i
 uint8_t searchBinary ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon );
 uint8_t searchBinaryu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex );
 uint8_t searchBinaryi32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex );
+uint32_t searchLowerBound ( const float* const array, uint32_t length, float item );
+uint32_t searchLowerBoundu32 ( const uint32_t* const array, uint32_t length, uint32_t item );
+uint32_t searchLowerBoundi32 ( const int32_t* const array, uint32_t length, int32_t item );
+uint32_t searchUpperBound ( const float* const array, uint32_t length, float item );
+uint32_t searchUpperBoundu32 ( const uint32_t* const array, uint32_t length, uint32_t item );
+uint32_t searchUpperBoundi32 ( const int32_t* const array, uint32_t length, int32_t item );
+uint8_t searchClosest ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex );
+uint8_t searchClosestu32 ( const uint32_t* const array, uint32_t length, uint32_t item, uint32_t* const foundIndex );
+uint8_t searchClosesti32 ( const int32_t* const array, uint32_t length, int32_t item, uint32_t* const foundIndex );
 
 #ifdef __cplusplus
 }
