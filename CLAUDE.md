@@ -162,15 +162,33 @@ These are stubs awaiting design, not defects. Leave them alone unless implementi
 - `src/communication/comsec.c` and `src/communication/comsafe.c` contain only a file banner. `inc/communication/comsec.h`, `comsafe.h`, `comgenbuf.h` and `inc/matrix/matrixlib.h` declare types but no function prototypes. Each of those four headers opens with a Doxygen `@warning` saying so — keep it there, it is the only thing standing between a consumer and a link error.
 - `rules.md` is an empty placeholder.
 
-## Testing gap — the largest open risk
+## Testing
 
-Eleven test programs cover 27 modules. `basicmath.c` is the file with the most logic still carrying **no test at all**, and it is also one of the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
+Twenty test programs cover every module that has functions, and **every one of the 181 exported symbols is referenced by at least one of them**. The only files with no test are `comsec`, `comsafe`, `comgenbuf` and `matrixlib`, which have nothing to test — see the known gaps above. Check that coverage claim still holds after adding an exported function:
 
-`test/ShiftRegister_Test/`, `test/Filter_Test/`, `test/FilterSet_Test/` and `test/SortSearch_Test/` are the exceptions to the house test style: they assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure. Prefer that shape for new tests. The first two exist because a bug lived precisely where the printing tests did not look — `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
+```bash
+cat test/*/*.c > /tmp/alltests.c
+arm-none-eabi-nm /tmp/objs/*.o | grep ' T ' | awk '{print $3}' | sort -u | \
+  while read s; do grep -q "\b$s\b" /tmp/alltests.c || echo "UNCALLED: $s"; done
+```
 
-`SortSearch_Test` covers both modules end to end, including the three bugs the July 2026 audit fixed there: the stray semicolon that made `searchLinear` report a match at index 0 for anything, and the `length - 1` underflow in `sortSelection` and in the binary searches. Each has a check aimed at it, so a regression fails rather than passes quietly.
+**The assert style is the house style now.** Thirteen tests assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure: `ShiftRegister_Test`, `Filter_Test`, `FilterSet_Test`, `SortSearch_Test`, `Math_Test`, `ArrayMatrix_Test`, `CRC_Test`, `Logic_Test`, `Protocol_Test`, `DcMotor_Test`, `Buffer_Test`, `ComplexMath_Test` and `Control_Test`. Write new tests that way.
 
-Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run.
+The seven older printing tests — `MAF_Test`, `EMAF_Test`, `Complex_Test`, `PID_Test`, `Hysteresis_Test`, `CircularBufferTest`, `WriteToAFile_Test` — predate that decision, and only five of them have an `output.txt` at all. Three of them are now shadowed rather than replaced: `Buffer_Test` covers what `CircularBufferTest` does not reach (the whole `u8` half, both overflow behaviours, the status reporting), `ComplexMath_Test` does the same for `Complex_Test`, and `Control_Test` for `PID_Test` and `Hysteresis_Test` (the four separate limiters, both `Change` functions, the argument checks). The printing originals are left alone; when one of these modules changes, the assert-style test is the one that has to keep passing. The first assert-style tests exist because a bug lived precisely where the printing tests did not look: `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
+
+Several tests aim a specific check at a specific fixed bug, so the regression fails rather than passing quietly. When touching one of these, that check is the one to keep:
+
+| test | bug it pins |
+|---|---|
+| `SortSearch_Test` | the stray semicolon that made `searchLinear` match at index 0 for anything; the `length - 1` underflow in `sortSelection` and in the binary searches |
+| `Math_Test` | `mathFindMini32` returning the maximum; `mathCalculateMedian` not averaging the two middle elements |
+| `Protocol_Test` | `rxTimeoutCounter` running on across frames. Note that the tick-driven discard cleared the counter even before the fix, so only a sequence that **completes** a frame late in its budget and then asks the next one for a full budget discriminates. Same for the buffer-overflow reset path. |
+| `Filter_Test` | the `emafu32` dead band and the `emafGetOutputu32` range overflow |
+| `ShiftRegister_Test` | the two transfer modes colliding, and the delay-to-step relation between them |
+| `ComplexMath_Test` | the `complexDiv` sign, checked both against the answer and by multiplying the quotient back |
+| `Control_Test` | `pidInit` leaving `lastError` and `partI` unset, and `ts == 0` reaching the derivative divide |
+
+Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run. Expected values in the assert-style tests were derived from independent models — an IEEE binary32 transliteration for the float ones, the CRC polynomials for `CRC_Test`, a state-machine replay for `Protocol_Test` — rather than from the C itself, which is the only thing that makes them worth anything without a run.
 
 Test `output.txt` files predate the July 2026 bug fixes and are stale until regenerated on a machine with a host compiler. What moved the numbers:
 

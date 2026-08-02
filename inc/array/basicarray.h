@@ -37,4 +37,4 @@ void arrayLimitUpDw1Di32 ( int32_t* array, int32_t upValue, int32_t dwValue, uin
 }
 #endif
 
-#endif /* BASICMATRIX_H_ */
+#endif /* BASICARRAY_H_ */

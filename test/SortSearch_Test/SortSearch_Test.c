@@ -298,6 +298,15 @@ static void reverseAndIsSortedCase ( void )
     sortReverseu32 ( workU, 0u );
     sortReverseu32 ( workU, 1u );
     check ( "sortReverse survives lengths 0 and 1", ( uint8_t ) ( workU[ 0 ] == 1u ) );
+
+    {
+        int32_t workI[ 4 ] = { -7, -2, 0, 9 };
+
+        sortReversei32 ( workI, 4u );
+        check ( "sortReversei32 reverses across both signs",
+                ( uint8_t ) ( ( workI[ 0 ] == 9 ) && ( workI[ 1 ] == 0 ) &&
+                              ( workI[ 2 ] == -2 ) && ( workI[ 3 ] == -7 ) ) );
+    }
 }
 
 /* -------------------------------------------------- linear and binary find */
@@ -353,6 +362,18 @@ static void findCase ( void )
             ( uint8_t ) ( searchBinaryi32 ( wantI, LEN, 2147483646, &idx ) == FALSE ) );
     check ( "searchBinaryi32 with a zero length",
             ( uint8_t ) ( searchBinaryi32 ( wantI, 0u, 0, &idx ) == FALSE ) );
+
+    check ( "searchLineari32 finds a negative item",
+            searchLineari32 ( srcI, LEN, -2, &idx ) );
+    check ( "at the right index", ( uint8_t ) ( idx == 1u ) );
+    check ( "searchLineari32 finds INT32_MIN",
+            searchLineari32 ( srcI, LEN, -2147483647 - 1, &idx ) );
+    check ( "at its index", ( uint8_t ) ( idx == 5u ) );
+
+    idx = 0xAAAAAAAAu;
+    check ( "searchLineari32 reports a missing item",
+            ( uint8_t ) ( searchLineari32 ( srcI, LEN, 12345, &idx ) == FALSE ) );
+    check ( "and leaves foundIndex alone", ( uint8_t ) ( idx == 0xAAAAAAAAu ) );
 }
 
 /* --------------------------------------------------- lower and upper bound */
