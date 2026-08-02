@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `esclib` is a freestanding general-purpose C library for embedded targets: filters, PID/hysteresis control, circular buffer, CRC, sort/search, matrix/complex math, serial protocol handlers, and shift-register drivers. No heap allocation, no OS dependency, C89-compatible style, `<stdint.h>` types throughout.
 
-The `filter/` group is the largest and each module there answers a different problem, so pick by what is wrong with the signal rather than by habit: `maf`/`emaf` smooth, `median` rejects impulses outright, `biquad` shapes a response in hertz (and is the only way to notch mains hum), `slew` bounds the rate of change, `deadband` holds the output still until the input really moves, `alphabeta` estimates position *and* velocity, and `emafi32` is the integer-only exponential average for parts with no FPU.
+The `filter/` group is the largest and each module there answers a different problem, so pick by what is wrong with the signal rather than by habit: `maf`/`emaf` smooth, `median` rejects impulses outright, `biquad` shapes a response in hertz (and is the only way to notch mains hum), `slew` bounds the rate of change, `deadband` holds the output still until the input really moves, and `alphabeta` estimates position *and* velocity. `emaf` also carries an integer-only variant, `emafIniti32`/`emafIterationi32`, for parts with no FPU — it is a width variant of `emaf` rather than a module of its own, so the float code shares the file with it.
 
 There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself.
 
@@ -50,7 +50,7 @@ There is no namespace in C and this library is copied into other people's projec
 | `sort` | `sort` | `logic` | `logic` |
 | `search` | `search` | `crc16`/`crc32` | already `crc16`/`crc32` |
 
-Stateful modules use their own name (`maf`, `emaf`, `emafi32`, `median`, `biquad`, `slew`, `deadband`, `alphabeta`, `pid`, `circBuf`, `comat`, `comstxetx`, `bininp`, `hysteresis`, `complex`, `hc595`, `hc597`, `dcMotor`). Check with `nm` after adding anything:
+Stateful modules use their own name (`maf`, `emaf`, `median`, `biquad`, `slew`, `deadband`, `alphabeta`, `pid`, `circBuf`, `comat`, `comstxetx`, `bininp`, `hysteresis`, `complex`, `hc595`, `hc597`, `dcMotor`). Check with `nm` after adding anything:
 
 ```bash
 arm-none-eabi-nm /tmp/objs/*.o | grep ' T ' | awk '{print $3}' | sort -u

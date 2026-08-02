@@ -3,7 +3,7 @@
   *
   * @file      emaf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   3.0.1
+  * @version   3.1.0
   * @date      22/04/2020
   *
   * @brief     Exponential moving average filter.
@@ -43,6 +43,12 @@
   *            bits, so every input above 4294967167 rounds up to @n
   *            4294967296 on the way in, and casting that back is @n
   *            undefined behaviour. The read clamps now. @n
+  * 02/08/2026 The i32 variant is added. It arrived as a module of its @n
+  *            own called emafi32, which was the wrong shape: its names @n
+  *            read as emaf with a width suffix, exactly like the u32 @n
+  *            variant beside it, so it belonged here. Folded in and @n
+  *            renamed to match its siblings, emafi32Init becoming @n
+  *            emafIniti32 and so on. @n
   *
   ******************************************************************************
   */
@@ -200,4 +206,102 @@ uint32_t emafGetOutputu32 ( const emafu32_t* const driver )
     }
 
     return ( retVal );
+}
+
+/**
+ * @brief   Initializes the exponential moving average filter for signed 32-bit
+ *          data, using integer arithmetic only.
+ * @param[out] driver      Filter state to initialize.
+ * @param[in]  shift       Smoothing factor, as alpha = 1 / 2^shift. Must be
+ *                         between 1 and 30.
+ * @param[in]  outputInit  Value the filter starts from.
+ * @return  TRUE on success, FALSE when driver is NULL, shift is outside
+ *          1 to 30, or outputInit is too large for the chosen shift.
+ * @note    The same filter as emafInit, reachable on a part with no floating
+ *          point unit. Fixing alpha at 1 / 2^shift turns the whole update into
+ *          one subtraction, one addition and two shifts. No multiply, no
+ *          divide, no float on this path.
+ * @note    That last sentence is about this path only. The float variants above
+ *          share the file, so a project without an FPU that copies emaf.c gets
+ *          them compiled too, and without --gc-sections the linker keeps them.
+ *          Delete the variants it does not call, or let the linker drop them.
+ * @note    A larger shift filters harder and responds more slowly. shift of 1
+ *          is alpha of 0.5, shift of 4 is 0.0625, shift of 8 is about 0.004.
+ * @note    Every input must satisfy the same bound as outputInit, which is
+ *          INT32_MAX >> shift, and nothing checks it on the iteration path.
+ *          The accumulator holds the output scaled up by 2^shift, so an input
+ *          past that bound overflows it. With shift of 4 the limit is about
+ *          134 million, with shift of 8 about 8.4 million. A converter reading
+ *          is nowhere near either; a raw 32-bit counter is.
+ * @note    A shift of zero is rejected. It would leave the filter a wire, and
+ *          it is also the one setting where the subtraction in the update could
+ *          overflow.
+ */
+uint8_t emafIniti32 ( emafi32_t* driver, uint8_t shift, int32_t outputInit )
+{
+    uint8_t retVal = FALSE;
+    int32_t bound = 0;
+
+    if ( ( driver != NULL ) && ( shift >= 1u ) && ( shift <= 30u ) )
+    {
+        bound = INT32_MAX >> shift;
+
+        if ( ( outputInit <= bound ) && ( outputInit >= -bound ) )
+        {
+            driver->shift = shift;
+            driver->output = outputInit;
+
+            /*
+             * The accumulator carries the output scaled up by 2^shift, which is
+             * where the fraction lives. Built with a multiply rather than a left
+             * shift: shifting a negative value left is undefined in C, and
+             * outputInit is signed.
+             */
+            driver->accumulator = outputInit * ( int32_t ) ( 1u << shift );
+
+            retVal = TRUE;
+        }
+        else
+        {
+            retVal = FALSE;
+        }
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Adds a new sample to the signed 32-bit integer exponential moving
+ *          average filter and updates its output.
+ * @param[in,out] driver   Filter state.
+ * @param[in]     newData  New sample. Must satisfy the bound documented on
+ *                         emafIniti32.
+ * @note    The fraction is kept in the accumulator and only the shifted copy is
+ *          published, so a sample that moves the output by less than one count
+ *          still moves the accumulator and is not lost.
+ * @note    Relies on the right shift of a negative value being arithmetic. The
+ *          standard leaves that implementation defined, but every compiler this
+ *          library targets does it, and the alternative, dividing by 2^shift,
+ *          rounds towards zero and would bias the filter upward on negative
+ *          signals.
+ */
+void emafIterationi32 ( emafi32_t* driver, int32_t newData )
+{
+    driver->accumulator += ( newData - ( driver->accumulator >> driver->shift ) );
+    driver->output = driver->accumulator >> driver->shift;
+}
+
+/**
+ * @brief   Gets the current output of the signed 32-bit integer exponential
+ *          moving average filter.
+ * @param[in] driver  Filter state.
+ * @return  Current filtered value.
+ */
+int32_t emafGetOutputi32 ( const emafi32_t* const driver )
+{
+    return ( driver->output );
 }

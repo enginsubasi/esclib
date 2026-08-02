@@ -1,6 +1,6 @@
 /*
- * Covers the six filters added alongside maf and emaf: median, biquad, slew,
- * alphabeta, deadband and emafi32.
+ * Covers the filters added alongside maf and emaf: median, biquad, slew,
+ * alphabeta and deadband, plus the integer variant that went into emaf itself.
  *
  * Asserts rather than printing values for a human to compare, so it needs no
  * output.txt and returns non zero on the first failure. Expected values were
@@ -15,7 +15,7 @@
 #include "slew.h"
 #include "alphabeta.h"
 #include "deadband.h"
-#include "emafi32.h"
+#include "emaf.h"
 
 static uint32_t failures = 0;
 
@@ -441,57 +441,57 @@ static void biquadCase ( void )
     check ( "and it stays there", flat );
 }
 
-/* --------------------------------------------------------------- emafi32 */
+/* ---------------------------------------------------- emaf, i32 variant */
 
 static void emafi32Case ( void )
 {
     emafi32_t driver;
     uint32_t i = 0;
 
-    printf ( "emafi32\n" );
+    printf ( "emaf i32 variant\n" );
 
     check ( "NULL driver is rejected",
-            ( uint8_t ) ( emafi32Init ( NULL, 4u, 0 ) == FALSE ) );
+            ( uint8_t ) ( emafIniti32 ( NULL, 4u, 0 ) == FALSE ) );
     check ( "a zero shift is rejected",
-            ( uint8_t ) ( emafi32Init ( &driver, 0u, 0 ) == FALSE ) );
+            ( uint8_t ) ( emafIniti32 ( &driver, 0u, 0 ) == FALSE ) );
     check ( "a shift past 30 is rejected",
-            ( uint8_t ) ( emafi32Init ( &driver, 31u, 0 ) == FALSE ) );
+            ( uint8_t ) ( emafIniti32 ( &driver, 31u, 0 ) == FALSE ) );
     check ( "an outputInit too large for the shift is rejected",
-            ( uint8_t ) ( emafi32Init ( &driver, 8u, INT32_MAX ) == FALSE ) );
+            ( uint8_t ) ( emafIniti32 ( &driver, 8u, INT32_MAX ) == FALSE ) );
     check ( "an outputInit that fits is accepted",
-            emafi32Init ( &driver, 8u, ( INT32_MAX >> 8 ) ) );
+            emafIniti32 ( &driver, 8u, ( INT32_MAX >> 8 ) ) );
 
-    check ( "Init", emafi32Init ( &driver, 4u, 0 ) );
+    check ( "Init", emafIniti32 ( &driver, 4u, 0 ) );
 
     for ( i = 0; i < 4000u; ++i )
     {
-        emafi32Iteration ( &driver, 1000 );
+        emafIterationi32 ( &driver, 1000 );
     }
 
     check ( "it settles exactly on the input, with no dead band",
-            ( uint8_t ) ( emafi32GetOutput ( &driver ) == 1000 ) );
+            ( uint8_t ) ( emafGetOutputi32 ( &driver ) == 1000 ) );
 
-    check ( "Init for the negative case", emafi32Init ( &driver, 4u, 0 ) );
+    check ( "Init for the negative case", emafIniti32 ( &driver, 4u, 0 ) );
 
     for ( i = 0; i < 4000u; ++i )
     {
-        emafi32Iteration ( &driver, -1000 );
+        emafIterationi32 ( &driver, -1000 );
     }
 
     check ( "and settles on a negative input too",
-            ( uint8_t ) ( emafi32GetOutput ( &driver ) == -1000 ) );
+            ( uint8_t ) ( emafGetOutputi32 ( &driver ) == -1000 ) );
 
-    check ( "Init to check the response speed", emafi32Init ( &driver, 4u, 0 ) );
+    check ( "Init to check the response speed", emafIniti32 ( &driver, 4u, 0 ) );
 
     for ( i = 0; i < 80u; ++i )
     {
-        emafi32Iteration ( &driver, 1000 );
+        emafIterationi32 ( &driver, 1000 );
     }
 
     /* The float emaf with the same alpha reaches 994.3 after 80 samples. */
     check ( "80 samples with shift 4 land where the float filter does",
-            ( uint8_t ) ( ( emafi32GetOutput ( &driver ) >= 990 ) &&
-                          ( emafi32GetOutput ( &driver ) <= 998 ) ) );
+            ( uint8_t ) ( ( emafGetOutputi32 ( &driver ) >= 990 ) &&
+                          ( emafGetOutputi32 ( &driver ) <= 998 ) ) );
 }
 
 int main ( void )
