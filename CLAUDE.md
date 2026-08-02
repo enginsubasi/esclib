@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `esclib` is a freestanding general-purpose C library for embedded targets: filters, PID/hysteresis control, circular buffer, CRC, sort/search, matrix/complex math, serial protocol handlers, and shift-register drivers. No heap allocation, no OS dependency, C89-compatible style, `<stdint.h>` types throughout.
 
+The `filter/` group is the largest and each module there answers a different problem, so pick by what is wrong with the signal rather than by habit: `maf`/`emaf` smooth, `median` rejects impulses outright, `biquad` shapes a response in hertz (and is the only way to notch mains hum), `slew` bounds the rate of change, `deadband` holds the output still until the input really moves, `alphabeta` estimates position *and* velocity, and `emafi32` is the integer-only exponential average for parts with no FPU.
+
 There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself.
 
 ## Building and testing
@@ -48,7 +50,7 @@ There is no namespace in C and this library is copied into other people's projec
 | `sort` | `sort` | `logic` | `logic` |
 | `search` | `search` | `crc16`/`crc32` | already `crc16`/`crc32` |
 
-Stateful modules use their own name (`maf`, `emaf`, `pid`, `circBuf`, `comat`, `comstxetx`, `bininp`, `hysteresis`, `complex`, `hc595`, `hc597`, `dcMotor`). Check with `nm` after adding anything:
+Stateful modules use their own name (`maf`, `emaf`, `emafi32`, `median`, `biquad`, `slew`, `deadband`, `alphabeta`, `pid`, `circBuf`, `comat`, `comstxetx`, `bininp`, `hysteresis`, `complex`, `hc595`, `hc597`, `dcMotor`). Check with `nm` after adding anything:
 
 ```bash
 arm-none-eabi-nm /tmp/objs/*.o | grep ' T ' | awk '{print $3}' | sort -u
@@ -160,9 +162,9 @@ These are stubs awaiting design, not defects. Leave them alone unless implementi
 
 ## Testing gap — the largest open risk
 
-Nine test programs cover 21 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
+Ten test programs cover 27 modules. The three files with the most logic — `basicmath.c`, `sort.c` and `search.c` — have **no test at all**, and they are also the files the July 2026 audit changed most. `crc16`, `crc32`, `statistic`, `basicmatrix`, `logic`, `bininp`, `comat`, `comstxetx` and `dcmotor` are untested too.
 
-`test/ShiftRegister_Test/` and `test/Filter_Test/` are the exceptions to the house test style: they assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure. Prefer that shape for new tests. Both exist because a bug lived precisely where the printing tests did not look — `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
+`test/ShiftRegister_Test/`, `test/Filter_Test/` and `test/FilterSet_Test/` are the exceptions to the house test style: they assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure. Prefer that shape for new tests. The first two exist because a bug lived precisely where the printing tests did not look — `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
 
 Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run.
 
