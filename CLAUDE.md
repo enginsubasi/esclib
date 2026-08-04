@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`esclib` is a freestanding general-purpose C library for embedded targets: filters, PID/hysteresis control, circular buffer, CRC, sort/search, matrix/complex math, serial protocol handlers, and shift-register drivers. No heap allocation, no OS dependency, C89-compatible style, `<stdint.h>` types throughout.
+`esclib` is a freestanding general-purpose C library for embedded targets: filters, PID/hysteresis control, circular buffer, CRC, sort/search, matrix/complex math, serial protocol handlers, soft timers, and shift-register drivers. No heap allocation, no OS dependency, C89-compatible style, `<stdint.h>` types throughout.
 
 The `filter/` group is the largest and each module there answers a different problem, so pick by what is wrong with the signal rather than by habit: `maf`/`emaf` smooth, `median` rejects impulses outright, `biquad` shapes a response in hertz (and is the only way to notch mains hum), `slew` bounds the rate of change, `deadband` holds the output still until the input really moves, and `alphabeta` estimates position *and* velocity. `emaf` also carries an integer-only variant, `emafIniti32`/`emafIterationi32`, for parts with no FPU — it is a width variant of `emaf` rather than a module of its own, so the float code shares the file with it.
 
 `sort` and `search` pair up and the choice within each is the same kind of decision. Among the sorts, `sortInsertion` wins on short or nearly-sorted arrays and is stable, `sortHeap` is the only one with an O(N log N) *guarantee* and stays in place without recursing, and `sortSelection`/`sortBubble` are there for teaching rather than for speed. Every sort produces ascending order; `sortReverse` turns that into descending in one pass, which is why there is no descending variant of each. Among the searches, `searchBinary` answers whether a value is present, `searchLowerBound`/`searchUpperBound` answer where it belongs — the insertion point, and their difference is the number of duplicates — and `searchClosest` answers which entry to read, which is what a calibration or linearisation table actually needs. All of the binary ones require ascending order and give a confident wrong answer without it, so `sortIsSorted` exists to check that precondition cheaply.
+
+`softtimer` is the library's only time abstraction. It counts calls to `softtimerTick`, which the caller makes from a fixed-rate ISR, so the period is expressed in ticks and the interrupt rate is the unit — the same rule `hc595Interrupt` follows. One-shot and periodic modes share one struct; the periodic reload happens inside the tick rather than at the read, which is what lets an expiry the main loop fails to read cost the event but never the phase. The reload itself subtracts the period rather than clearing the counter, a form that stays correct if the counter ever overshoots today's invariant that it lands exactly on the period — the two forms are equivalent as things stand, and no test of this API distinguishes them. It is deliberately not consumed by `comat`, `dcMotor` or the shift-register drivers: they keep their own counters, because module independence forbids one module including another's header.
 
 There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself.
 
@@ -164,7 +166,7 @@ These are stubs awaiting design, not defects. Leave them alone unless implementi
 
 ## Testing
 
-Twenty test programs cover every module that has functions, and **every one of the 181 exported symbols is referenced by at least one of them**. The only files with no test are `comsec`, `comsafe`, `comgenbuf` and `matrixlib`, which have nothing to test — see the known gaps above. Check that coverage claim still holds after adding an exported function:
+Twenty-one test programs cover every module that has functions, and **every one of the 190 exported symbols is referenced by at least one of them**. The only files with no test are `comsec`, `comsafe`, `comgenbuf` and `matrixlib`, which have nothing to test — see the known gaps above. Check that coverage claim still holds after adding an exported function:
 
 ```bash
 cat test/*/*.c > /tmp/alltests.c
@@ -172,7 +174,7 @@ arm-none-eabi-nm /tmp/objs/*.o | grep ' T ' | awk '{print $3}' | sort -u | \
   while read s; do grep -q "\b$s\b" /tmp/alltests.c || echo "UNCALLED: $s"; done
 ```
 
-**The assert style is the house style now.** Thirteen tests assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure: `ShiftRegister_Test`, `Filter_Test`, `FilterSet_Test`, `SortSearch_Test`, `Math_Test`, `ArrayMatrix_Test`, `CRC_Test`, `Logic_Test`, `Protocol_Test`, `DcMotor_Test`, `Buffer_Test`, `ComplexMath_Test` and `Control_Test`. Write new tests that way.
+**The assert style is the house style now.** Fourteen tests assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure: `ShiftRegister_Test`, `Filter_Test`, `FilterSet_Test`, `SortSearch_Test`, `Math_Test`, `ArrayMatrix_Test`, `CRC_Test`, `Logic_Test`, `Protocol_Test`, `DcMotor_Test`, `Buffer_Test`, `ComplexMath_Test`, `Control_Test` and `SoftTimer_Test`. Write new tests that way.
 
 The seven older printing tests — `MAF_Test`, `EMAF_Test`, `Complex_Test`, `PID_Test`, `Hysteresis_Test`, `CircularBufferTest`, `WriteToAFile_Test` — predate that decision, and only five of them have an `output.txt` at all. Three of them are now shadowed rather than replaced: `Buffer_Test` covers what `CircularBufferTest` does not reach (the whole `u8` half, both overflow behaviours, the status reporting), `ComplexMath_Test` does the same for `Complex_Test`, and `Control_Test` for `PID_Test` and `Hysteresis_Test` (the four separate limiters, both `Change` functions, the argument checks). The printing originals are left alone; when one of these modules changes, the assert-style test is the one that has to keep passing. The first assert-style tests exist because a bug lived precisely where the printing tests did not look: `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
 
@@ -187,6 +189,7 @@ Several tests aim a specific check at a specific fixed bug, so the regression fa
 | `ShiftRegister_Test` | the two transfer modes colliding, and the delay-to-step relation between them |
 | `ComplexMath_Test` | the `complexDiv` sign, checked both against the answer and by multiplying the quotient back |
 | `Control_Test` | `pidInit` leaving `lastError` and `partI` unset, and `ts == 0` reaching the derivative divide |
+| `SoftTimer_Test` | a periodic timer stopping at its first expiry instead of reloading, and a one-shot that keeps counting after it has expired |
 
 Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run. Expected values in the assert-style tests were derived from independent models — an IEEE binary32 transliteration for the float ones, the CRC polynomials for `CRC_Test`, a state-machine replay for `Protocol_Test` — rather than from the C itself, which is the only thing that makes them worth anything without a run.
 
