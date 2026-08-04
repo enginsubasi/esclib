@@ -3,7 +3,7 @@
   *
   * @file      softtimer.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   1.0.0
   * @date      04/08/2026
   *
   * @brief     Tick counting soft timer, one shot or periodic.
@@ -12,7 +12,9 @@
   * Generic
   *
   * @par History
-  * 04/08/2026 Created. @n
+  * 04/08/2026 Created: one shot and periodic modes, start/stop, tick counting
+  *            with a phase preserving periodic reload, elapsed/remaining
+  *            queries and period change. @n
   *
   * @note      The period is expressed in ticks, not in milliseconds. The rate
   *            at which softtimerTick is called is the unit, so a 250 ms
