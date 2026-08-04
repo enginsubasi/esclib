@@ -4,10 +4,12 @@
  * Asserts rather than printing values for a human to compare, so it needs no
  * output.txt and returns non zero when any check fails.
  *
- * The check this file exists for is periodicPhaseCase: a periodic timer whose
- * expiry flag goes unread must not lose phase. Reloading by resetting the
- * counter to zero instead of subtracting the period passes every other case
- * in this file and fails that one.
+ * periodicCase and periodicPhaseCase pin the periodic mode split: that a
+ * periodic timer reloads and keeps running rather than stopping at its first
+ * expiry the way a one shot does, and that the reload happens at all. They do
+ * not distinguish subtracting the period from clearing the counter, and no
+ * test of this API can: the counter is below the period on entry to every
+ * tick, so it lands exactly on the period and the two reloads agree.
  */
 
 #include <stdio.h>
@@ -241,16 +243,15 @@ static void periodicCase ( void )
 }
 
 /*
- * The check this file exists for.
+ * Expiries that the main loop never reads must not disturb the tick the next
+ * one lands on. Ticking 35 times without reading the flag leaves 5 counts of
+ * the current period standing, so the next expiry is 5 ticks away, at tick 40.
  *
- * The reload subtracts the period rather than resetting the counter to zero,
- * so a missed expiry costs the event but never the phase. Ticking 35 times
- * without reading the flag leaves 5 counts standing, and the next expiry is
- * therefore 5 ticks away, at tick 40. A reload that zeroed the counter would
- * put it at 45 and drift a little further on every unread expiry.
- *
- * Only a sequence that lets expiries go unread discriminates between the two
- * reloads. Reading the flag after every tick passes either way.
+ * This pins the reload against a tick that forgets to reload at all, which
+ * would leave the counter at 35 and never expire again. It does not pin the
+ * subtracting reload against one that clears the counter — those two are the
+ * same here, because the counter is always below the period on entry to a
+ * tick and therefore lands exactly on it.
  */
 static void periodicPhaseCase ( void )
 {

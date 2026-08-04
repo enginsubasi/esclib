@@ -31,7 +31,7 @@ Four questions were settled before design.
 
 3. **`softtimerExpired` consumes the flag it reports.** The library already has a precedent for a consuming read — `bininpGetRisingValue` clears the flag it returns, and CLAUDE.md marks it as genuinely `in,out`. `softtimerExpired` follows it exactly: it takes a non-`const` driver and is documented `@param[in,out]`.
 
-4. **Periodic reload subtracts the period; it does not reset the counter to zero.** If the main loop misses an expiry, the phase does not drift. The number of missed expiries is not tracked — deliberately, as no caller in view needs it.
+4. **The reload happens inside the tick rather than at the read.** This is what preserves the phase when the main loop misses an expiry. The reload itself subtracts the period rather than clearing the counter, a form that stays correct if the counter ever overshoots today's invariant that it lands exactly on the period. The number of missed expiries is not tracked — deliberately, as no caller in view needs it.
 
 ## Placement
 
@@ -133,7 +133,7 @@ Assert style — `test/SoftTimer_Test/SoftTimer_Test.c`, no `output.txt`, non-ze
 1. `Init` rejects a NULL driver, `period == 0`, and an out-of-range mode. A sentinel pattern written into the struct beforehand is unchanged after every rejected call.
 2. `Init` leaves `STS_STOPPED`; ticking a stopped timer `period + 10` times leaves `Expired` `FALSE`.
 3. A one-shot of period N expires on the Nth tick, not the (N-1)th; `Expired` reads `TRUE` once then `FALSE`; the state stays `STS_EXPIRED`; further ticks do not expire it again.
-4. **The pinned regression.** Period 10, tick 35 times, read `Expired` once at the end, then confirm the next expiry lands on tick 40 rather than 45. Landing on 45 means the subtracting reload was replaced by a reset to zero. Only a sequence that lets expiries go unread discriminates between the two.
+4. **The pinned regressions.** `periodicCase` pins that the mode split exists: a periodic timer reloads and stays running rather than reaching `STS_EXPIRED` like a one-shot. `periodicPhaseCase` pins that the reload happens at all: period 10, tick 35 without reading the flag, read `Expired` once, then confirm the next expiry lands on tick 40. With no reload at all, the counter would stay at 35 and never expire again. The case does not distinguish subtracting the period from clearing the counter — both are equivalent here, because the counter is always below the period on entry and lands exactly on it.
 5. `Start` clears the counter and the flag; after `Stop`, further ticks leave `GetElapsed` unchanged.
 6. `GetRemaining` returns `0` after expiry and does not wrap.
 7. `ChangePeriod` rejects zero and leaves the driver intact; on success it resets the counter.

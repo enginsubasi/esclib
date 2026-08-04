@@ -697,16 +697,15 @@ static void periodicCase ( void )
 }
 
 /*
- * The check this file exists for.
+ * Expiries that the main loop never reads must not disturb the tick the next
+ * one lands on. Ticking 35 times without reading the flag leaves 5 counts of
+ * the current period standing, so the next expiry is 5 ticks away, at tick 40.
  *
- * The reload subtracts the period rather than resetting the counter to zero,
- * so a missed expiry costs the event but never the phase. Ticking 35 times
- * without reading the flag leaves 5 counts standing, and the next expiry is
- * therefore 5 ticks away, at tick 40. A reload that zeroed the counter would
- * put it at 45 and drift a little further on every unread expiry.
- *
- * Only a sequence that lets expiries go unread discriminates between the two
- * reloads. Reading the flag after every tick passes either way.
+ * This pins the reload against a tick that forgets to reload at all, which
+ * would leave the counter at 35 and never expire again. It does not pin the
+ * subtracting reload against one that clears the counter — those two are the
+ * same here, because the counter is always below the period on entry to a
+ * tick and therefore lands exactly on it.
  */
 static void periodicPhaseCase ( void )
 {
@@ -798,12 +797,17 @@ with:
         }
 ```
 
-Add a third `@note` to the `softtimerTick` block, above the existing one shot note:
+Add two new `@note` lines to the `softtimerTick` block, above the existing one shot note:
 
 ```c
- * @note    A periodic reload subtracts the period rather than clearing the
- *          counter, so a missed expiry costs the event but not the phase.
- *          The number of missed expiries is not counted.
+ * @note    A missed expiry costs the event but not the phase: the reload
+ *          happens here rather than at the read, so the next expiry lands on
+ *          the tick it always would have. The number of missed expiries is
+ *          not counted.
+ * @note    The reload subtracts the period rather than clearing the counter.
+ *          The counter is always below the period on entry, so it lands
+ *          exactly on the period and the two are equivalent today. The
+ *          subtraction is the form that stays correct if that ever changes.
 ```
 
 Append `softtimerGetElapsed`:
@@ -1115,7 +1119,7 @@ Three edits, all factual:
 3. In the "Testing" section, change the test count from twenty to twenty-one, the exported symbol count from 181 to 190, add `SoftTimer_Test` to the list of assert-style tests, and add a row to the table of tests that pin a specific bug:
 
 ```markdown
-| `SoftTimer_Test` | the periodic reload losing phase when an expiry goes unread — only a run that leaves expiries unread discriminates a subtracting reload from one that clears the counter |
+| `SoftTimer_Test` | a periodic timer stopping at its first expiry instead of reloading, and a one-shot that keeps counting after it has expired |
 ```
 
 - [ ] **Step 5: Commit**

@@ -109,9 +109,14 @@ void softtimerStop ( softtimer_t* driver )
  * @param[in,out] driver  Timer state.
  * @note    A timer that is not running ignores the call, so every timer the
  *          caller owns can be ticked unconditionally.
- * @note    A periodic reload subtracts the period rather than clearing the
- *          counter, so a missed expiry costs the event but not the phase.
- *          The number of missed expiries is not counted.
+ * @note    A missed expiry costs the event but not the phase: the reload
+ *          happens here rather than at the read, so the next expiry lands on
+ *          the tick it always would have. The number of missed expiries is
+ *          not counted.
+ * @note    The reload subtracts the period rather than clearing the counter.
+ *          The counter is always below the period on entry, so it lands
+ *          exactly on the period and the two are equivalent today. The
+ *          subtraction is the form that stays correct if that ever changes.
  * @note    A one shot stops counting once it expires, which is what keeps its
  *          counter from wrapping.
  */
