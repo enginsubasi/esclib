@@ -109,6 +109,9 @@ void softtimerStop ( softtimer_t* driver )
  * @param[in,out] driver  Timer state.
  * @note    A timer that is not running ignores the call, so every timer the
  *          caller owns can be ticked unconditionally.
+ * @note    A periodic reload subtracts the period rather than clearing the
+ *          counter, so a missed expiry costs the event but not the phase.
+ *          The number of missed expiries is not counted.
  * @note    A one shot stops counting once it expires, which is what keeps its
  *          counter from wrapping.
  */
@@ -121,7 +124,15 @@ void softtimerTick ( softtimer_t* driver )
         if ( driver->counter >= driver->period )
         {
             driver->expired = TRUE;
-            driver->state = ( uint8_t ) STS_EXPIRED;
+
+            if ( driver->mode == ( uint8_t ) STM_PERIODIC )
+            {
+                driver->counter -= driver->period;
+            }
+            else
+            {
+                driver->state = ( uint8_t ) STS_EXPIRED;
+            }
         }
         else
         {
@@ -150,6 +161,20 @@ uint8_t softtimerExpired ( softtimer_t* driver )
 
     retVal = driver->expired;
     driver->expired = FALSE;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Reports how many ticks the current period has counted.
+ * @param[in] driver  Timer state.
+ * @return  Ticks counted since the last start or the last periodic reload.
+ */
+uint32_t softtimerGetElapsed ( const softtimer_t* const driver )
+{
+    uint32_t retVal = 0u;
+
+    retVal = driver->counter;
 
     return ( retVal );
 }

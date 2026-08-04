@@ -203,6 +203,90 @@ static void startStopCase ( void )
             ( uint8_t ) ( softtimerExpired ( &driver ) == TRUE ) );
 }
 
+/* --------------------------------------------------------- periodic timing */
+
+static void periodicCase ( void )
+{
+    softtimer_t driver;
+    uint32_t i = 0;
+    uint32_t expiries = 0;
+
+    printf ( "periodic timing\n" );
+
+    check ( "init", softtimerInit ( &driver, 10u, ( uint8_t ) STM_PERIODIC ) );
+
+    softtimerStart ( &driver );
+
+    for ( i = 0; i < 100u; ++i )
+    {
+        softtimerTick ( &driver );
+
+        if ( softtimerExpired ( &driver ) == TRUE )
+        {
+            ++expiries;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    printf ( "        expiries in 100 ticks at period 10: %lu\n",
+             ( unsigned long ) expiries );
+
+    check ( "a period of 10 expires 10 times in 100 ticks",
+            ( uint8_t ) ( expiries == 10u ) );
+    check ( "a periodic timer stays running rather than reaching STS_EXPIRED",
+            ( uint8_t ) ( softtimerGetState ( &driver ) == ( uint8_t ) STS_RUNNING ) );
+}
+
+/*
+ * The check this file exists for.
+ *
+ * The reload subtracts the period rather than resetting the counter to zero,
+ * so a missed expiry costs the event but never the phase. Ticking 35 times
+ * without reading the flag leaves 5 counts standing, and the next expiry is
+ * therefore 5 ticks away, at tick 40. A reload that zeroed the counter would
+ * put it at 45 and drift a little further on every unread expiry.
+ *
+ * Only a sequence that lets expiries go unread discriminates between the two
+ * reloads. Reading the flag after every tick passes either way.
+ */
+static void periodicPhaseCase ( void )
+{
+    softtimer_t driver;
+    uint32_t i = 0;
+
+    printf ( "periodic phase after unread expiries\n" );
+
+    check ( "init", softtimerInit ( &driver, 10u, ( uint8_t ) STM_PERIODIC ) );
+
+    softtimerStart ( &driver );
+
+    for ( i = 0; i < 35u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "the unread expiries left the flag set",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == TRUE ) );
+    check ( "5 ticks of the current period have already been counted",
+            ( uint8_t ) ( softtimerGetElapsed ( &driver ) == 5u ) );
+
+    for ( i = 0; i < 4u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "tick 39 is still short of the next expiry",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+
+    softtimerTick ( &driver );
+
+    check ( "the next expiry lands on tick 40, not tick 45",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == TRUE ) );
+}
+
 int main ( void )
 {
     initCase ( );
@@ -211,6 +295,11 @@ int main ( void )
     oneShotCase ( );
     printf ( "\n" );
     startStopCase ( );
+
+    printf ( "\n" );
+    periodicCase ( );
+    printf ( "\n" );
+    periodicPhaseCase ( );
 
     printf ( "\n" );
 
