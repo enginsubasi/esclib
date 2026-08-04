@@ -78,3 +78,78 @@ uint8_t softtimerGetState ( const softtimer_t* const driver )
 
     return ( retVal );
 }
+
+/**
+ * @brief   Starts the timer from zero.
+ * @param[in,out] driver  Timer state.
+ * @note    This is also the restart. The counter and the expiry flag are both
+ *          cleared, so there is no separate Restart function.
+ */
+void softtimerStart ( softtimer_t* driver )
+{
+    driver->counter = 0u;
+    driver->expired = FALSE;
+    driver->state = ( uint8_t ) STS_RUNNING;
+}
+
+/**
+ * @brief   Stops the timer without disturbing what it has counted.
+ * @param[in,out] driver  Timer state.
+ * @note    Stop freezes and Start resets. The counter and the expiry flag are
+ *          left alone here, so softtimerGetElapsed still means something after
+ *          a stop.
+ */
+void softtimerStop ( softtimer_t* driver )
+{
+    driver->state = ( uint8_t ) STS_STOPPED;
+}
+
+/**
+ * @brief   Advances the timer by one tick. Call this from a fixed rate ISR.
+ * @param[in,out] driver  Timer state.
+ * @note    A timer that is not running ignores the call, so every timer the
+ *          caller owns can be ticked unconditionally.
+ * @note    A one shot stops counting once it expires, which is what keeps its
+ *          counter from wrapping.
+ */
+void softtimerTick ( softtimer_t* driver )
+{
+    if ( driver->state == ( uint8_t ) STS_RUNNING )
+    {
+        ++driver->counter;
+
+        if ( driver->counter >= driver->period )
+        {
+            driver->expired = TRUE;
+            driver->state = ( uint8_t ) STS_EXPIRED;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+
+/**
+ * @brief   Reports whether the timer has expired since the last call, and
+ *          clears the flag.
+ * @param[in,out] driver  Timer state. The flag this reports is cleared by the
+ *                        call, so the parameter is genuinely in and out.
+ * @return  TRUE when the timer expired since the previous call, FALSE
+ *          otherwise.
+ * @note    Reading consumes the event. Two calls in a row never both return
+ *          TRUE for the same expiry.
+ */
+uint8_t softtimerExpired ( softtimer_t* driver )
+{
+    uint8_t retVal = FALSE;
+
+    retVal = driver->expired;
+    driver->expired = FALSE;
+
+    return ( retVal );
+}

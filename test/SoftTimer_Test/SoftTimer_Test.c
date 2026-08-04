@@ -96,9 +96,121 @@ static void initCase ( void )
             ( uint8_t ) ( softtimerGetState ( &driver ) == ( uint8_t ) STS_STOPPED ) );
 }
 
+/* --------------------------------------------------------- one shot timing */
+
+/*
+ * A period of N must expire on the Nth tick after Start, not the N-1th, and
+ * the flag must read TRUE exactly once. Once expired the counter stops, which
+ * is what keeps a long lived one shot from wrapping its counter.
+ */
+static void oneShotCase ( void )
+{
+    softtimer_t driver;
+    uint32_t i = 0;
+
+    printf ( "one shot timing\n" );
+
+    check ( "init", softtimerInit ( &driver, 10u, ( uint8_t ) STM_ONESHOT ) );
+
+    softtimerStart ( &driver );
+    check ( "start sets the timer running",
+            ( uint8_t ) ( softtimerGetState ( &driver ) == ( uint8_t ) STS_RUNNING ) );
+
+    for ( i = 0; i < 9u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "not expired after 9 of 10 ticks",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+
+    softtimerTick ( &driver );
+
+    check ( "state is expired after the 10th tick",
+            ( uint8_t ) ( softtimerGetState ( &driver ) == ( uint8_t ) STS_EXPIRED ) );
+    check ( "the flag reads TRUE once",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == TRUE ) );
+    check ( "and FALSE on the second read",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+    check ( "the state survives the flag being consumed",
+            ( uint8_t ) ( softtimerGetState ( &driver ) == ( uint8_t ) STS_EXPIRED ) );
+
+    for ( i = 0; i < 100u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "a finished one shot does not expire again",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+}
+
+/* ------------------------------------------------------- start, stop, ticks */
+
+/*
+ * Stop freezes, Start resets. A stopped timer must ignore ticks outright so
+ * the caller can tick every timer it owns from the ISR without asking which
+ * ones are live.
+ */
+static void startStopCase ( void )
+{
+    softtimer_t driver;
+    uint32_t i = 0;
+
+    printf ( "start and stop\n" );
+
+    check ( "init", softtimerInit ( &driver, 10u, ( uint8_t ) STM_ONESHOT ) );
+
+    for ( i = 0; i < 20u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "an unstarted timer ignores ticks",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+    check ( "and stays stopped",
+            ( uint8_t ) ( softtimerGetState ( &driver ) == ( uint8_t ) STS_STOPPED ) );
+
+    softtimerStart ( &driver );
+
+    for ( i = 0; i < 5u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    softtimerStop ( &driver );
+
+    for ( i = 0; i < 20u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "a stopped timer ignores ticks",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+
+    softtimerStart ( &driver );
+
+    for ( i = 0; i < 9u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "start reset the counter, so 9 ticks is not enough",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+
+    softtimerTick ( &driver );
+
+    check ( "and the 10th tick after start expires it",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == TRUE ) );
+}
+
 int main ( void )
 {
     initCase ( );
+
+    printf ( "\n" );
+    oneShotCase ( );
+    printf ( "\n" );
+    startStopCase ( );
 
     printf ( "\n" );
 
