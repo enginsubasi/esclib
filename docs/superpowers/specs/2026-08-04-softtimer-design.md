@@ -71,13 +71,21 @@ Nine exported symbols.
 ```c
 typedef struct
 {
-    uint32_t period;
-    uint32_t counter;
-    uint8_t  mode;
-    uint8_t  state;
-    uint8_t  expired;
+    uint8_t mode;
+
+    /*
+     * Shared between the main loop and softtimerTick on the interrupt side.
+     * Declared volatile so the writes stay ordered with respect to each
+     * other and neither side caches state in a register.
+     */
+    volatile uint32_t period;
+    volatile uint32_t counter;
+    volatile uint8_t state;
+    volatile uint8_t expired;
 } softtimer_t;
 ```
+
+`softtimerTick` runs in an ISR while the other eight functions run in the main loop, and `period`, `counter`, `state` and `expired` all cross that boundary — `softtimerChangePeriod` writes `period` from the main loop while `softtimerTick` reads it, and `softtimerTick` writes `counter`, `state` and `expired` while the main loop reads them — so those four carry `volatile` for the same reason `hc595_t` does; `mode` does not, because only `softtimerInit` writes it, and only before the timer can be running.
 
 ```c
 enum SOFTTIMER_MODE

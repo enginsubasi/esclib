@@ -25,11 +25,17 @@
 
 typedef struct
 {
-    uint32_t period;
-    uint32_t counter;
     uint8_t mode;
-    uint8_t state;
-    uint8_t expired;
+
+    /*
+     * Shared between the main loop and softtimerTick on the interrupt side.
+     * Declared volatile so the writes stay ordered with respect to each
+     * other and neither side caches state in a register.
+     */
+    volatile uint32_t period;
+    volatile uint32_t counter;
+    volatile uint8_t state;
+    volatile uint8_t expired;
 } softtimer_t;
 
 /* ENUMS */

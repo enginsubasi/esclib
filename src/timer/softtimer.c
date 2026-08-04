@@ -3,7 +3,7 @@
   *
   * @file      softtimer.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.0.0
+  * @version   1.1.0
   * @date      04/08/2026
   *
   * @brief     Tick counting soft timer, one shot or periodic.
@@ -15,6 +15,13 @@
   * 04/08/2026 Created: one shot and periodic modes, start/stop, tick counting
   *            with a phase preserving periodic reload, elapsed/remaining
   *            queries and period change. @n
+  * 05/08/2026 softtimer_t's shared fields (period, counter, state, expired) @n
+  *            are declared volatile: softtimerTick runs in an ISR while the @n
+  *            other eight functions run in the main loop, and without it a @n
+  *            compiler may hoist a read out of a caller's polling loop. @n
+  *            mode stays non-volatile, since only softtimerInit writes it. @n
+  *            Also documented the read-modify-write race in softtimerExpired @n
+  *            and the STS_STOPPED/expired interaction in softtimerStop. @n
   *
   * @note      The period is expressed in ticks, not in milliseconds. The rate
   *            at which softtimerTick is called is the unit, so a 250 ms
@@ -100,6 +107,12 @@ void softtimerStart ( softtimer_t* driver )
  * @note    Stop freezes and Start resets. The counter and the expiry flag are
  *          left alone here, so softtimerGetElapsed still means something after
  *          a stop.
+ * @note    Stopping a one shot that has expired but whose flag has not been
+ *          read yet leaves softtimerGetState reporting STS_STOPPED,
+ *          indistinguishable from a timer that was never started, while
+ *          softtimerExpired still returns TRUE for it. This is reachable and
+ *          arguably correct, since stopped means stopped, but nothing else
+ *          documents it.
  */
 void softtimerStop ( softtimer_t* driver )
 {
@@ -161,6 +174,17 @@ void softtimerTick ( softtimer_t* driver )
  *          otherwise.
  * @note    Reading consumes the event. Two calls in a row never both return
  *          TRUE for the same expiry.
+ * @note    The read and the clear are two separate statements, not one
+ *          atomic operation. A softtimerTick that lands between them sets
+ *          expired after it has already been read here, and the clear that
+ *          follows immediately erases that expiry. For a periodic timer the
+ *          phase survives regardless, because the reload happens inside
+ *          softtimerTick rather than here, so only the missed event is lost.
+ *          For a one shot it discards the only expiry that timer will ever
+ *          produce, though softtimerGetState still reports STS_EXPIRED, which
+ *          is a way back. bininpGetRisingValue has the identical shape and
+ *          ships, so this is the library's consuming-read idiom rather than a
+ *          defect.
  */
 uint8_t softtimerExpired ( softtimer_t* driver )
 {
