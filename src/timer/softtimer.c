@@ -183,3 +183,60 @@ uint32_t softtimerGetElapsed ( const softtimer_t* const driver )
 
     return ( retVal );
 }
+
+/**
+ * @brief   Reports how many ticks are left before the timer expires.
+ * @param[in] driver  Timer state.
+ * @return  Ticks remaining in the current period, or zero once the counter has
+ *          reached it.
+ * @note    The comparison is explicit rather than an unsigned subtraction,
+ *          which would wrap for an expired one shot.
+ */
+uint32_t softtimerGetRemaining ( const softtimer_t* const driver )
+{
+    uint32_t retVal = 0u;
+
+    if ( driver->counter < driver->period )
+    {
+        retVal = driver->period - driver->counter;
+    }
+    else
+    {
+        retVal = 0u;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Installs a new period and restarts the current interval.
+ * @param[in,out] driver  Timer state.
+ * @param[in]     period  New number of ticks per timeout.
+ * @return  TRUE on success, FALSE when driver is NULL or period is zero.
+ *          Nothing is written to the driver when FALSE is returned.
+ * @note    This returns a status because it takes a new argument that would
+ *          break softtimerTick, which is the same reason
+ *          pidChangeCoefficients returns one.
+ * @note    The counter is cleared. Without that, a new period smaller than the
+ *          current count would expire on consecutive ticks until the counter
+ *          drained. The state and the expiry flag are left alone, so a
+ *          finished one shot stays finished until it is started again.
+ */
+uint8_t softtimerChangePeriod ( softtimer_t* driver, uint32_t period )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( period > 0u ) )
+    {
+        driver->period = period;
+        driver->counter = 0u;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}

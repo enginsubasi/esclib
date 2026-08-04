@@ -288,6 +288,97 @@ static void periodicPhaseCase ( void )
             ( uint8_t ) ( softtimerExpired ( &driver ) == TRUE ) );
 }
 
+/* ------------------------------------------------- remaining and the period */
+
+static void remainingCase ( void )
+{
+    softtimer_t driver;
+    uint32_t i = 0;
+
+    printf ( "elapsed and remaining\n" );
+
+    check ( "init", softtimerInit ( &driver, 10u, ( uint8_t ) STM_ONESHOT ) );
+
+    check ( "a fresh timer has its whole period remaining",
+            ( uint8_t ) ( softtimerGetRemaining ( &driver ) == 10u ) );
+
+    softtimerStart ( &driver );
+
+    for ( i = 0; i < 4u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "4 ticks elapsed", ( uint8_t ) ( softtimerGetElapsed ( &driver ) == 4u ) );
+    check ( "6 ticks remaining", ( uint8_t ) ( softtimerGetRemaining ( &driver ) == 6u ) );
+
+    softtimerStop ( &driver );
+
+    for ( i = 0; i < 20u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "stop froze the counter rather than clearing it",
+            ( uint8_t ) ( softtimerGetElapsed ( &driver ) == 4u ) );
+
+    softtimerStart ( &driver );
+
+    for ( i = 0; i < 10u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "remaining is zero once the timer has expired",
+            ( uint8_t ) ( softtimerGetRemaining ( &driver ) == 0u ) );
+}
+
+static void changePeriodCase ( void )
+{
+    softtimer_t driver;
+    uint32_t i = 0;
+
+    printf ( "softtimerChangePeriod\n" );
+
+    check ( "init", softtimerInit ( &driver, 10u, ( uint8_t ) STM_PERIODIC ) );
+
+    check ( "a NULL driver is rejected",
+            ( uint8_t ) ( softtimerChangePeriod ( NULL, 5u ) == FALSE ) );
+
+    softtimerStart ( &driver );
+
+    for ( i = 0; i < 7u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "a zero period is rejected",
+            ( uint8_t ) ( softtimerChangePeriod ( &driver, 0u ) == FALSE ) );
+    check ( "the rejected period left the timer counting where it was",
+            ( uint8_t ) ( softtimerGetElapsed ( &driver ) == 7u ) );
+    check ( "and left the old period in place",
+            ( uint8_t ) ( softtimerGetRemaining ( &driver ) == 3u ) );
+
+    check ( "a change to 5 is accepted", softtimerChangePeriod ( &driver, 5u ) );
+    check ( "the change reset the counter",
+            ( uint8_t ) ( softtimerGetElapsed ( &driver ) == 0u ) );
+    check ( "the timer is still running",
+            ( uint8_t ) ( softtimerGetState ( &driver ) == ( uint8_t ) STS_RUNNING ) );
+
+    for ( i = 0; i < 4u; ++i )
+    {
+        softtimerTick ( &driver );
+    }
+
+    check ( "4 ticks is short of the new period",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == FALSE ) );
+
+    softtimerTick ( &driver );
+
+    check ( "and the 5th tick expires it",
+            ( uint8_t ) ( softtimerExpired ( &driver ) == TRUE ) );
+}
+
 int main ( void )
 {
     initCase ( );
@@ -301,6 +392,11 @@ int main ( void )
     periodicCase ( );
     printf ( "\n" );
     periodicPhaseCase ( );
+
+    printf ( "\n" );
+    remainingCase ( );
+    printf ( "\n" );
+    changePeriodCase ( );
 
     printf ( "\n" );
 
