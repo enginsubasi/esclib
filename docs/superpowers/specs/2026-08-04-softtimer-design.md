@@ -5,13 +5,12 @@ Status: approved
 
 ## Problem
 
-The library has no concept of time, yet three modules improvise one.
+The library has no concept of time, yet two modules improvise one.
 
 | Module | How it handles time today |
 |---|---|
 | `comat` / `comstxetx` | `xxxTimeoutCounter ( driver )` called from a periodic tick, counting into a private field |
 | `hc595` / `hc597` | `dlyMs` / `dlyNop` callbacks injected at `Init`, or one step per ISR call in interrupt mode |
-| `dcMotor` | its own counters |
 
 Each one re-derives the same shape: a counter advanced from a fixed-rate interrupt, compared against a limit, read from the main loop. Nothing exports that shape, so a caller who needs a plain "has 250 ms passed yet" has to write it again.
 
