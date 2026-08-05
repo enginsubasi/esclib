@@ -21,12 +21,18 @@ Each `test/<Name>_Test/` directory is a standalone `main()` that exercises one m
 ```bash
 # One test = test main + the module .c, with the module's inc/ dir on the include path
 gcc -Wall -g -Iinc/filter test/MAF_Test/MAF_Test.c src/filter/maf.c -o maf_test && ./maf_test
-gcc -Wall -g -Iinc/math   test/Complex_Test/Complex_Test.c src/complex/complex.c -lm -o complex_test
+gcc -Wall -g -Iinc/complex test/Complex_Test/Complex_Test.c src/complex/complex.c -lm -o complex_test
 ```
 
 Tests print to stdout and are verified by eye against the checked-in `output.txt` next to each test — there is no assertion framework and no runner. When changing a module with a test, regenerate `output.txt` and diff it.
 
-`gcc` is not on PATH in this environment; `arm-none-eabi-gcc` is. For syntax/warning checking use:
+Two compilers are installed and neither is the obvious one. `arm-none-eabi-gcc` is on PATH and cross-compiles for ARM, so it checks syntax and warnings but cannot run what it builds. A host `gcc` (MinGW-w64, WinLibs) was installed on 05/08/2026 and is **not** on PATH — prepend it when a test has to actually run:
+
+```bash
+export PATH="$LOCALAPPDATA/Microsoft/WinGet/Packages/BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/mingw64/bin:$PATH"
+```
+
+For syntax/warning checking without running anything, the ARM compiler is enough:
 
 ```bash
 arm-none-eabi-gcc -c -Wall -Iinc/<module> src/<module>/<file>.c -o /dev/null
@@ -191,11 +197,19 @@ Several tests aim a specific check at a specific fixed bug, so the regression fa
 | `Control_Test` | `pidInit` leaving `lastError` and `partI` unset, and `ts == 0` reaching the derivative divide |
 | `SoftTimer_Test` | a periodic timer stopping at its first expiry instead of reloading, and a one-shot that keeps counting after it has expired |
 
-Nothing in this repo has ever been *executed* here: there is no host compiler on this machine, only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds. Every verification below is compile-time and link-time only. Treat any claim about numeric results as unverified until it is run. Expected values in the assert-style tests were derived from independent models — an IEEE binary32 transliteration for the float ones, the CRC polynomials for `CRC_Test`, a state-machine replay for `Protocol_Test` — rather than from the C itself, which is the only thing that makes them worth anything without a run.
+**The suite was run for the first time on 05/08/2026** and all twenty-one programs build clean and pass, with no warnings from any test file. Until that day nothing here had ever been executed — the machine carried only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds, so every check was compile-time and link-time. The expected values in the assert-style tests had been derived from independent models rather than from the C itself — an IEEE binary32 transliteration for the float ones, the CRC polynomials for `CRC_Test`, a state-machine replay for `Protocol_Test`, hand simulation for `SoftTimer_Test` — and the run confirmed every one of them.
 
-Test `output.txt` files predate the July 2026 bug fixes and are stale until regenerated on a machine with a host compiler. What moved the numbers:
+Running them needs a host compiler, which the ARM toolchain is not. Each test is its own `main` plus the module sources its `#include "..."` lines name, so the dependency set is derivable and needs no list:
 
-- July 2026 bug fixes — `mathFindMini32`, `mathCalculateMedian`, `complexDiv`, `complexToPolar`, PID initial state.
-- August 2026 — the switch from `sqrt`/`atan2`/`cos`/`sin` to the `f` variants. Single precision changes the trailing digits of `complexToPolar`, `complexFromPolar` and `statStandardDeviation`, so `Complex_Test` output will differ even where the fix itself was behaviour-neutral.
+```bash
+gcc -Wall -Wextra -Iinc/filter test/Filter_Test/Filter_Test.c src/filter/maf.c src/filter/emaf.c -o filter_test && ./filter_test
+```
 
-Do not treat a diff against a checked-in `output.txt` as a regression until the file has been regenerated once against current source.
+That run also found what only execution could:
+
+- `WriteToAFile.c` called `exit` without `<stdlib.h>` and declared `void main`. A modern compiler makes the implicit declaration an error, not a warning, so the file did not build at all.
+- All six printing tests ended `main` with an unconditional `return ( 1 );`, so their exit status said failure on every run. Now `0`.
+
+The four `output.txt` files with comparable content were regenerated in the same pass, and the staleness they were assumed to carry was mostly not there: `MAF_Test` and `Hysteresis_Test` matched to the digit, `EMAF_Test` differed in one last place of one value, and only `PID_Test` had genuinely moved — the July 2026 initial-state fix, exactly where it was predicted. What the old files really differed by was whitespace: their tabs had been expanded to spaces at some point, and the programs emit real tabs.
+
+Regenerate an `output.txt` by redirecting the program's stdout and stripping the carriage returns — the sources print `\r\n` and a Windows text-mode stream adds another `\r`, so a raw redirect stores `\r\r\n`.
