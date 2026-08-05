@@ -32,6 +32,15 @@
 float mathAbsolute ( float inp );
 int32_t mathAbsolutei32 ( int32_t inp );
 
+float mathClamp ( float value, float low, float high );
+uint32_t mathClampu32 ( uint32_t value, uint32_t low, uint32_t high );
+int32_t mathClampi32 ( int32_t value, int32_t low, int32_t high );
+
+float mathMap ( float value, float inLow, float inHigh, float outLow, float outHigh );
+int32_t mathMapi32 ( int32_t value, int32_t inLow, int32_t inHigh, int32_t outLow, int32_t outHigh );
+
+float mathLerp ( float from, float to, float t );
+
 float mathFindMax ( const float* const array, uint32_t length );
 uint32_t mathFindMaxu32 ( const uint32_t* const array, uint32_t length );
 int32_t mathFindMaxi32 ( const int32_t* const array, uint32_t length );

@@ -308,9 +308,155 @@ static void statisticCase ( void )
             ( uint8_t ) ( statCovariancei32 ( d1, d2, 0u ) == 0 ) );
 }
 
+/* ------------------------------------------------------ scalar primitives */
+
+/*
+ * The three scalars operate on values rather than arrays, which is what
+ * separates them from everything else in basicmath. Clamp is the only one
+ * with an unsigned variant: a u32 map would need a descending range to be
+ * useful and cannot express one.
+ */
+static void clampCase ( void )
+{
+    printf ( "basicmath clamp\n" );
+
+    check ( "a value inside the range is returned unchanged",
+            nearly ( mathClamp ( 5.0f, 0.0f, 10.0f ), 5.0f ) );
+    check ( "a value below the range is raised to the low end",
+            nearly ( mathClamp ( -3.0f, 0.0f, 10.0f ), 0.0f ) );
+    check ( "a value above the range is lowered to the high end",
+            nearly ( mathClamp ( 42.0f, 0.0f, 10.0f ), 10.0f ) );
+    check ( "the endpoints are inside the range",
+            ( uint8_t ) ( nearly ( mathClamp ( 0.0f, 0.0f, 10.0f ), 0.0f ) &&
+                          nearly ( mathClamp ( 10.0f, 0.0f, 10.0f ), 10.0f ) ) );
+
+    /*
+     * An inverted range is the caller's mistake and the low end wins, which
+     * is what a plain pair of comparisons does. Checked so the behaviour is
+     * recorded rather than discovered.
+     */
+    check ( "an inverted range collapses onto the low end",
+            nearly ( mathClamp ( 5.0f, 10.0f, 0.0f ), 10.0f ) );
+
+    check ( "the u32 variant clamps below",
+            ( uint8_t ) ( mathClampu32 ( 3u, 10u, 20u ) == 10u ) );
+    check ( "the u32 variant clamps above",
+            ( uint8_t ) ( mathClampu32 ( 30u, 10u, 20u ) == 20u ) );
+    check ( "the u32 variant passes a value through",
+            ( uint8_t ) ( mathClampu32 ( 15u, 10u, 20u ) == 15u ) );
+
+    check ( "the i32 variant clamps a negative below a negative low",
+            ( uint8_t ) ( mathClampi32 ( -50, -20, 20 ) == -20 ) );
+    check ( "the i32 variant clamps above",
+            ( uint8_t ) ( mathClampi32 ( 50, -20, 20 ) == 20 ) );
+    check ( "the i32 variant passes a negative through",
+            ( uint8_t ) ( mathClampi32 ( -5, -20, 20 ) == -5 ) );
+}
+
+/*
+ * mathMap does not clamp. Feeding it a value outside the input range
+ * extrapolates, which is the useful behaviour and is why mathClamp is a
+ * separate function rather than folded in.
+ */
+static void mapCase ( void )
+{
+    printf ( "basicmath map\n" );
+
+    check ( "the low end maps to the low end",
+            nearly ( mathMap ( 0.0f, 0.0f, 1023.0f, 0.0f, 5.0f ), 0.0f ) );
+    check ( "the high end maps to the high end",
+            nearly ( mathMap ( 1023.0f, 0.0f, 1023.0f, 0.0f, 5.0f ), 5.0f ) );
+    check ( "the midpoint maps to the midpoint",
+            nearly ( mathMap ( 511.5f, 0.0f, 1023.0f, 0.0f, 5.0f ), 2.5f ) );
+
+    check ( "a descending output range reverses the sense",
+            nearly ( mathMap ( 0.0f, 0.0f, 10.0f, 100.0f, 0.0f ), 100.0f ) );
+    check ( "and lands correctly at its other end",
+            nearly ( mathMap ( 10.0f, 0.0f, 10.0f, 100.0f, 0.0f ), 0.0f ) );
+
+    check ( "a value past the input range extrapolates rather than clamping",
+            nearly ( mathMap ( 20.0f, 0.0f, 10.0f, 0.0f, 100.0f ), 200.0f ) );
+    check ( "and below it too",
+            nearly ( mathMap ( -5.0f, 0.0f, 10.0f, 0.0f, 100.0f ), -50.0f ) );
+
+    /*
+     * A degenerate input range would divide by zero. The whole input
+     * collapses to a point, so the low end of the output is the defensible
+     * answer and it costs one comparison to give it instead of an inf.
+     */
+    check ( "a zero width input range returns the output low end",
+            nearly ( mathMap ( 7.0f, 3.0f, 3.0f, 10.0f, 20.0f ), 10.0f ) );
+
+    check ( "the i32 variant maps a twelve bit reading to millivolts",
+            ( uint8_t ) ( mathMapi32 ( 2048, 0, 4095, 0, 3300 ) == 1650 ) );
+    check ( "the i32 variant lands exactly on the high end",
+            ( uint8_t ) ( mathMapi32 ( 4095, 0, 4095, 0, 3300 ) == 3300 ) );
+    check ( "the i32 variant handles a negative output range",
+            ( uint8_t ) ( mathMapi32 ( 50, 0, 100, -40, 40 ) == 0 ) );
+    check ( "the i32 variant returns the output low end on a zero width input",
+            ( uint8_t ) ( mathMapi32 ( 7, 3, 3, 10, 20 ) == 10 ) );
+
+    /*
+     * The i32 arithmetic is the same problem interp's is. The product
+     * overflows an int32_t long before the ranges look unreasonable, so
+     * every intermediate is int64_t, and the division rounds to nearest
+     * rather than truncating toward zero.
+     */
+    check ( "the i32 product is not computed in thirty two bits",
+            ( uint8_t ) ( mathMapi32 ( 1000000, 0, 2000000, 0, 2000000 ) == 1000000 ) );
+    check ( "the i32 division rounds to nearest rather than truncating",
+            ( uint8_t ) ( mathMapi32 ( 1, 0, 2, 0, 1 ) == 1 ) );
+    check ( "and away from zero on a negative half too",
+            ( uint8_t ) ( mathMapi32 ( 1, 0, 2, 0, -1 ) == -1 ) );
+
+    /*
+     * A descending input range makes the denominator negative, which is
+     * where mathMapi32 differs from interp: interp's table always ascends,
+     * so its rounding never had to take the magnitude of half the divisor.
+     * Rounding the wrong way here would answer 0 instead of 1.
+     */
+    check ( "a descending input range maps its midpoint",
+            ( uint8_t ) ( mathMapi32 ( 5, 10, 0, 0, 100 ) == 50 ) );
+    check ( "and rounds to nearest with a negative denominator",
+            ( uint8_t ) ( mathMapi32 ( 1, 2, 0, 0, 1 ) == 1 ) );
+    check ( "the float variant takes a descending input range too",
+            nearly ( mathMap ( 5.0f, 10.0f, 0.0f, 0.0f, 100.0f ), 50.0f ) );
+}
+
+static void lerpCase ( void )
+{
+    printf ( "basicmath lerp\n" );
+
+    check ( "t of zero gives the start", nearly ( mathLerp ( 10.0f, 20.0f, 0.0f ), 10.0f ) );
+    check ( "t of one gives the end", nearly ( mathLerp ( 10.0f, 20.0f, 1.0f ), 20.0f ) );
+    check ( "t of a half gives the midpoint",
+            nearly ( mathLerp ( 10.0f, 20.0f, 0.5f ), 15.0f ) );
+    check ( "it runs backwards when the end is below the start",
+            nearly ( mathLerp ( 20.0f, 10.0f, 0.25f ), 17.5f ) );
+    check ( "t outside zero to one extrapolates rather than clamping",
+            nearly ( mathLerp ( 10.0f, 20.0f, 2.0f ), 30.0f ) );
+    check ( "and below zero too",
+            nearly ( mathLerp ( 10.0f, 20.0f, -1.0f ), 0.0f ) );
+
+    /*
+     * Written as from + t * ( to - from ) rather than the algebraically
+     * equal ( 1 - t ) * from + t * to. The first is one multiply cheaper;
+     * the second is exact at t == 1. This checks the endpoint the chosen
+     * form is weakest at.
+     */
+    check ( "the end is hit exactly at t of one even for awkward values",
+            nearly ( mathLerp ( 0.1f, 0.3f, 1.0f ), 0.3f ) );
+}
+
 int main ( void )
 {
     absoluteCase ( );
+    printf ( "\n" );
+    clampCase ( );
+    printf ( "\n" );
+    mapCase ( );
+    printf ( "\n" );
+    lerpCase ( );
     printf ( "\n" );
     minMaxCase ( );
     printf ( "\n" );

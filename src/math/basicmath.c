@@ -3,7 +3,7 @@
   *
   * @file      basicmath.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.2.0
   * @date      03/06/2020
   *
   * @brief     Basic mathematics function library file.
@@ -34,8 +34,14 @@
   * 01/08/2026 The i32 variants of findMinMax, calculateSum, @n
   *            calculateMean, calculateMedian and calculateRange are @n
   *            added. Only float and u32 existed before. @n
+  * 05/08/2026 Scalar primitives: mathClamp, mathMap and mathLerp with @n
+  *            their typed variants. Everything here operated on @n
+  *            arrays until now, so the three lines an embedded @n
+  *            project rewrites most often had to be written by hand. @n
   *
-  * @note      Every function returns zero for a zero length array.
+  * @note      Every array function returns zero for a zero length array.
+  *            The scalar primitives at the end of this file take values
+  *            rather than arrays and have no such case.
   *
   ******************************************************************************
   */
@@ -707,4 +713,213 @@ int32_t mathCalculateRangei32 ( const int32_t* const array, uint32_t length )
     mathFindMinMaxi32 ( array, length, &tempMin, &tempMax );
 
     return ( tempMax - tempMin );
+}
+
+/**
+ * @brief   Constrains a value to a range.
+ * @param[in] value  Value to constrain.
+ * @param[in] low    Smallest value that may be returned.
+ * @param[in] high   Largest value that may be returned.
+ * @return  value when it lies between low and high, otherwise whichever end
+ *          it passed. The endpoints are inside the range.
+ * @note    An inverted range, where low is above high, collapses onto low.
+ *          The comparisons are made in that order and nothing here detects
+ *          the mistake.
+ */
+float mathClamp ( float value, float low, float high )
+{
+    float retVal = 0;
+
+    if ( value < low )
+    {
+        retVal = low;
+    }
+    else if ( value > high )
+    {
+        retVal = high;
+    }
+    else
+    {
+        retVal = value;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Constrains an unsigned 32-bit value to a range.
+ * @param[in] value  Value to constrain.
+ * @param[in] low    Smallest value that may be returned.
+ * @param[in] high   Largest value that may be returned.
+ * @return  value when it lies between low and high, otherwise whichever end
+ *          it passed.
+ */
+uint32_t mathClampu32 ( uint32_t value, uint32_t low, uint32_t high )
+{
+    uint32_t retVal = 0;
+
+    if ( value < low )
+    {
+        retVal = low;
+    }
+    else if ( value > high )
+    {
+        retVal = high;
+    }
+    else
+    {
+        retVal = value;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Constrains a signed 32-bit value to a range.
+ * @param[in] value  Value to constrain.
+ * @param[in] low    Smallest value that may be returned.
+ * @param[in] high   Largest value that may be returned.
+ * @return  value when it lies between low and high, otherwise whichever end
+ *          it passed.
+ */
+int32_t mathClampi32 ( int32_t value, int32_t low, int32_t high )
+{
+    int32_t retVal = 0;
+
+    if ( value < low )
+    {
+        retVal = low;
+    }
+    else if ( value > high )
+    {
+        retVal = high;
+    }
+    else
+    {
+        retVal = value;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Rescales a value from one range to another.
+ * @param[in] value    Value to rescale.
+ * @param[in] inLow    Low end of the range value is measured in.
+ * @param[in] inHigh   High end of that range.
+ * @param[in] outLow   Low end of the range to rescale into.
+ * @param[in] outHigh  High end of that range.
+ * @return  The rescaled value, or outLow when the input range has zero
+ *          width.
+ * @note    This does not clamp. A value outside the input range is
+ *          extrapolated, which is the useful behaviour and is why mathClamp
+ *          is a separate function rather than folded in here.
+ * @note    Either range may descend. An outHigh below outLow reverses the
+ *          sense, which is what an inverted sensor needs.
+ * @note    A zero width input range would divide by zero. The whole input
+ *          collapses to a point, so outLow is the defensible answer and it
+ *          costs one comparison to return it instead of an inf.
+ */
+float mathMap ( float value, float inLow, float inHigh, float outLow, float outHigh )
+{
+    float retVal = 0;
+
+    if ( ( inHigh - inLow ) == 0 )
+    {
+        retVal = outLow;
+    }
+    else
+    {
+        retVal = outLow + ( ( ( value - inLow ) * ( outHigh - outLow ) ) /
+                            ( inHigh - inLow ) );
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Rescales a signed 32-bit value from one range to another.
+ * @param[in] value    Value to rescale.
+ * @param[in] inLow    Low end of the range value is measured in.
+ * @param[in] inHigh   High end of that range.
+ * @param[in] outLow   Low end of the range to rescale into.
+ * @param[in] outHigh  High end of that range.
+ * @return  The rescaled value rounded to the nearest integer, or outLow when
+ *          the input range has zero width.
+ * @note    Every intermediate is int64_t, the subtractions included. This is
+ *          the same exposure interp's integer path has: a twelve bit reading
+ *          scaled to millivolts already reaches seven digits, and the
+ *          product overflows an int32_t long before either range looks
+ *          unreasonable.
+ * @note    The division rounds to nearest rather than truncating toward
+ *          zero, so the rounding follows the sign of the numerator. The
+ *          denominator may be negative here, unlike in interp, so its
+ *          magnitude is taken first.
+ * @note    Like the float variant this does not clamp, and either range may
+ *          descend.
+ */
+int32_t mathMapi32 ( int32_t value, int32_t inLow, int32_t inHigh, int32_t outLow, int32_t outHigh )
+{
+    int32_t retVal = 0;
+    int64_t num = 0;
+    int64_t den = 0;
+    int64_t half = 0;
+
+    den = ( int64_t ) inHigh - ( int64_t ) inLow;
+
+    if ( den == 0 )
+    {
+        retVal = outLow;
+    }
+    else
+    {
+        num = ( ( int64_t ) value - ( int64_t ) inLow ) *
+              ( ( int64_t ) outHigh - ( int64_t ) outLow );
+
+        half = den / 2;
+
+        if ( half < 0 )
+        {
+            half = -half;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( num >= 0 )
+        {
+            num += half;
+        }
+        else
+        {
+            num -= half;
+        }
+
+        retVal = outLow + ( int32_t ) ( num / den );
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Interpolates linearly between two values.
+ * @param[in] from  Value returned at t of zero.
+ * @param[in] to    Value returned at t of one.
+ * @param[in] t     Position between the two, normally between zero and one.
+ * @return  The interpolated value.
+ * @note    This does not clamp t. Values outside zero to one extrapolate,
+ *          which is deliberate; mathClamp is there when that is unwanted.
+ * @note    Written as from + t * ( to - from ) rather than the
+ *          algebraically equal ( 1 - t ) * from + t * to. The first is one
+ *          multiply cheaper and the second is exact at t of one, which is
+ *          the trade being made.
+ */
+float mathLerp ( float from, float to, float t )
+{
+    float retVal = 0;
+
+    retVal = from + ( t * ( to - from ) );
+
+    return ( retVal );
 }
