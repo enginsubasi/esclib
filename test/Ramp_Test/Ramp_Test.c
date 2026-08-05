@@ -162,9 +162,346 @@ static void initCase ( void )
     check ( "and it is stored", nearly ( rampGetOutput ( &driver ), -3.0f ) );
 }
 
+/* --------------------------------------------------------- the trajectory */
+
+/*
+ * The velocity step is maxAcceleration * ts, which these limits make exactly
+ * 2 per iteration. From rest the profile must take that step and no more.
+ */
+static void accelerationCase ( void )
+{
+    ramp_t driver;
+
+    printf ( "ramp acceleration limit\n" );
+
+    check ( "init", rampInit ( &driver, VMAX, AMAX, TS, 0.0f ) );
+
+    rampIteration ( &driver, 1000.0f );
+    check ( "one step from rest gives exactly one velocity increment",
+            nearly ( rampGetVelocity ( &driver ), 2.0f ) );
+    check ( "and the ramp is not arrived",
+            ( uint8_t ) ( rampIsArrived ( &driver ) == FALSE ) );
+
+    rampIteration ( &driver, 1000.0f );
+    check ( "two steps give two increments",
+            nearly ( rampGetVelocity ( &driver ), 4.0f ) );
+
+    rampIteration ( &driver, 1000.0f );
+    check ( "three steps give three increments",
+            nearly ( rampGetVelocity ( &driver ), 6.0f ) );
+
+    check ( "and the position is the sum of the steps so far",
+            nearly ( rampGetOutput ( &driver ), 0.12f ) );
+}
+
+/*
+ * Fifty steps of 2 reach the cap of 100 exactly. Beyond that the velocity
+ * must hold rather than keep climbing, and the target is far enough away
+ * that braking has not begun: the profile cruises.
+ */
+static void velocityCapCase ( void )
+{
+    ramp_t driver;
+    uint32_t i = 0;
+    uint8_t everExceeded = FALSE;
+
+    printf ( "ramp velocity cap\n" );
+
+    check ( "init", rampInit ( &driver, VMAX, AMAX, TS, 0.0f ) );
+
+    for ( i = 0; i < 50u; ++i )
+    {
+        rampIteration ( &driver, 1000.0f );
+
+        if ( rampGetVelocity ( &driver ) > VMAX )
+        {
+            everExceeded = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "fifty steps reach the cap exactly",
+            nearly ( rampGetVelocity ( &driver ), VMAX ) );
+    check ( "and the distance covered is the area under the ramp",
+            nearly ( rampGetOutput ( &driver ), 25.5f ) );
+
+    for ( i = 0; i < 50u; ++i )
+    {
+        rampIteration ( &driver, 1000.0f );
+
+        if ( rampGetVelocity ( &driver ) > VMAX )
+        {
+            everExceeded = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "the velocity holds at the cap while cruising",
+            nearly ( rampGetVelocity ( &driver ), VMAX ) );
+    check ( "and never exceeded it on any step",
+            ( uint8_t ) ( everExceeded == FALSE ) );
+}
+
+/*
+ * The pinned regression.
+ *
+ * A run long enough to accelerate, cruise and brake. The position is checked
+ * against the target on every single step, because the defect this pins —
+ * a missing final clamp — shows up as a single step past the target followed
+ * by a turn around, and a check made only at the end would miss it.
+ *
+ * The arrived position and velocity are compared exactly rather than with a
+ * tolerance. rampIteration assigns them, so an exact match is what
+ * distinguishes the clamp having run from the ramp merely coasting close.
+ *
+ * The arrival velocity is checked separately because the clamp masks a wrong
+ * brake point. Braking at some fixed remaining distance instead of at the
+ * square root envelope still lands the ramp exactly on the target — the clamp
+ * sees to that — so no position check can tell the two apart. What gives it
+ * away is arriving at speed: with the envelope the ramp is down to about 17
+ * on the step that arrives, and with a fixed brake distance it is still doing
+ * 92 out of a cap of 100.
+ */
+static void noOvershootCase ( void )
+{
+    ramp_t driver;
+    uint32_t i = 0;
+    uint32_t steps = 0;
+    uint8_t everPassed = FALSE;
+    uint8_t everReversed = FALSE;
+    float velocityBefore = 0;
+    float arrivalVelocity = 0;
+
+    printf ( "ramp arrival without overshoot\n" );
+
+    check ( "init", rampInit ( &driver, VMAX, AMAX, TS, 0.0f ) );
+
+    for ( i = 0; i < 300u; ++i )
+    {
+        velocityBefore = rampGetVelocity ( &driver );
+
+        rampIteration ( &driver, 100.0f );
+
+        if ( rampGetOutput ( &driver ) > 100.0f )
+        {
+            everPassed = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( rampGetVelocity ( &driver ) < 0.0f )
+        {
+            everReversed = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( ( rampIsArrived ( &driver ) == TRUE ) && ( steps == 0 ) )
+        {
+            steps = i + 1u;
+            arrivalVelocity = velocityBefore;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "the position never passed the target on any step",
+            ( uint8_t ) ( everPassed == FALSE ) );
+    check ( "the velocity never reversed, so the ramp never turned around",
+            ( uint8_t ) ( everReversed == FALSE ) );
+    check ( "the ramp arrived", ( uint8_t ) ( rampIsArrived ( &driver ) == TRUE ) );
+    check ( "it arrived within the run rather than on the last step",
+            ( uint8_t ) ( ( steps > 0 ) && ( steps < 300u ) ) );
+    check ( "it had braked well below the cap before arriving, so the envelope ran",
+            ( uint8_t ) ( arrivalVelocity < ( VMAX / 4.0f ) ) );
+    check ( "the position lands exactly on the target",
+            ( uint8_t ) ( rampGetOutput ( &driver ) == 100.0f ) );
+    check ( "and the velocity is exactly zero",
+            ( uint8_t ) ( rampGetVelocity ( &driver ) == 0.0f ) );
+}
+
+/*
+ * A move too short for the cap. The peak velocity of a triangular profile
+ * over a distance d is sqrt( a * d ), which for d = 10 and a = 200 is about
+ * 44.7 — well under the cap of 100, so the cap must never be reached.
+ */
+static void triangularCase ( void )
+{
+    ramp_t driver;
+    uint32_t i = 0;
+    float peak = 0;
+
+    printf ( "ramp triangular profile\n" );
+
+    check ( "init", rampInit ( &driver, VMAX, AMAX, TS, 0.0f ) );
+
+    for ( i = 0; i < 300u; ++i )
+    {
+        rampIteration ( &driver, 10.0f );
+
+        if ( rampGetVelocity ( &driver ) > peak )
+        {
+            peak = rampGetVelocity ( &driver );
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "the move is too short to reach the cap",
+            ( uint8_t ) ( peak < VMAX ) );
+    check ( "but it does get moving",
+            ( uint8_t ) ( peak > 40.0f ) );
+    check ( "and it still lands exactly on the target",
+            ( uint8_t ) ( rampGetOutput ( &driver ) == 10.0f ) );
+    check ( "at rest", ( uint8_t ) ( rampGetVelocity ( &driver ) == 0.0f ) );
+}
+
+/*
+ * The mirror image. A sign error in the velocity envelope or in the step
+ * clamp shows up here and nowhere else, because every other case runs in the
+ * positive direction.
+ */
+static void negativeCase ( void )
+{
+    ramp_t driver;
+    uint32_t i = 0;
+    uint8_t everPassed = FALSE;
+
+    printf ( "ramp in the negative direction\n" );
+
+    check ( "init", rampInit ( &driver, VMAX, AMAX, TS, 0.0f ) );
+
+    rampIteration ( &driver, -100.0f );
+    check ( "the first step moves the other way",
+            nearly ( rampGetVelocity ( &driver ), -2.0f ) );
+
+    for ( i = 0; i < 300u; ++i )
+    {
+        rampIteration ( &driver, -100.0f );
+
+        if ( rampGetOutput ( &driver ) < -100.0f )
+        {
+            everPassed = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "the position never passed the target on any step",
+            ( uint8_t ) ( everPassed == FALSE ) );
+    check ( "it lands exactly on the target",
+            ( uint8_t ) ( rampGetOutput ( &driver ) == -100.0f ) );
+    check ( "at rest", ( uint8_t ) ( rampGetVelocity ( &driver ) == 0.0f ) );
+}
+
+/*
+ * The target is a parameter of every iteration rather than something set
+ * once, which is what makes a moving target fall out for free. Here it is
+ * pulled in mid flight, while the ramp is still accelerating away from it.
+ *
+ * The target also has to be reachable once the ramp is already arrived: a
+ * second move from rest must start again rather than stay stuck.
+ */
+static void movingTargetCase ( void )
+{
+    ramp_t driver;
+    uint32_t i = 0;
+
+    printf ( "ramp with a target that moves\n" );
+
+    check ( "init", rampInit ( &driver, VMAX, AMAX, TS, 0.0f ) );
+
+    for ( i = 0; i < 30u; ++i )
+    {
+        rampIteration ( &driver, 100.0f );
+    }
+
+    check ( "the ramp is under way and not arrived",
+            ( uint8_t ) ( rampIsArrived ( &driver ) == FALSE ) );
+
+    for ( i = 0; i < 300u; ++i )
+    {
+        rampIteration ( &driver, 50.0f );
+    }
+
+    check ( "it arrives on the new target, not the old one",
+            ( uint8_t ) ( rampGetOutput ( &driver ) == 50.0f ) );
+    check ( "at rest", ( uint8_t ) ( rampGetVelocity ( &driver ) == 0.0f ) );
+    check ( "and reports arrival",
+            ( uint8_t ) ( rampIsArrived ( &driver ) == TRUE ) );
+
+    for ( i = 0; i < 300u; ++i )
+    {
+        rampIteration ( &driver, 60.0f );
+    }
+
+    check ( "a second move from rest starts again rather than staying stuck",
+            ( uint8_t ) ( rampGetOutput ( &driver ) == 60.0f ) );
+}
+
+/*
+ * A target the ramp is already sitting on. remaining is zero, so the step is
+ * zero, and the final clamp fires on the first call because zero is not less
+ * than zero. Nothing moves and nothing is reported as running.
+ */
+static void alreadyThereCase ( void )
+{
+    ramp_t driver;
+    uint32_t i = 0;
+
+    printf ( "ramp already on its target\n" );
+
+    check ( "init at 5", rampInit ( &driver, VMAX, AMAX, TS, 5.0f ) );
+
+    for ( i = 0; i < 10u; ++i )
+    {
+        rampIteration ( &driver, 5.0f );
+    }
+
+    check ( "the position did not move",
+            ( uint8_t ) ( rampGetOutput ( &driver ) == 5.0f ) );
+    check ( "the velocity stayed at zero",
+            ( uint8_t ) ( rampGetVelocity ( &driver ) == 0.0f ) );
+    check ( "and it reports arrival",
+            ( uint8_t ) ( rampIsArrived ( &driver ) == TRUE ) );
+}
+
 int main ( void )
 {
     initCase ( );
+
+    printf ( "\n" );
+    accelerationCase ( );
+    printf ( "\n" );
+    velocityCapCase ( );
+
+    printf ( "\n" );
+    noOvershootCase ( );
+    printf ( "\n" );
+    triangularCase ( );
+    printf ( "\n" );
+    negativeCase ( );
+
+    printf ( "\n" );
+    movingTargetCase ( );
+    printf ( "\n" );
+    alreadyThereCase ( );
 
     printf ( "\n" );
 
