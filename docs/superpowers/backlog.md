@@ -18,15 +18,15 @@ Fixed and regenerated in commits `315ebe6`, `ebdace6` and `bb5b864`.
 
 **Still open from this item.** CLAUDE.md records that this repository deliberately has no build system and no test runner. The run above used a throwaway script that derives each test's module sources from its own `#include "..."` lines. Whether such a runner should live in the tree is an open decision, not something to settle by drift.
 
-## 2. Protocol modules do not verify what they receive
+## 2. Protocol modules do not verify what they receive — DONE 05/08/2026
 
-**State.** `src/communication/comat.c` and `comstxetx.c` contain no CRC or checksum call at all. They frame bytes, time out, and hand the buffer to `packetProcess`. A corrupted frame that still has valid framing passes straight through.
+`comstxetx` now frames binary and verifies what it receives. A payload byte equal to STX, ETX or the caller-chosen DLE travels preceded by DLE, so any byte value crosses the link; every frame carries a two-byte check computed over the unescaped payload by a function installed at `Init`, whose signature is `crc16`'s so `crc16` goes in with no wrapper; a frame that fails its check is dropped and counted in `comstxetxGetRejectCount`. `comstxetxBuildFrame` is the matching encoder, filling the transmit buffer the module already owned but never used, which is what keeps the two halves from drifting apart.
 
-**Why it matters.** This is the only entry on the list where a shipped module gives a wrong answer rather than merely lacking a convenience. `crc16` and `crc32` already exist in the tree.
+`comat` was deliberately left without one. It speaks AT, an ASCII command protocol whose real peers do not checksum, and adding one would invent a dialect nothing else speaks. A `@note` in `comat.c` records that so the next reader does not take it for an omission.
 
-**The design constraint.** Module independence forbids `comat.c` from including `crc16.h`. The integrity check therefore has to arrive the way every other dependency does in this library — as a function pointer installed at `Init`, alongside `packetProcess` and `txTransmissionTrigger`. That is a design decision, not a coding task: where in the frame the check sits, what width it is, what happens to a frame that fails it, and whether an existing caller that installs no checker keeps working unchanged.
+Implemented in commits `e6290d9`, `a559589`, `0e30dc6` and `f1b8fc2`. `Protocol_Test` grew from the old print-and-look case to 88 asserted checks, including a round trip that builds a frame carrying all three framing bytes and feeds the wire bytes back.
 
-**Companion.** A `checksum` module: LRC/XOR, sum8, sum16, Fletcher16, Adler32. Stateless, same signature shape as `crc16`, and the natural thing to install into the hook above when a full CRC is more than the link needs.
+**Still open from this item.** The companion `checksum` module — LRC/XOR, sum8, sum16, Fletcher16, Adler32. Stateless, same signature shape as `crc16`, and the natural thing to install into the hook above when a full CRC is more than the link needs. The hook now exists, so this is no longer blocked on a design decision.
 
 ## 3. `interp` — table interpolation
 
