@@ -4,17 +4,19 @@ Date: 2026-08-05
 
 Candidate work, ordered by value. Each entry says what is missing, why it matters, and what the first concrete step is. Nothing here is committed work — this is the list to pick from.
 
-## 1. Run the test suite once on a host compiler
+## 1. Run the test suite once on a host compiler — DONE 05/08/2026
 
-**State.** Nothing in this repository has ever been executed. Twenty-one test programs, thirteen of them assert-style, verified only by compiling and linking with `arm-none-eabi-gcc`, which cross-compiles for ARM and cannot run its output.
+A host `gcc` (MinGW-w64, WinLibs) was installed and every test was built and run for the first time. All twenty-one build clean and pass, with no warnings from any test file, and every expected value that had been derived by reasoning rather than by running turned out to be correct.
 
-**Why it leads.** The assert-style tests were written to fail loudly, and their expected values were derived from independent models — an IEEE binary32 transliteration for the float filters, the CRC polynomials for `CRC_Test`, a state-machine replay for `Protocol_Test`, hand simulation for `SoftTimer_Test`. That is the best that can be done without running them, and it is not the same thing. A wrong expectation looks exactly like a passing test to every reader.
+The run found three things nothing else could have:
 
-**First step.** On a machine with `gcc` (MinGW or WSL both work), build and run each test: the test's own `main`, its module sources, and the module include directories. Each test's dependencies are derivable from its own `#include "..."` lines, so no list needs maintaining.
+- `WriteToAFile.c` did not compile at all — it called `exit` without `<stdlib.h>`, which a modern compiler treats as an error rather than a warning, and declared `void main`.
+- All six printing tests ended `main` with an unconditional `return ( 1 );`, so their exit status reported failure on every run.
+- The assumed staleness of the checked-in `output.txt` files was mostly not real. `MAF_Test` and `Hysteresis_Test` matched to the digit; `EMAF_Test` differed in the last place of one value; only `PID_Test` had genuinely moved, from the July 2026 initial-state fix. What the old files actually differed by was whitespace — their tabs had been expanded to spaces, and the programs emit real tabs.
 
-**Follow-on.** Five checked-in `output.txt` files are stale — `MAF_Test`, `EMAF_Test`, `PID_Test`, `Hysteresis_Test`, `WriteToAFile_Test`. They predate the July 2026 bug fixes and the August 2026 switch from `sqrt`/`atan2`/`cos`/`sin` to the `f` variants. Regenerate them in the same pass. Until then a diff against them is not evidence of a regression.
+Fixed and regenerated in commits `315ebe6`, `ebdace6` and `bb5b864`.
 
-**Note.** CLAUDE.md records that this repository has no build system and no test runner, deliberately. A permanent runner script would change that property, so this is a one-off run unless the runner is adopted as a decision in its own right.
+**Still open from this item.** CLAUDE.md records that this repository deliberately has no build system and no test runner. The run above used a throwaway script that derives each test's module sources from its own `#include "..."` lines. Whether such a runner should live in the tree is an open decision, not something to settle by drift.
 
 ## 2. Protocol modules do not verify what they receive
 
