@@ -39,9 +39,17 @@
 #include "comstxetx.h"
 
 // comstxetxReceive writes rxBuffer[ rxIndex ] and only afterwards checks the
-// index against rxSize, so the smallest buffer that never takes a write past
-// its end is one that can hold the STX byte and one payload byte.
+// index against rxSize. The smallest meaningful frame carries an empty payload
+// and the two checksum bytes, so that pair is also the smallest buffer that
+// never takes a write past its end.
 #define COMSTXETX_MIN_RX_SIZE   2
+
+// The smallest frame comstxetxBuildFrame can emit is STX, two checksum bytes
+// and ETX, with no byte needing an escape.
+#define COMSTXETX_MIN_TX_SIZE   4
+
+// Bytes of checksum carried at the end of every frame, low byte first.
+#define COMSTXETX_CHECKSUM_SIZE 2
 
 /**
  * @brief   Initializes the STX, ETX communication framework.
@@ -52,43 +60,51 @@
  * @param[in]  txSize         Size of txBuffer in bytes.
  * @param[in]  stx            Byte that marks the start of a frame.
  * @param[in]  etx            Byte that marks the end of a frame.
+ * @param[in]  dle            Escape byte. A payload byte equal to stx, etx or
+ *                            dle is sent preceded by this byte, and the byte
+ *                            after it is always data.
  * @param[in]  rxTimeout      Number of comstxetxTimeoutCounter ticks a
  *                            partial frame may stay pending. It is discarded
  *                            once the tick count exceeds this value, so the
  *                            budget is rxTimeout + 1 ticks. This is a whole
  *                            frame timeout, not an inter-byte one.
- * @param[in]  packetProcess  Called with the completed frame and its length.
- *                            The frame holds the STX byte at index 0
- *                            followed by the payload bytes; ETX itself is
- *                            not stored, unlike comatReceive, which stores
- *                            every byte of its frame including the leading
- *                            'A', 'T' and the trailing CR LF.
- * @return  TRUE on success, FALSE when a pointer is NULL, txSize is zero,
- *          rxSize is below two or stx equals etx.
+ * @param[in]  checksum       Computes the frame check over the unescaped
+ *                            payload. The signature is that of crc16, so
+ *                            crc16 and crc16Alt can be passed directly.
+ * @param[in]  packetProcess  Called with the payload alone, without the STX
+ *                            byte and without the checksum bytes.
+ * @return  TRUE on success, FALSE when a pointer is NULL, rxSize is below
+ *          two, txSize is below four, or stx, etx and dle are not three
+ *          distinct values.
  * @note    Both buffers are zero filled here and are not copied. They must
  *          outlive the driver.
- * @note    packetProcess is required. comstxetxEvaluate calls it without
+ * @note    Both callbacks are required. comstxetxEvaluate calls them without
  *          checking, so a NULL here would only surface as a crash on the
  *          first complete frame.
- * @note    rxSize must hold at least the STX byte and one payload byte.
+ * @note    rxSize must hold at least the two checksum bytes.
  *          comstxetxReceive stores a byte before it compares the index
  *          against rxSize, so a shorter buffer would take a write past its
  *          end.
- * @note    stx equal to etx is rejected. The same byte cannot both open a
- *          frame and close it, since the receive state machine tests for
- *          etx only once a frame is already open, which would make every
- *          frame end empty.
+ * @note    The three framing bytes must differ from one another. Two equal
+ *          values leave at least one of them unable to mean what it names.
  */
-uint8_t comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer, uint32_t rxSize, uint32_t txSize, uint8_t stx, uint8_t etx, uint32_t rxTimeout, void (*packetProcess) ( uint8_t* buffer, uint32_t index ) )
+uint8_t comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffer,
+                        uint32_t rxSize, uint32_t txSize,
+                        uint8_t stx, uint8_t etx, uint8_t dle,
+                        uint32_t rxTimeout,
+                        uint16_t ( *checksum ) ( const uint8_t* const buffer, uint32_t length ),
+                        void ( *packetProcess ) ( uint8_t* buffer, uint32_t index ) )
 {
     uint8_t retVal = FALSE;
     uint32_t i = 0;
 
     if ( ( driver != NULL ) && ( rxBuffer != NULL ) && ( txBuffer != NULL ) &&
-            ( rxSize >= COMSTXETX_MIN_RX_SIZE ) && ( txSize != 0 ) &&
-            ( stx != etx ) && ( packetProcess != NULL ) )
+            ( rxSize >= COMSTXETX_MIN_RX_SIZE ) && ( txSize >= COMSTXETX_MIN_TX_SIZE ) &&
+            ( stx != etx ) && ( stx != dle ) && ( etx != dle ) &&
+            ( checksum != NULL ) && ( packetProcess != NULL ) )
     {
         // Function assignment.
+        driver->checksum = checksum;
         driver->packetProcess = packetProcess;
 
         // Parameter settings.
@@ -100,13 +116,17 @@ uint8_t comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffe
 
         driver->stx = stx;
         driver->etx = etx;
+        driver->dle = dle;
 
         driver->rxTimeoutCounter = 0;
         driver->rxTimeout = rxTimeout;
 
         // Initialize to zero and FALSE
         driver->rxIndex = 0;
+        driver->rxFrameOpen = FALSE;
+        driver->rxEscape = FALSE;
         driver->rxReadyToEvaluate = FALSE;
+        driver->rxRejectCount = 0;
 
         // Fill with zero
         for ( i = 0; i < driver->rxSize; ++i )
@@ -224,4 +244,22 @@ void comstxetxTimeoutCounter ( comstxetx_t* driver )
             ++driver->rxTimeoutCounter;
         }
     }
+}
+
+/**
+ * @brief   Reports how many frames have been discarded without reaching
+ *          packetProcess.
+ * @param[in] driver  Framework state.
+ * @return  Count of frames rejected since Init.
+ * @note    It counts both causes together: a frame whose checksum did not
+ *          match, and a frame too short to carry a checksum at all. Nothing a
+ *          caller does differs between the two, so they are not separated.
+ */
+uint32_t comstxetxGetRejectCount ( const comstxetx_t* const driver )
+{
+    uint32_t retVal = 0;
+
+    retVal = driver->rxRejectCount;
+
+    return ( retVal );
 }

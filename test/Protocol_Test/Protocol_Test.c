@@ -15,6 +15,7 @@
 
 #include "comat.h"
 #include "comstxetx.h"
+#include "crc16.h"
 
 static uint32_t failures = 0;
 
@@ -399,6 +400,85 @@ static void sxFeed ( comstxetx_t* driver, const char* text )
     }
 }
 
+/*
+ * A byte sum rather than a real CRC, so every expected value in this file can
+ * be worked out by hand. crc16 is exercised separately in sxBuildGuardCase to
+ * prove the callback type takes it with no wrapper.
+ */
+static uint16_t sxSumChecksum ( const uint8_t* const buffer, uint32_t length )
+{
+    uint16_t retVal = 0;
+    uint32_t i = 0;
+
+    for ( i = 0; i < length; ++i )
+    {
+        retVal = ( uint16_t ) ( retVal + buffer[ i ] );
+    }
+
+    return ( retVal );
+}
+
+static void sxInitCase ( void )
+{
+    comstxetx_t driver;
+    uint8_t rxBuffer[ 32 ];
+    uint8_t txBuffer[ 32 ];
+
+    printf ( "comstxetx init contract\n" );
+
+    check ( "a NULL driver is rejected",
+            ( uint8_t ) ( comstxetxInit ( NULL, rxBuffer, txBuffer, 32u, 32u,
+                                          0x02u, 0x03u, 0x10u, 10u,
+                                          sxSumChecksum, sxPacketProcess ) == FALSE ) );
+
+    check ( "stx equal to etx is rejected",
+            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                          0x02u, 0x02u, 0x10u, 10u,
+                                          sxSumChecksum, sxPacketProcess ) == FALSE ) );
+
+    check ( "dle equal to stx is rejected",
+            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                          0x02u, 0x03u, 0x02u, 10u,
+                                          sxSumChecksum, sxPacketProcess ) == FALSE ) );
+
+    check ( "dle equal to etx is rejected",
+            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                          0x02u, 0x03u, 0x03u, 10u,
+                                          sxSumChecksum, sxPacketProcess ) == FALSE ) );
+
+    check ( "a NULL checksum is rejected",
+            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                          0x02u, 0x03u, 0x10u, 10u,
+                                          NULL, sxPacketProcess ) == FALSE ) );
+
+    check ( "a NULL packetProcess is rejected",
+            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                          0x02u, 0x03u, 0x10u, 10u,
+                                          sxSumChecksum, NULL ) == FALSE ) );
+
+    check ( "an rxSize below two is rejected",
+            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 1u, 32u,
+                                          0x02u, 0x03u, 0x10u, 10u,
+                                          sxSumChecksum, sxPacketProcess ) == FALSE ) );
+
+    check ( "a txSize below four is rejected",
+            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 3u,
+                                          0x02u, 0x03u, 0x10u, 10u,
+                                          sxSumChecksum, sxPacketProcess ) == FALSE ) );
+
+    check ( "a well formed init succeeds",
+            comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                            0x02u, 0x03u, 0x10u, 10u,
+                            sxSumChecksum, sxPacketProcess ) );
+
+    check ( "init leaves no frame open",
+            ( uint8_t ) ( driver.rxFrameOpen == FALSE ) );
+    check ( "init leaves no escape pending",
+            ( uint8_t ) ( driver.rxEscape == FALSE ) );
+    check ( "init clears the reject count",
+            ( uint8_t ) ( comstxetxGetRejectCount ( &driver ) == 0u ) );
+}
+
 static void comstxetxCase ( void )
 {
     comstxetx_t driver;
@@ -410,19 +490,19 @@ static void comstxetxCase ( void )
 
     check ( "a NULL driver is rejected",
             ( uint8_t ) ( comstxetxInit ( NULL, rxBuffer, txBuffer, 8u, 8u,
-                                          0x02u, 0x03u, 5u, sxPacketProcess ) == FALSE ) );
+                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
     check ( "a NULL rx buffer is rejected",
             ( uint8_t ) ( comstxetxInit ( &driver, NULL, txBuffer, 8u, 8u,
-                                          0x02u, 0x03u, 5u, sxPacketProcess ) == FALSE ) );
+                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
     check ( "a NULL callback is rejected",
             ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                                          0x02u, 0x03u, 5u, NULL ) == FALSE ) );
+                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, NULL ) == FALSE ) );
     check ( "a zero tx size is rejected",
             ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 0u,
-                                          0x02u, 0x03u, 5u, sxPacketProcess ) == FALSE ) );
+                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
     check ( "an rx size of 1 is rejected",
             ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 1u, 8u,
-                                          0x02u, 0x03u, 5u, sxPacketProcess ) == FALSE ) );
+                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
 
     /*
      * The same byte cannot both open and close a frame. The receive state
@@ -431,11 +511,11 @@ static void comstxetxCase ( void )
      */
     check ( "an STX equal to the ETX is rejected",
             ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                                          0x02u, 0x02u, 5u, sxPacketProcess ) == FALSE ) );
+                                          0x02u, 0x02u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
 
     check ( "a full init succeeds",
             comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                            0x02u, 0x03u, 5u, sxPacketProcess ) );
+                            0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) );
     sxReset ( );
 
     /* Bytes before STX are ignored. */
@@ -484,7 +564,7 @@ static void comstxetxCase ( void )
     /* The timeout behaves the same way it does in comat. */
     check ( "Init with rxTimeout 2",
             comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                            0x02u, 0x03u, 2u, sxPacketProcess ) );
+                            0x02u, 0x03u, 0x10u, 2u, sxSumChecksum, sxPacketProcess ) );
     sxReset ( );
 
     comstxetxReceive ( &driver, 0x02u );
@@ -558,6 +638,8 @@ int main ( void )
     comatTimeoutCase ( );
     printf ( "\n" );
     comatOverflowTimeoutCase ( );
+    printf ( "\n" );
+    sxInitCase ( );
     printf ( "\n" );
     comstxetxCase ( );
 
