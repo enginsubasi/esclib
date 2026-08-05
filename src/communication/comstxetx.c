@@ -335,6 +335,113 @@ void comstxetxTimeoutCounter ( comstxetx_t* driver )
 }
 
 /**
+ * @brief   Builds a complete wire frame in txBuffer from a payload.
+ * @param[in,out] driver       Framework state. txBuffer is written.
+ * @param[in]     payload      Bytes to carry. Any byte value is allowed.
+ * @param[in]     length       Number of payload bytes. Zero is legal and
+ *                             produces a frame carrying only the check.
+ * @param[out]    frameLength  Number of bytes written to txBuffer.
+ * @return  TRUE on success, FALSE when an argument is NULL or the escaped
+ *          frame would not fit in txBuffer.
+ * @note    On FALSE the contents of txBuffer are undefined and frameLength is
+ *          set to zero. The function does not pre-check the worst case of
+ *          1 + 2 * ( length + 2 ) + 1, because that would refuse frames that
+ *          fit comfortably whenever few payload bytes need an escape.
+ * @note    It does not transmit. comstxetx has no transmission trigger the
+ *          way comat does; the buffer is filled and the length reported, and
+ *          sending is the caller's.
+ * @note    The check is computed over the unescaped payload, so escaping
+ *          cannot change it. The check bytes are themselves escaped, without
+ *          which a check byte equal to etx would close the frame it protects.
+ */
+uint8_t comstxetxBuildFrame ( comstxetx_t* driver, const uint8_t* const payload,
+                              uint32_t length, uint32_t* frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint8_t overflow = FALSE;
+    uint8_t byte = 0;
+    uint8_t needed = 0;
+    uint16_t sum = 0;
+    uint32_t i = 0;
+    uint32_t out = 0;
+    uint8_t check[ COMSTXETX_CHECKSUM_SIZE ];
+
+    if ( ( driver != NULL ) && ( payload != NULL ) && ( frameLength != NULL ) )
+    {
+        sum = driver->checksum ( payload, length );
+        check[ 0 ] = ( uint8_t ) ( sum & 0xFFu );
+        check[ 1 ] = ( uint8_t ) ( ( sum >> 8 ) & 0xFFu );
+
+        // txSize is at least four, so the STX always fits.
+        driver->txBuffer[ out ] = driver->stx;
+        ++out;
+
+        for ( i = 0; ( i < ( length + COMSTXETX_CHECKSUM_SIZE ) ) && ( overflow == FALSE ); ++i )
+        {
+            if ( i < length )
+            {
+                byte = payload[ i ];
+            }
+            else
+            {
+                byte = check[ i - length ];
+            }
+
+            if ( ( byte == driver->stx ) || ( byte == driver->etx ) ||
+                    ( byte == driver->dle ) )
+            {
+                needed = 2;
+            }
+            else
+            {
+                needed = 1;
+            }
+
+            // The trailing ETX is reserved here so the frame cannot fail late.
+            if ( ( out + needed + 1u ) > driver->txSize )
+            {
+                overflow = TRUE;
+            }
+            else
+            {
+                if ( needed == 2 )
+                {
+                    driver->txBuffer[ out ] = driver->dle;
+                    ++out;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+
+                driver->txBuffer[ out ] = byte;
+                ++out;
+            }
+        }
+
+        if ( overflow == FALSE )
+        {
+            driver->txBuffer[ out ] = driver->etx;
+            ++out;
+
+            *frameLength = out;
+            retVal = TRUE;
+        }
+        else
+        {
+            *frameLength = 0;
+            retVal = FALSE;
+        }
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
  * @brief   Reports how many frames have been discarded without reaching
  *          packetProcess.
  * @param[in] driver  Framework state.

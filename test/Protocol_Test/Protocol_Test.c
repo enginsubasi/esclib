@@ -708,6 +708,115 @@ static void sxOpenEmptyTimeoutCase ( void )
             ( uint8_t ) ( sxProcessCalls == 0u ) );
 }
 
+/*
+ * The decisive case. Build a frame whose payload holds a byte equal to each
+ * framing byte, then feed the wire bytes back one at a time and confirm the
+ * payload survives unchanged. An encoder that disagrees with the decoder is
+ * the defect this design is most exposed to, and nothing else catches it.
+ */
+static void sxRoundTripCase ( void )
+{
+    comstxetx_t driver;
+    uint8_t rxBuffer[ 64 ];
+    uint8_t txBuffer[ 64 ];
+    uint8_t wire[ 64 ];
+    uint32_t wireLength = 0;
+    uint32_t i = 0;
+    uint8_t same = TRUE;
+    static const uint8_t payload[ ] =
+    {
+        0x02u, 0x03u, 0x10u, 0x00u, 0xFFu, 0x41u
+    };
+
+    printf ( "comstxetx round trip\n" );
+
+    sxReset ( );
+
+    check ( "init", comstxetxInit ( &driver, rxBuffer, txBuffer, 64u, 64u,
+                                    0x02u, 0x03u, 0x10u, 10u,
+                                    sxSumChecksum, sxPacketProcess ) );
+
+    check ( "the frame was built",
+            comstxetxBuildFrame ( &driver, payload,
+                                  ( uint32_t ) sizeof ( payload ), &wireLength ) );
+
+    /*
+     * Three payload bytes need an escape and none of the checksum bytes do:
+     * the sum of the payload is 0x0155, so the check bytes are 0x55 and 0x01.
+     * STX + 6 payload bytes + 3 escapes + 2 check bytes + ETX is 13.
+     */
+    check ( "the wire length accounts for the escapes",
+            ( uint8_t ) ( wireLength == 13u ) );
+    check ( "the frame opens with STX", ( uint8_t ) ( txBuffer[ 0 ] == 0x02u ) );
+    check ( "the frame closes with ETX",
+            ( uint8_t ) ( txBuffer[ wireLength - 1u ] == 0x03u ) );
+
+    for ( i = 0; i < wireLength; ++i )
+    {
+        wire[ i ] = txBuffer[ i ];
+    }
+
+    sxFeedBytes ( &driver, wire, wireLength );
+    comstxetxEvaluate ( &driver );
+
+    check ( "the frame reached packetProcess", ( uint8_t ) ( sxProcessCalls == 1u ) );
+    check ( "the payload length survived",
+            ( uint8_t ) ( sxLastLength == ( uint32_t ) sizeof ( payload ) ) );
+
+    for ( i = 0; i < ( uint32_t ) sizeof ( payload ); ++i )
+    {
+        if ( sxLastFrame[ i ] != payload[ i ] )
+        {
+            same = FALSE;
+        }
+    }
+
+    check ( "and every payload byte survived", same );
+    check ( "nothing was rejected",
+            ( uint8_t ) ( comstxetxGetRejectCount ( &driver ) == 0u ) );
+}
+
+/*
+ * BuildFrame validates its own arguments because they are new and can break a
+ * later invariant, and it refuses rather than writing past the buffer it was
+ * given. crc16 is used here to prove the callback type takes the library own
+ * CRC with no wrapper.
+ */
+static void sxBuildGuardCase ( void )
+{
+    comstxetx_t driver;
+    uint8_t rxBuffer[ 64 ];
+    uint8_t txBuffer[ 8 ];
+    uint32_t wireLength = 99u;
+    static const uint8_t payload[ ] =
+    {
+        0x02u, 0x02u, 0x02u, 0x02u, 0x02u, 0x02u
+    };
+
+    printf ( "comstxetx build guards\n" );
+
+    check ( "init takes crc16 directly",
+            comstxetxInit ( &driver, rxBuffer, txBuffer, 64u, 8u,
+                            0x02u, 0x03u, 0x10u, 10u,
+                            crc16, sxPacketProcess ) );
+
+    check ( "a NULL payload is rejected",
+            ( uint8_t ) ( comstxetxBuildFrame ( &driver, NULL, 1u, &wireLength ) == FALSE ) );
+    check ( "a NULL length pointer is rejected",
+            ( uint8_t ) ( comstxetxBuildFrame ( &driver, payload, 1u, NULL ) == FALSE ) );
+
+    /*
+     * Every payload byte equals STX, so each one costs two wire bytes. The
+     * frame would need 1 + 12 + at least 2 + 1 bytes and the buffer holds 8.
+     */
+    check ( "a frame that would overflow txBuffer is refused",
+            ( uint8_t ) ( comstxetxBuildFrame ( &driver, payload,
+                                                ( uint32_t ) sizeof ( payload ),
+                                                &wireLength ) == FALSE ) );
+    check ( "and the reported length is zeroed",
+            ( uint8_t ) ( wireLength == 0u ) );
+}
+
 int main ( void )
 {
     comatInitCase ( );
@@ -731,6 +840,10 @@ int main ( void )
     sxBoundaryCase ( );
     printf ( "\n" );
     sxOpenEmptyTimeoutCase ( );
+    printf ( "\n" );
+    sxRoundTripCase ( );
+    printf ( "\n" );
+    sxBuildGuardCase ( );
 
     printf ( "\n" );
 
