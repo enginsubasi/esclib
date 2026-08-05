@@ -283,6 +283,85 @@ static void clampCase ( void )
             ( uint8_t ) ( interpInRange ( &driver, 40.1f ) == FALSE ) );
 }
 
+/* -------------------------------------------------- integer compute path */
+
+/*
+ * The integer variant is for parts with no FPU, the same reason emaf carries
+ * an i32 width. It behaves like the float one at the nodes, between them and
+ * past the ends.
+ */
+static void integerCase ( void )
+{
+    interpi32_t driver;
+    static const int32_t xTable[ 4 ] = {   0, 10, 20, 40 };
+    static const int32_t yTable[ 4 ] = { 100, 80, 50,  0 };
+
+    printf ( "interp integer path\n" );
+
+    check ( "init", interpIniti32 ( &driver, xTable, yTable, 4u ) );
+
+    check ( "the first node", ( uint8_t ) ( interpCalculatei32 ( &driver, 0 ) == 100 ) );
+    check ( "an interior node", ( uint8_t ) ( interpCalculatei32 ( &driver, 20 ) == 50 ) );
+    check ( "the last node", ( uint8_t ) ( interpCalculatei32 ( &driver, 40 ) == 0 ) );
+
+    check ( "halfway across the first interval",
+            ( uint8_t ) ( interpCalculatei32 ( &driver, 5 ) == 90 ) );
+    check ( "halfway across the last interval",
+            ( uint8_t ) ( interpCalculatei32 ( &driver, 30 ) == 25 ) );
+
+    check ( "below the first x the first y is held",
+            ( uint8_t ) ( interpCalculatei32 ( &driver, -5 ) == 100 ) );
+    check ( "above the last x the last y is held",
+            ( uint8_t ) ( interpCalculatei32 ( &driver, 1000 ) == 0 ) );
+
+    check ( "the first x is in range",
+            ( uint8_t ) ( interpInRangei32 ( &driver, 0 ) == TRUE ) );
+    check ( "the last x is in range",
+            ( uint8_t ) ( interpInRangei32 ( &driver, 40 ) == TRUE ) );
+    check ( "one below the first x is out of range",
+            ( uint8_t ) ( interpInRangei32 ( &driver, -1 ) == FALSE ) );
+    check ( "one above the last x is out of range",
+            ( uint8_t ) ( interpInRangei32 ( &driver, 41 ) == FALSE ) );
+}
+
+/*
+ * Two things only the integer path can get wrong.
+ *
+ * The division rounds to nearest rather than truncating toward zero. Both
+ * tables below put the exact answer on a half, and truncation and rounding
+ * disagree there by one in each direction.
+ *
+ * The intermediates are all int64_t, subtractions included. The wide table
+ * spans nearly the whole int32_t range, so its denominator alone is
+ * 4000000000 and overflows an int32_t before the multiply is even reached.
+ */
+static void integerEdgeCase ( void )
+{
+    interpi32_t driver;
+    static const int32_t halfX[ 2 ] = { 0, 2 };
+    static const int32_t halfUp[ 2 ] = { 0, 1 };
+    static const int32_t halfDown[ 2 ] = { 0, -1 };
+    static const int32_t wideX[ 2 ] = { -2000000000, 2000000000 };
+    static const int32_t wideY[ 2 ] = { 0, 1000 };
+
+    printf ( "interp integer rounding and width\n" );
+
+    check ( "init a table whose midpoint answer is one half",
+            interpIniti32 ( &driver, halfX, halfUp, 2u ) );
+    check ( "a positive half rounds away from zero, it does not truncate",
+            ( uint8_t ) ( interpCalculatei32 ( &driver, 1 ) == 1 ) );
+
+    check ( "init the same table with a descending y",
+            interpIniti32 ( &driver, halfX, halfDown, 2u ) );
+    check ( "a negative half rounds away from zero too",
+            ( uint8_t ) ( interpCalculatei32 ( &driver, 1 ) == -1 ) );
+
+    check ( "init a table spanning nearly the whole int32 range",
+            interpIniti32 ( &driver, wideX, wideY, 2u ) );
+    check ( "the midpoint is exact, so the intermediates were not 32 bit",
+            ( uint8_t ) ( interpCalculatei32 ( &driver, 0 ) == 500 ) );
+}
+
 int main ( void )
 {
     initCase ( );
@@ -293,6 +372,11 @@ int main ( void )
     betweenCase ( );
     printf ( "\n" );
     clampCase ( );
+
+    printf ( "\n" );
+    integerCase ( );
+    printf ( "\n" );
+    integerEdgeCase ( );
 
     printf ( "\n" );
 

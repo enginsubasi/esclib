@@ -3,7 +3,7 @@
   *
   * @file      interp.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.0.3
   * @date      05/08/2026
   *
   * @brief     Linear interpolation over an ascending table.
@@ -20,6 +20,8 @@
   * @par History
   * 05/08/2026 Created @n
   * 05/08/2026 Float compute path: interpCalculate and interpInRange. @n
+  * 05/08/2026 Integer compute path: interpCalculatei32 and @n
+  *            interpInRangei32, for parts with no FPU. @n
   *
   ******************************************************************************
   */
@@ -236,6 +238,125 @@ float interpCalculate ( const interp_t* const driver, float x )
  *          included. FALSE when interpCalculate would clamp.
  */
 uint8_t interpInRange ( const interp_t* const driver, float x )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( x >= driver->xTable[ 0 ] ) &&
+         ( x <= driver->xTable[ driver->length - 1u ] ) )
+    {
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the interval that holds x, as the index of its lower end.
+ * @param[in]  xTable   Strictly ascending x values.
+ * @param[in]  length   Number of entries.
+ * @param[in]  x        Value to bracket. Must lie strictly inside the table.
+ * @return  Index i such that xTable[ i ] <= x < xTable[ i + 1 ].
+ * @note    The integer twin of interpBracket. The two are kept apart rather
+ *          than merged behind a cast because the comparison is the only line
+ *          that differs and it is the line whose type matters.
+ */
+static uint32_t interpBracketi32 ( const int32_t* const xTable, uint32_t length, int32_t x )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( xTable[ mid ] <= x )
+        {
+            low = mid + 1u;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+
+    retVal = low - 1u;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Returns the table value at x with integer arithmetic only,
+ *          interpolated linearly and held flat past either end.
+ * @param[in]  driver   Initialized interpolator.
+ * @param[in]  x        Value to look up.
+ * @return  The interpolated y, rounded to the nearest integer.
+ * @note    Every intermediate is int64_t, the subtractions included. The
+ *          bracket is narrow, but the table's own span can fill an int32_t,
+ *          and a difference taken in int32_t would overflow before the
+ *          widening could help.
+ * @note    The division rounds to nearest rather than truncating toward
+ *          zero. Truncation would bias every result toward the lower node
+ *          and double the worst case error of an integer table. The divisor
+ *          is always positive because interpInit proved the strict ascent,
+ *          so the rounding only has to follow the sign of the numerator.
+ * @note    A 64 bit multiply and divide are library calls on a 32 bit core
+ *          rather than instructions. That is the cost of this variant, and
+ *          it is still cheaper than an FPU the part does not have.
+ */
+int32_t interpCalculatei32 ( const interpi32_t* const driver, int32_t x )
+{
+    int32_t retVal = 0;
+    uint32_t i = 0;
+    int64_t num = 0;
+    int64_t den = 0;
+
+    if ( x <= driver->xTable[ 0 ] )
+    {
+        retVal = driver->yTable[ 0 ];
+    }
+    else if ( x >= driver->xTable[ driver->length - 1u ] )
+    {
+        retVal = driver->yTable[ driver->length - 1u ];
+    }
+    else
+    {
+        i = interpBracketi32 ( driver->xTable, driver->length, x );
+
+        num = ( ( int64_t ) x - ( int64_t ) driver->xTable[ i ] ) *
+              ( ( int64_t ) driver->yTable[ i + 1u ] - ( int64_t ) driver->yTable[ i ] );
+        den = ( int64_t ) driver->xTable[ i + 1u ] - ( int64_t ) driver->xTable[ i ];
+
+        if ( num >= 0 )
+        {
+            num += ( den / 2 );
+        }
+        else
+        {
+            num -= ( den / 2 );
+        }
+
+        retVal = driver->yTable[ i ] + ( int32_t ) ( num / den );
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Reports whether x falls inside the table rather than past an end.
+ * @param[in]  driver   Initialized interpolator.
+ * @param[in]  x        Value to test.
+ * @return  TRUE when x lies between the first and last table x, endpoints
+ *          included. FALSE when interpCalculatei32 would clamp.
+ */
+uint8_t interpInRangei32 ( const interpi32_t* const driver, int32_t x )
 {
     uint8_t retVal = FALSE;
 
