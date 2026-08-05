@@ -12,8 +12,6 @@ float r, a;
 
 int main ( void )
 {
-    int i = 0;
-
     complexInit ( &t1, 3, 4 );
     complexInit ( &t2, 5, 12 );
 
@@ -27,6 +25,6 @@ int main ( void )
 
     printf ( "r: %.2f a: %.2f\r\n", r, a );
 
-    return ( 1 );
+    return ( 0 );
 }
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-void main ( void )
+int main ( void )
 {
     FILE *fptr;
 
@@ -15,4 +16,6 @@ void main ( void )
     fprintf(fptr,"1\t2\t3\t4\r\n");
 
     fclose(fptr);
+
+    return ( 0 );
 }

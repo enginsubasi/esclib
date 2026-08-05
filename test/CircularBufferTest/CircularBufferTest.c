@@ -43,8 +43,7 @@ int main ( void )
     {
         retValTemp = circBufReadu32 ( &cb, &readTemp );
 
-        //printf ( "R: %d, D: %d\r\n", retValTemp, readTemp );
-        printf ( "R-S: %d, W: %d, R: %d L: %d D: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ), readTemp );
+        printf ( "R-S: %d, W: %d, R: %d L: %d D: %d RV: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ), readTemp, retValTemp );
         printBuffer ( cb.buffer, cb.capacity );
     }
 
@@ -59,12 +58,11 @@ int main ( void )
     {
         retValTemp = circBufReadu32 ( &cb, &readTemp );
 
-        //printf ( "R: %d, D: %d\r\n", retValTemp, readTemp );
-        printf ( "R-S: %d, W: %d, R: %d L: %d D: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ), readTemp );
+        printf ( "R-S: %d, W: %d, R: %d L: %d D: %d RV: %d-\t\t", cb.status, cb.wp, cb.rp, circBufGetLengthu32 ( &cb ), readTemp, retValTemp );
         printBuffer ( cb.buffer, cb.capacity );
     }
 
 
 
-    return ( 1 );
+    return ( 0 );
 }

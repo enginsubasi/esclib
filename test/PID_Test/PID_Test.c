@@ -40,5 +40,5 @@ int main ( void )
         printf ( "%d-\t%.3f\t%.3f\t%.3f\r\n", i, testArray[ i ], tempVal1, tempVal2 );
     }
 
-    return ( 1 );
+    return ( 0 );
 }
