@@ -3,13 +3,17 @@
   *
   * @file      comstxetx.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.4
+  * @version   1.0.0
   * @date      26/08/2020
   *
   * @brief     Basic STX, ETX communication framework.
   *
   * @par Device
   * Generic
+  *
+  * @note      Any payload byte value is allowed. A byte equal to stx, etx or
+  *            dle travels preceded by dle, and the byte after dle is always
+  *            data.
   *
   * @par History
   * 26/08/2020 Created. @n
@@ -30,6 +34,13 @@
   * 01/08/2026 comstxetxInit rejects an rxSize below two, for the same @n
   *            write past the end that comatInit now rejects, and an @n
   *            stx equal to etx, which can never frame anything. @n
+  * 05/08/2026 Breaking change. Frames now carry a DLE escape and a @n
+  *            two byte check. Init takes the escape byte and a @n
+  *            checksum callback, and packetProcess receives the @n
+  *            payload alone, without the STX byte and without the @n
+  *            check bytes. Existing callers will not compile, which @n
+  *            is deliberate: a format change that still compiled @n
+  *            would corrupt a working link silently. @n
   *
   ******************************************************************************
   */

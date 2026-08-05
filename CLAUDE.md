@@ -12,6 +12,8 @@ The `filter/` group is the largest and each module there answers a different pro
 
 `softtimer` is the library's only time abstraction. It counts calls to `softtimerTick`, which the caller makes from a fixed-rate ISR, so the period is expressed in ticks and the interrupt rate is the unit — the same rule `hc595Interrupt` follows. One-shot and periodic modes share one struct; the periodic reload happens inside the tick rather than at the read, which is what lets an expiry the main loop fails to read cost the event but never the phase. The reload itself subtracts the period rather than clearing the counter, a form that stays correct if the counter ever overshoots today's invariant that it lands exactly on the period — the two forms are equivalent as things stand, and no test of this API distinguishes them. It is deliberately not consumed by `comat` or the shift-register drivers: they keep their own counters, because module independence forbids one module including another's header.
 
+The two protocol modules answer different problems and only one of them checks what it receives. `comstxetx` frames binary: a payload byte equal to STX, ETX or the caller-chosen DLE travels preceded by DLE, and the byte after DLE is always data, so any byte value can cross the link. Every frame carries a two-byte check computed over the unescaped payload by a function the caller installs at `Init` — the signature is `crc16`'s, so `crc16` goes in directly, and the indirection is what lets the module keep its independence from `crc/`. `comstxetxBuildFrame` is the matching encoder, filling the transmit buffer the module owns, so the two halves cannot drift apart. A frame that fails its check is dropped and counted in `comstxetxGetRejectCount` rather than silently. `comat` has none of this on purpose: it speaks AT, an ASCII command protocol whose real peers do not checksum, and adding one would invent a dialect nothing else speaks.
+
 There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself.
 
 ## Building and testing
@@ -172,7 +174,7 @@ These are stubs awaiting design, not defects. Leave them alone unless implementi
 
 ## Testing
 
-Twenty-one test programs cover every module that has functions, and **every one of the 190 exported symbols is referenced by at least one of them**. The only files with no test are `comsec`, `comsafe`, `comgenbuf` and `matrixlib`, which have nothing to test — see the known gaps above. Check that coverage claim still holds after adding an exported function:
+Twenty-one test programs cover every module that has functions, and **every one of the 192 exported symbols is referenced by at least one of them**. The only files with no test are `comsec`, `comsafe`, `comgenbuf` and `matrixlib`, which have nothing to test — see the known gaps above. Check that coverage claim still holds after adding an exported function:
 
 ```bash
 cat test/*/*.c > /tmp/alltests.c
@@ -190,7 +192,7 @@ Several tests aim a specific check at a specific fixed bug, so the regression fa
 |---|---|
 | `SortSearch_Test` | the stray semicolon that made `searchLinear` match at index 0 for anything; the `length - 1` underflow in `sortSelection` and in the binary searches |
 | `Math_Test` | `mathFindMini32` returning the maximum; `mathCalculateMedian` not averaging the two middle elements |
-| `Protocol_Test` | `rxTimeoutCounter` running on across frames. Note that the tick-driven discard cleared the counter even before the fix, so only a sequence that **completes** a frame late in its budget and then asks the next one for a full budget discriminates. Same for the buffer-overflow reset path. |
+| `Protocol_Test` | `rxTimeoutCounter` running on across frames. Note that the tick-driven discard cleared the counter even before the fix, so only a sequence that **completes** a frame late in its budget and then asks the next one for a full budget discriminates. Same for the buffer-overflow reset path. Also a `comstxetx` frame opened on STX but carrying no payload byte never timing out, which is what keying the timeout off `rxIndex` rather than `rxFrameOpen` causes. |
 | `Filter_Test` | the `emafu32` dead band and the `emafGetOutputu32` range overflow |
 | `ShiftRegister_Test` | the two transfer modes colliding, and the delay-to-step relation between them |
 | `ComplexMath_Test` | the `complexDiv` sign, checked both against the answer and by multiplying the quotient back |

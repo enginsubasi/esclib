@@ -3,13 +3,19 @@
   *
   * @file      comat.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.4
+  * @version   0.0.5
   * @date      20/02/2020
   *
   * @brief     AT communication framework.
   *
   * @par Device
   * Generic
+  *
+  * @note      This module carries no checksum on purpose. AT is an ASCII
+  *            command protocol and its real peers, from modems to cellular
+  *            and BLE modules, do not checksum their frames. Adding one here
+  *            would invent a private dialect no peer speaks. comstxetx is
+  *            the module for links that need integrity.
   *
   * @par History
   * 20/02/2020 Created @n
@@ -32,6 +38,9 @@
   * 01/08/2026 comatInit rejects an rxSize below three. comatReceive @n
   *            stores a byte before it compares the index against @n
   *            rxSize, so a shorter buffer took a write past its end. @n
+  * 05/08/2026 Documentation only. A note records that the absence of @n
+  *            a checksum here is deliberate, since AT peers do not @n
+  *            carry one. No code changed. @n
   *
   ******************************************************************************
   */
