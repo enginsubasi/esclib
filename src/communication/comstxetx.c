@@ -151,14 +151,19 @@ uint8_t comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffe
 
 /**
  * @brief   Called from the receive interrupt, one byte at a time; assembles
- *          a frame that starts at the STX byte and completes at the ETX byte.
+ *          the unescaped payload of a frame that starts at the STX byte and
+ *          completes at an unescaped ETX byte.
  * @param[in,out] driver  Framework state.
  * @param[in]     data    Byte received from the interface.
- * @note    The assembled buffer holds STX at index 0 followed by the
- *          payload bytes; ETX is not stored, it only sets the ready flag,
- *          so rxIndex is not incremented for it. This differs from
- *          comatReceive, which stores every byte of the frame including
- *          the leading 'A', 'T' and the trailing CR LF.
+ * @note    The buffer holds the payload alone. STX is not stored, ETX is not
+ *          stored, and the escape bytes are consumed as they are seen. The
+ *          two checksum bytes are stored and are stripped by
+ *          comstxetxEvaluate, which is where they are checked.
+ * @note    The byte after DLE is always data, whatever it is. That is the
+ *          whole escape rule, and it is why a payload may contain any byte.
+ * @note    An unescaped STX inside an open frame restarts the payload rather
+ *          than being stored. A payload STX always arrives escaped, so an
+ *          unescaped one can only mean the sender began again.
  * @note    If rxBuffer fills before ETX arrives, the partial frame is
  *          discarded and the driver goes back to looking for STX. Bytes are
  *          ignored while a completed frame is still waiting for
@@ -166,52 +171,129 @@ uint8_t comstxetxInit ( comstxetx_t* driver, uint8_t* rxBuffer, uint8_t* txBuffe
  */
 void comstxetxReceive ( comstxetx_t* driver, uint8_t data )
 {
+    uint8_t store = FALSE;
+
     if ( driver->rxReadyToEvaluate == FALSE )
     {
-        if ( driver->rxIndex == 0 )
+        if ( driver->rxFrameOpen == FALSE )
         {
             if ( data == driver->stx )
             {
-                driver->rxBuffer[ driver->rxIndex ] = data;
-                ++driver->rxIndex;
+                driver->rxFrameOpen = TRUE;
+                driver->rxIndex = 0;
+                driver->rxEscape = FALSE;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+        else if ( driver->rxEscape == TRUE )
+        {
+            driver->rxEscape = FALSE;
+            store = TRUE;
+        }
+        else if ( data == driver->dle )
+        {
+            driver->rxEscape = TRUE;
+        }
+        else if ( data == driver->etx )
+        {
+            driver->rxReadyToEvaluate = TRUE;
+        }
+        else if ( data == driver->stx )
+        {
+            driver->rxIndex = 0;
+        }
+        else
+        {
+            store = TRUE;
+        }
+
+        if ( store == TRUE )
+        {
+            driver->rxBuffer[ driver->rxIndex ] = data;
+            ++driver->rxIndex;
+
+            if ( driver->rxIndex >= driver->rxSize )
+            {
+                // Terminate all received bytes.
+                driver->rxFrameOpen = FALSE;
+                driver->rxEscape = FALSE;
+                driver->rxIndex = 0;
+                driver->rxTimeoutCounter = 0;
+            }
+            else
+            {
+                /* Intentionally blank */
             }
         }
         else
         {
-            if ( data == driver->etx )
-            {
-                driver->rxReadyToEvaluate = TRUE;
-            }
-            else
-            {
-                driver->rxBuffer[ driver->rxIndex ] = data;
-                ++driver->rxIndex;
-                
-                if ( driver->rxIndex >= driver->rxSize )
-                {
-                    // Terminate all received bytes.
-                    driver->rxIndex = 0;
-                    driver->rxTimeoutCounter = 0;
-                }
-            }
+            /* Intentionally blank */
         }
+    }
+    else
+    {
+        /* Intentionally blank */
     }
 }
 
 /**
- * @brief   Called from the main loop; runs the packet callback when a
- *          complete frame is waiting.
+ * @brief   Called from the main loop; verifies the frame check and runs the
+ *          packet callback when a complete frame is waiting.
  * @param[in,out] driver  Framework state.
+ * @note    The check runs here rather than in comstxetxReceive because it
+ *          walks the whole payload, and comstxetxReceive runs per byte from
+ *          an interrupt.
+ * @note    The last two stored bytes are the received check, low byte first.
+ *          packetProcess is handed everything before them.
+ * @note    A frame that fails, and a frame too short to carry a check at all,
+ *          are both discarded and counted in rxRejectCount. A frame dropped
+ *          with no trace is the worst thing a link can do to whoever has to
+ *          diagnose it.
  */
 void comstxetxEvaluate ( comstxetx_t* driver )
 {
+    uint16_t received = 0;
+    uint16_t computed = 0;
+    uint32_t payloadLength = 0;
+
     if ( driver->rxReadyToEvaluate == TRUE )
     {
-        driver->packetProcess ( driver->rxBuffer, driver->rxIndex );
-        
+        if ( driver->rxIndex >= COMSTXETX_CHECKSUM_SIZE )
+        {
+            payloadLength = driver->rxIndex - COMSTXETX_CHECKSUM_SIZE;
+
+            received = ( uint16_t ) driver->rxBuffer[ payloadLength ];
+            received = ( uint16_t ) ( received |
+                       ( uint16_t ) ( ( uint16_t ) driver->rxBuffer[ payloadLength + 1u ] << 8 ) );
+
+            computed = driver->checksum ( driver->rxBuffer, payloadLength );
+
+            if ( received == computed )
+            {
+                driver->packetProcess ( driver->rxBuffer, payloadLength );
+            }
+            else
+            {
+                ++driver->rxRejectCount;
+            }
+        }
+        else
+        {
+            ++driver->rxRejectCount;
+        }
+
         driver->rxIndex = 0;
+        driver->rxFrameOpen = FALSE;
+        driver->rxEscape = FALSE;
         driver->rxReadyToEvaluate = FALSE;
         driver->rxTimeoutCounter = 0;
+    }
+    else
+    {
+        /* Intentionally blank */
     }
 }
 
@@ -228,14 +310,20 @@ void comstxetxEvaluate ( comstxetx_t* driver )
  * @note    The counter only advances while a partial frame is pending. It
  *          stands still while no frame is being assembled and while a
  *          completed frame waits for comstxetxEvaluate.
+ * @note    Pending means a frame is open, not that a byte has been stored.
+ *          A frame that has seen its STX and nothing since must still time
+ *          out, and keying this off rxIndex would leave it pending for good
+ *          now that the STX byte is no longer stored.
  */
 void comstxetxTimeoutCounter ( comstxetx_t* driver )
 {
-    if ( ( driver->rxIndex != 0 ) && ( driver->rxReadyToEvaluate == FALSE ) )
+    if ( ( driver->rxFrameOpen == TRUE ) && ( driver->rxReadyToEvaluate == FALSE ) )
     {
         if ( driver->rxTimeoutCounter > driver->rxTimeout )
         {
             // Terminate all received bytes.
+            driver->rxFrameOpen = FALSE;
+            driver->rxEscape = FALSE;
             driver->rxIndex = 0;
             driver->rxTimeoutCounter = 0;
         }

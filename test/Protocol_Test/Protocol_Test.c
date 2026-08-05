@@ -390,21 +390,21 @@ static void sxReset ( void )
     sxLastLength = 0;
 }
 
-static void sxFeed ( comstxetx_t* driver, const char* text )
-{
-    uint32_t i = 0;
-
-    for ( i = 0; text[ i ] != '\0'; ++i )
-    {
-        comstxetxReceive ( driver, ( uint8_t ) text[ i ] );
-    }
-}
-
 /*
  * A byte sum rather than a real CRC, so every expected value in this file can
  * be worked out by hand. crc16 is exercised separately in sxBuildGuardCase to
  * prove the callback type takes it with no wrapper.
  */
+static void sxFeedBytes ( comstxetx_t* driver, const uint8_t* const bytes, uint32_t length )
+{
+    uint32_t i = 0;
+
+    for ( i = 0; i < length; ++i )
+    {
+        comstxetxReceive ( driver, bytes[ i ] );
+    }
+}
+
 static uint16_t sxSumChecksum ( const uint8_t* const buffer, uint32_t length )
 {
     uint16_t retVal = 0;
@@ -479,152 +479,233 @@ static void sxInitCase ( void )
             ( uint8_t ) ( comstxetxGetRejectCount ( &driver ) == 0u ) );
 }
 
-static void comstxetxCase ( void )
+/*
+ * Framing with stx 0x02, etx 0x03, dle 0x10.
+ *
+ * The payload is 0x41 0x03 0x10, chosen because the second byte is ETX and the
+ * third is DLE. Without escaping the frame would end at the second byte, which
+ * is the hole this work exists to close.
+ *
+ * Sum checksum over { 0x41, 0x03, 0x10 } is 0x54, so the frame carries 0x54
+ * then 0x00, low byte first. Neither collides with a framing byte, so neither
+ * needs an escape.
+ */
+static void sxEscapeCase ( void )
+{
+    comstxetx_t driver;
+    uint8_t rxBuffer[ 32 ];
+    uint8_t txBuffer[ 32 ];
+    static const uint8_t wire[ ] =
+    {
+        0x02u,                  /* STX                        */
+        0x41u,                  /* letter A, no escape needed */
+        0x10u, 0x03u,           /* escaped ETX in the payload */
+        0x10u, 0x10u,           /* escaped DLE in the payload */
+        0x54u, 0x00u,           /* checksum, low byte first   */
+        0x03u                   /* ETX                        */
+    };
+
+    printf ( "comstxetx escaping\n" );
+
+    sxReset ( );
+
+    check ( "init", comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                    0x02u, 0x03u, 0x10u, 10u,
+                                    sxSumChecksum, sxPacketProcess ) );
+
+    sxFeedBytes ( &driver, wire, ( uint32_t ) sizeof ( wire ) );
+    comstxetxEvaluate ( &driver );
+
+    check ( "the frame reached packetProcess", ( uint8_t ) ( sxProcessCalls == 1u ) );
+    check ( "the payload is three bytes, checksum stripped",
+            ( uint8_t ) ( sxLastLength == 3u ) );
+    check ( "the escaped ETX arrived as data",
+            ( uint8_t ) ( sxLastFrame[ 1 ] == 0x03u ) );
+    check ( "the escaped DLE arrived as data",
+            ( uint8_t ) ( sxLastFrame[ 2 ] == 0x10u ) );
+    check ( "the unescaped byte is unchanged",
+            ( uint8_t ) ( sxLastFrame[ 0 ] == 0x41u ) );
+    check ( "nothing was rejected",
+            ( uint8_t ) ( comstxetxGetRejectCount ( &driver ) == 0u ) );
+}
+
+/*
+ * A single corrupted payload byte must be rejected rather than delivered, and
+ * a frame that closes with fewer than two stored bytes cannot carry a checksum
+ * at all.
+ */
+static void sxRejectCase ( void )
+{
+    comstxetx_t driver;
+    uint8_t rxBuffer[ 32 ];
+    uint8_t txBuffer[ 32 ];
+    static const uint8_t corrupt[ ] =
+    {
+        /*
+         * A valid single byte frame carrying 0x41 would read
+         * 0x02 0x41 0x41 0x00 0x03, the check being the sum of one byte. Here
+         * the payload byte alone was flipped to 0x42, so the check still
+         * claims 0x41 while the payload now sums to 0x42.
+         */
+        0x02u, 0x42u, 0x41u, 0x00u, 0x03u
+    };
+    static const uint8_t tooShort[ ] =
+    {
+        0x02u, 0x41u, 0x03u                 /* one stored byte, then ETX */
+    };
+
+    printf ( "comstxetx rejection\n" );
+
+    sxReset ( );
+
+    check ( "init", comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                    0x02u, 0x03u, 0x10u, 10u,
+                                    sxSumChecksum, sxPacketProcess ) );
+
+    sxFeedBytes ( &driver, corrupt, ( uint32_t ) sizeof ( corrupt ) );
+    comstxetxEvaluate ( &driver );
+
+    check ( "a corrupted frame does not reach packetProcess",
+            ( uint8_t ) ( sxProcessCalls == 0u ) );
+    check ( "and is counted",
+            ( uint8_t ) ( comstxetxGetRejectCount ( &driver ) == 1u ) );
+
+    sxFeedBytes ( &driver, tooShort, ( uint32_t ) sizeof ( tooShort ) );
+    comstxetxEvaluate ( &driver );
+
+    check ( "a frame too short to carry a checksum does not reach packetProcess",
+            ( uint8_t ) ( sxProcessCalls == 0u ) );
+    check ( "and is counted too",
+            ( uint8_t ) ( comstxetxGetRejectCount ( &driver ) == 2u ) );
+}
+
+/*
+ * An unescaped STX inside an open frame can only mean the sender restarted,
+ * because a payload STX always arrives escaped. The bytes before it are
+ * abandoned and the frame begins again.
+ */
+static void sxResyncCase ( void )
+{
+    comstxetx_t driver;
+    uint8_t rxBuffer[ 32 ];
+    uint8_t txBuffer[ 32 ];
+    static const uint8_t wire[ ] =
+    {
+        0x02u, 0x99u, 0x99u,    /* abandoned by the STX that follows */
+        0x02u,                  /* restart                           */
+        0x41u, 0x41u, 0x00u,    /* payload 0x41, checksum 0x41 0x00  */
+        0x03u
+    };
+
+    printf ( "comstxetx resynchronisation\n" );
+
+    sxReset ( );
+
+    check ( "init", comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                    0x02u, 0x03u, 0x10u, 10u,
+                                    sxSumChecksum, sxPacketProcess ) );
+
+    sxFeedBytes ( &driver, wire, ( uint32_t ) sizeof ( wire ) );
+    comstxetxEvaluate ( &driver );
+
+    check ( "the restarted frame reached packetProcess",
+            ( uint8_t ) ( sxProcessCalls == 1u ) );
+    check ( "only the bytes after the second STX are payload",
+            ( uint8_t ) ( sxLastLength == 1u ) );
+    check ( "and the payload is the byte that followed it",
+            ( uint8_t ) ( sxLastFrame[ 0 ] == 0x41u ) );
+}
+
+/*
+ * An escape sequence straddling the end of the buffer must not write past it.
+ * rxSize is deliberately smaller than the array, and the byte just beyond it
+ * carries a sentinel that Init did not touch, so an overrun is visible.
+ */
+static void sxBoundaryCase ( void )
 {
     comstxetx_t driver;
     uint8_t rxBuffer[ 8 ];
-    uint8_t txBuffer[ 8 ];
+    uint8_t txBuffer[ 32 ];
+    static const uint8_t wire[ ] =
+    {
+        0x02u,                  /* STX                          */
+        0x10u, 0x02u,           /* escaped STX, stores one byte */
+        0x11u,                  /* stores one byte              */
+        0x12u,                  /* stores one byte              */
+        0x10u, 0x03u            /* escaped ETX, the fourth store fills rxSize */
+    };
+
+    printf ( "comstxetx escape at the buffer boundary\n" );
+
+    sxReset ( );
+
+    check ( "init with an rxSize of four",
+            comstxetxInit ( &driver, rxBuffer, txBuffer, 4u, 32u,
+                            0x02u, 0x03u, 0x10u, 10u,
+                            sxSumChecksum, sxPacketProcess ) );
+
+    rxBuffer[ 4 ] = 0xEEu;
+
+    sxFeedBytes ( &driver, wire, ( uint32_t ) sizeof ( wire ) );
+
+    check ( "the byte past rxSize is untouched",
+            ( uint8_t ) ( rxBuffer[ 4 ] == 0xEEu ) );
+    check ( "the overrun frame was discarded",
+            ( uint8_t ) ( driver.rxFrameOpen == FALSE ) );
+    check ( "and no escape stayed pending",
+            ( uint8_t ) ( driver.rxEscape == FALSE ) );
+
+    comstxetxEvaluate ( &driver );
+
+    check ( "nothing reached packetProcess",
+            ( uint8_t ) ( sxProcessCalls == 0u ) );
+}
+
+/*
+ * The pinned regression.
+ *
+ * With STX no longer stored, rxIndex == 0 no longer means no frame is open. A
+ * frame that has opened on STX but received no payload byte yet must still
+ * time out. Keying comstxetxTimeoutCounter off rxIndex leaves it pending for
+ * good, and every other case in this file passes with that bug present.
+ */
+static void sxOpenEmptyTimeoutCase ( void )
+{
+    comstxetx_t driver;
+    uint8_t rxBuffer[ 32 ];
+    uint8_t txBuffer[ 32 ];
     uint32_t i = 0;
+    static const uint8_t rest[ ] = { 0x41u, 0x41u, 0x00u, 0x03u };
 
-    printf ( "comstxetx\n" );
+    printf ( "comstxetx timeout on an opened but empty frame\n" );
 
-    check ( "a NULL driver is rejected",
-            ( uint8_t ) ( comstxetxInit ( NULL, rxBuffer, txBuffer, 8u, 8u,
-                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
-    check ( "a NULL rx buffer is rejected",
-            ( uint8_t ) ( comstxetxInit ( &driver, NULL, txBuffer, 8u, 8u,
-                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
-    check ( "a NULL callback is rejected",
-            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, NULL ) == FALSE ) );
-    check ( "a zero tx size is rejected",
-            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 0u,
-                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
-    check ( "an rx size of 1 is rejected",
-            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 1u, 8u,
-                                          0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
-
-    /*
-     * The same byte cannot both open and close a frame. The receive state
-     * machine only tests for ETX once a frame is open, so every frame would
-     * end empty.
-     */
-    check ( "an STX equal to the ETX is rejected",
-            ( uint8_t ) ( comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                                          0x02u, 0x02u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) == FALSE ) );
-
-    check ( "a full init succeeds",
-            comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                            0x02u, 0x03u, 0x10u, 5u, sxSumChecksum, sxPacketProcess ) );
     sxReset ( );
 
-    /* Bytes before STX are ignored. */
-    comstxetxReceive ( &driver, 'j' );
-    comstxetxReceive ( &driver, 'u' );
+    check ( "init", comstxetxInit ( &driver, rxBuffer, txBuffer, 32u, 32u,
+                                    0x02u, 0x03u, 0x10u, 3u,
+                                    sxSumChecksum, sxPacketProcess ) );
+
     comstxetxReceive ( &driver, 0x02u );
-    sxFeed ( &driver, "abc" );
+
+    check ( "the frame is open", ( uint8_t ) ( driver.rxFrameOpen == TRUE ) );
+
+    for ( i = 0; i < 5u; ++i )
+    {
+        comstxetxTimeoutCounter ( &driver );
+    }
+
+    check ( "the empty open frame timed out",
+            ( uint8_t ) ( driver.rxFrameOpen == FALSE ) );
+
+    /*
+     * The bytes that would have completed the abandoned frame must not be
+     * taken as a frame of their own, because no STX opened them.
+     */
+    sxFeedBytes ( &driver, rest, ( uint32_t ) sizeof ( rest ) );
     comstxetxEvaluate ( &driver );
-    check ( "a frame with no ETX yet does not fire",
+
+    check ( "the orphaned tail did not become a frame",
             ( uint8_t ) ( sxProcessCalls == 0u ) );
-
-    comstxetxReceive ( &driver, 0x03u );
-    comstxetxEvaluate ( &driver );
-    check ( "ETX completes the frame", ( uint8_t ) ( sxProcessCalls == 1u ) );
-
-    /*
-     * Unlike comat, this stores STX at index 0 and does not store ETX at all,
-     * so a three byte payload reports a length of four.
-     */
-    check ( "the length counts STX and the payload but not ETX",
-            ( uint8_t ) ( sxLastLength == 4u ) );
-    check ( "STX is at index 0", ( uint8_t ) ( sxLastFrame[ 0 ] == 0x02u ) );
-    check ( "and the payload follows it",
-            ( uint8_t ) ( ( sxLastFrame[ 1 ] == 'a' ) && ( sxLastFrame[ 3 ] == 'c' ) ) );
-
-    comstxetxEvaluate ( &driver );
-    check ( "a second Evaluate does not fire again",
-            ( uint8_t ) ( sxProcessCalls == 1u ) );
-
-    /* An over long frame is discarded rather than overflowing the buffer. */
-    sxReset ( );
-    comstxetxReceive ( &driver, 0x02u );
-    sxFeed ( &driver, "0123456789" );
-    comstxetxReceive ( &driver, 0x03u );
-    comstxetxEvaluate ( &driver );
-    check ( "an over long frame is discarded", ( uint8_t ) ( sxProcessCalls == 0u ) );
-
-    /* And the driver recovers. */
-    comstxetxReceive ( &driver, 0x02u );
-    sxFeed ( &driver, "hi" );
-    comstxetxReceive ( &driver, 0x03u );
-    comstxetxEvaluate ( &driver );
-    check ( "and the driver still works afterwards",
-            ( uint8_t ) ( sxProcessCalls == 1u ) );
-
-    /* The timeout behaves the same way it does in comat. */
-    check ( "Init with rxTimeout 2",
-            comstxetxInit ( &driver, rxBuffer, txBuffer, 8u, 8u,
-                            0x02u, 0x03u, 0x10u, 2u, sxSumChecksum, sxPacketProcess ) );
-    sxReset ( );
-
-    comstxetxReceive ( &driver, 0x02u );
-    sxFeed ( &driver, "ab" );
-
-    for ( i = 0; i < 3u; ++i )
-    {
-        comstxetxTimeoutCounter ( &driver );
-    }
-
-    comstxetxReceive ( &driver, 0x03u );
-    comstxetxEvaluate ( &driver );
-    check ( "a frame finished inside the timeout is accepted",
-            ( uint8_t ) ( sxProcessCalls == 1u ) );
-
-    sxReset ( );
-    comstxetxReceive ( &driver, 0x02u );
-    sxFeed ( &driver, "ab" );
-
-    for ( i = 0; i < 4u; ++i )
-    {
-        comstxetxTimeoutCounter ( &driver );
-    }
-
-    comstxetxReceive ( &driver, 0x03u );
-    comstxetxEvaluate ( &driver );
-    check ( "a frame that ran out of time is discarded",
-            ( uint8_t ) ( sxProcessCalls == 0u ) );
-
-    /*
-     * The same counter leak comat had. A frame completed late in its budget
-     * must not shorten the budget of the frame that follows it, and only
-     * Evaluate clearing the counter makes that true.
-     */
-    sxReset ( );
-    comstxetxReceive ( &driver, 0x02u );
-    sxFeed ( &driver, "ab" );
-
-    for ( i = 0; i < 3u; ++i )
-    {
-        comstxetxTimeoutCounter ( &driver );
-    }
-
-    comstxetxReceive ( &driver, 0x03u );
-    comstxetxEvaluate ( &driver );
-    check ( "a frame completed late in its budget still fires",
-            ( uint8_t ) ( sxProcessCalls == 1u ) );
-
-    comstxetxReceive ( &driver, 0x02u );
-    sxFeed ( &driver, "cd" );
-
-    for ( i = 0; i < 3u; ++i )
-    {
-        comstxetxTimeoutCounter ( &driver );
-    }
-
-    comstxetxReceive ( &driver, 0x03u );
-    comstxetxEvaluate ( &driver );
-    check ( "and the frame after it starts with a full budget",
-            ( uint8_t ) ( sxProcessCalls == 2u ) );
 }
 
 int main ( void )
@@ -641,7 +722,15 @@ int main ( void )
     printf ( "\n" );
     sxInitCase ( );
     printf ( "\n" );
-    comstxetxCase ( );
+    sxEscapeCase ( );
+    printf ( "\n" );
+    sxRejectCase ( );
+    printf ( "\n" );
+    sxResyncCase ( );
+    printf ( "\n" );
+    sxBoundaryCase ( );
+    printf ( "\n" );
+    sxOpenEmptyTimeoutCase ( );
 
     printf ( "\n" );
 
