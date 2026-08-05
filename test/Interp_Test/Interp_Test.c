@@ -197,9 +197,102 @@ static void initCase ( void )
     check ( "and the i32 driver was left alone", isSentineli32 ( &driveri32 ) );
 }
 
+/* ---------------------------------------------------- float compute path */
+
+/*
+ * At every table x the answer must be that x's own y exactly, including both
+ * ends where the clamp takes over from the interpolation.
+ */
+static void nodeCase ( void )
+{
+    interp_t driver;
+
+    printf ( "interp at the table nodes\n" );
+
+    check ( "init", interpInit ( &driver, fallingX, fallingY, 4u ) );
+
+    check ( "the first node", nearly ( interpCalculate ( &driver, 0.0f ), 100.0f ) );
+    check ( "an interior node", nearly ( interpCalculate ( &driver, 10.0f ), 80.0f ) );
+    check ( "the other interior node", nearly ( interpCalculate ( &driver, 20.0f ), 50.0f ) );
+    check ( "the last node", nearly ( interpCalculate ( &driver, 40.0f ), 0.0f ) );
+}
+
+/*
+ * Halfway between two nodes the answer is the mean of their y values, which
+ * holds whichever way y runs. The slope here is negative throughout, so a
+ * sign error in the interpolation shows up immediately.
+ */
+static void betweenCase ( void )
+{
+    interp_t driver;
+    static const float risingX[ 3 ] = { -10.0f, 0.0f, 10.0f };
+    static const float risingY[ 3 ] = {  -1.0f, 0.0f,  3.0f };
+
+    printf ( "interp between the nodes\n" );
+
+    check ( "init", interpInit ( &driver, fallingX, fallingY, 4u ) );
+
+    check ( "halfway across the first interval is the mean of its ends",
+            nearly ( interpCalculate ( &driver, 5.0f ), 90.0f ) );
+    check ( "halfway across the last interval is the mean of its ends",
+            nearly ( interpCalculate ( &driver, 30.0f ), 25.0f ) );
+    check ( "a quarter of the way across the last interval",
+            nearly ( interpCalculate ( &driver, 25.0f ), 37.5f ) );
+    check ( "the interval widths differ and each is used on its own",
+            nearly ( interpCalculate ( &driver, 15.0f ), 65.0f ) );
+
+    check ( "init an ascending y table",
+            interpInit ( &driver, risingX, risingY, 3u ) );
+
+    check ( "a rising slope on the far interval",
+            nearly ( interpCalculate ( &driver, 5.0f ), 1.5f ) );
+    check ( "a rising slope on the near interval, across zero",
+            nearly ( interpCalculate ( &driver, -5.0f ), -0.5f ) );
+}
+
+/*
+ * Past either end the value is held at the end rather than extrapolated, and
+ * interpInRange is the separate question of whether that happened. Clamping
+ * is an answer here, not an error, which is why interpCalculate returns the
+ * value directly and the range question is asked apart from it.
+ */
+static void clampCase ( void )
+{
+    interp_t driver;
+
+    printf ( "interp clamping and range\n" );
+
+    check ( "init", interpInit ( &driver, fallingX, fallingY, 4u ) );
+
+    check ( "below the first x the first y is held",
+            nearly ( interpCalculate ( &driver, -5.0f ), 100.0f ) );
+    check ( "far below the first x the first y is still held",
+            nearly ( interpCalculate ( &driver, -1000.0f ), 100.0f ) );
+    check ( "above the last x the last y is held",
+            nearly ( interpCalculate ( &driver, 100.0f ), 0.0f ) );
+
+    check ( "the first x is in range",
+            ( uint8_t ) ( interpInRange ( &driver, 0.0f ) == TRUE ) );
+    check ( "the last x is in range, the endpoints are included",
+            ( uint8_t ) ( interpInRange ( &driver, 40.0f ) == TRUE ) );
+    check ( "an interior x is in range",
+            ( uint8_t ) ( interpInRange ( &driver, 20.0f ) == TRUE ) );
+    check ( "just below the first x is out of range",
+            ( uint8_t ) ( interpInRange ( &driver, -0.1f ) == FALSE ) );
+    check ( "just above the last x is out of range",
+            ( uint8_t ) ( interpInRange ( &driver, 40.1f ) == FALSE ) );
+}
+
 int main ( void )
 {
     initCase ( );
+
+    printf ( "\n" );
+    nodeCase ( );
+    printf ( "\n" );
+    betweenCase ( );
+    printf ( "\n" );
+    clampCase ( );
 
     printf ( "\n" );
 

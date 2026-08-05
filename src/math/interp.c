@@ -3,7 +3,7 @@
   *
   * @file      interp.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.1
+  * @version   0.0.2
   * @date      05/08/2026
   *
   * @brief     Linear interpolation over an ascending table.
@@ -19,6 +19,7 @@
   *
   * @par History
   * 05/08/2026 Created @n
+  * 05/08/2026 Float compute path: interpCalculate and interpInRange. @n
   *
   ******************************************************************************
   */
@@ -131,6 +132,117 @@ uint8_t interpIniti32 ( interpi32_t* driver, const int32_t* const xTable, const 
         {
             retVal = FALSE;
         }
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Finds the interval that holds x, as the index of its lower end.
+ * @param[in]  xTable   Strictly ascending x values.
+ * @param[in]  length   Number of entries.
+ * @param[in]  x        Value to bracket. Must lie strictly inside the table.
+ * @return  Index i such that xTable[ i ] <= x < xTable[ i + 1 ].
+ * @note    This is the upper bound search: the first index whose x is
+ *          strictly greater than the input, minus one. The caller has
+ *          already handled both clamps, so x is strictly inside the table,
+ *          which puts the upper bound in [ 1, length - 1 ] and the returned
+ *          index in [ 0, length - 2 ]. Neither the subtraction below nor the
+ *          i + 1 read at the call site can leave the table.
+ */
+static uint32_t interpBracket ( const float* const xTable, uint32_t length, float x )
+{
+    uint32_t retVal = 0;
+    uint32_t low = 0;
+    uint32_t high = 0;
+    uint32_t mid = 0;
+
+    high = length;
+
+    while ( low < high )
+    {
+        mid = low + ( ( high - low ) >> 1 ); // divide by 2
+
+        if ( xTable[ mid ] <= x )
+        {
+            low = mid + 1u;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+
+    retVal = low - 1u;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Returns the table value at x, interpolated linearly between the
+ *          two neighbouring entries and held flat past either end.
+ * @param[in]  driver   Initialized interpolator.
+ * @param[in]  x        Value to look up.
+ * @return  The interpolated y. Past the first x it is the first y, past the
+ *          last x it is the last y.
+ * @note    A pure read, which is what lets one driver be shared between the
+ *          main loop and an interrupt. It caches nothing between calls on
+ *          purpose: caching the last interval would cost the const and buy
+ *          nothing on the small tables this library is used with.
+ * @note    The divisor cannot be zero and the index cannot leave the table.
+ *          interpInit proved the strict ascent, and the two clamps run
+ *          first, so the interpolating branch is only reached when x lies
+ *          strictly inside the table.
+ * @note    Clamping is an answer rather than an error, so the value comes
+ *          back directly. interpInRange answers separately whether x fell
+ *          inside the table, for the caller who needs to tell a saturated
+ *          reading from a broken sensor.
+ */
+float interpCalculate ( const interp_t* const driver, float x )
+{
+    float retVal = 0;
+    uint32_t i = 0;
+
+    if ( x <= driver->xTable[ 0 ] )
+    {
+        retVal = driver->yTable[ 0 ];
+    }
+    else if ( x >= driver->xTable[ driver->length - 1u ] )
+    {
+        retVal = driver->yTable[ driver->length - 1u ];
+    }
+    else
+    {
+        i = interpBracket ( driver->xTable, driver->length, x );
+
+        retVal = driver->yTable[ i ] +
+                 ( ( ( x - driver->xTable[ i ] ) *
+                     ( driver->yTable[ i + 1u ] - driver->yTable[ i ] ) ) /
+                   ( driver->xTable[ i + 1u ] - driver->xTable[ i ] ) );
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Reports whether x falls inside the table rather than past an end.
+ * @param[in]  driver   Initialized interpolator.
+ * @param[in]  x        Value to test.
+ * @return  TRUE when x lies between the first and last table x, endpoints
+ *          included. FALSE when interpCalculate would clamp.
+ */
+uint8_t interpInRange ( const interp_t* const driver, float x )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( x >= driver->xTable[ 0 ] ) &&
+         ( x <= driver->xTable[ driver->length - 1u ] ) )
+    {
+        retVal = TRUE;
     }
     else
     {
