@@ -24,19 +24,37 @@ The two protocol modules answer different problems and only one of them checks w
 
 `checksum` is what goes into that hook when a full CRC is more than the link needs. Five stateless functions — `checksumXor`, `checksumSum8`, `checksumSum16`, `checksumFletcher16`, `checksumAdler32` — each returning its **own natural width** rather than a common one, which is the whole reason only the `uint16_t` pair fits `comstxetxInit`'s callback. Widening `checksumSum8` to sixteen bits would make it fit too and would be a lie about how many bits of protection it carries. The choice among them is one question: `xor` and the two sums are blind to a reordering, because neither accumulator depends on where a byte sits; `Fletcher16` sees it for nearly the cost of a plain sum, by summing the running total rather than the bytes; `Adler32` is Fletcher with a wider modulus, stronger on long payloads and notably weak on short ones where its first accumulator has barely left its seed.
 
-There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself.
+There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself. `run_tests.sh` at the root is not an exception to that: it builds and runs the tests, and nothing that ships.
 
 ## Building and testing
 
-Each `test/<Name>_Test/` directory is a standalone `main()` that exercises one module. Only `CircularBufferTest` keeps its Code::Blocks project file (`.cbp`) in git; the other `.cbp`/`.depend`/`.layout` files are `.gitignore`d, so build tests directly:
+Each `test/<Name>_Test/` directory is a standalone `main()` that exercises one module. Only `CircularBufferTest` keeps its Code::Blocks project file (`.cbp`) in git; the other `.cbp`/`.depend`/`.layout` files are `.gitignore`d.
+
+There is no assertion framework — the assert-style tests carry their own three-line `check` helper, and the seven older printing tests are verified against the checked-in `output.txt` next to each.
+
+There **is** a runner, `run_tests.sh` at the root, added 06/08/2026 after six modules' worth of running the suite from a throwaway copy of it:
+
+```bash
+sh run_tests.sh
+```
+
+It earns its place by needing no maintenance. Each test's module dependencies are derived from its own `#include "..."` lines, so there is no list to keep in sync with the tree and adding a module and its test requires no edit to it. It reports a warning as loudly as a failure, because a warning is a regression here, and its exit status is the number of tests that failed. `LINKONLY=1` with a cross compiler checks that every source set links without running anything:
+
+```bash
+CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
+```
+
+It is written to POSIX `sh` and is checked under `dash`, not only under the Git Bash that happens to be on this machine — a process substitution would work here and fail elsewhere. It also deletes the stray `output.txt` that `WriteToAFile_Test` drops into the working directory, which otherwise gets committed by accident sooner or later.
+
+An `output.txt` difference is reported and never counted as a failure, because regenerating one is a judgement call about whether the module moved or the expectation did.
+
+A single test still builds directly, and that is often what you want mid-change:
 
 ```bash
 # One test = test main + the module .c, with the module's inc/ dir on the include path
 gcc -Wall -g -Iinc/filter test/MAF_Test/MAF_Test.c src/filter/maf.c -o maf_test && ./maf_test
 gcc -Wall -g -Iinc/complex test/Complex_Test/Complex_Test.c src/complex/complex.c -lm -o complex_test
 ```
-
-Tests print to stdout and are verified by eye against the checked-in `output.txt` next to each test — there is no assertion framework and no runner. When changing a module with a test, regenerate `output.txt` and diff it.
 
 Two compilers are installed and neither is the obvious one. `arm-none-eabi-gcc` is on PATH and cross-compiles for ARM, so it checks syntax and warnings but cannot run what it builds. A host `gcc` (MinGW-w64, WinLibs) was installed on 05/08/2026 and is **not** on PATH — prepend it when a test has to actually run:
 

@@ -2,7 +2,7 @@
 
 Created 2026-08-05, last updated 2026-08-06.
 
-Every item on this list has been built. Each entry now records what was actually done and, where the outcome differed from the proposal, why. One decision is still open; it is the last section.
+Every item on this list has been built, and the one decision it carried is settled. Each entry records what was actually done and, where the outcome differed from the proposal, why.
 
 ## 1. Run the test suite once on a host compiler — DONE 05/08/2026
 
@@ -16,7 +16,7 @@ The run found three things nothing else could have:
 
 Fixed and regenerated in commits `315ebe6`, `ebdace6` and `bb5b864`.
 
-**Still open from this item.** CLAUDE.md records that this repository deliberately has no build system and no test runner. The run above used a throwaway script that derives each test's module sources from its own `#include "..."` lines. Whether such a runner should live in the tree is an open decision, not something to settle by drift.
+**Settled 06/08/2026.** The throwaway script that run used became `run_tests.sh` at the repository root. See the last section.
 
 ## 2. Protocol modules do not verify what they receive — DONE 05/08/2026
 
@@ -66,10 +66,16 @@ Implemented in `2e0fd20`. `Encoder_Test` asserts 44 checks, and all three of its
 
 Implemented in `681e070` and `ae49b80`, tested inside the existing `Math_Test`, which now asserts 111 checks.
 
-## Nothing is outstanding except one decision
+## Everything on this list is built
 
-Every module entry on this list is built. What remains is the open question carried over from item 1: **whether a test runner belongs in the tree.**
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`. Nothing is outstanding.
 
-CLAUDE.md records that this repository deliberately has no build system and no test runner. Every suite run since 05/08/2026 has used a throwaway script in a scratch directory that derives each test's module sources from its own `#include "..."` lines, so it carries no list and needs no maintenance. It has been run for `softtimer`, `comstxetx`, `interp`, `ramp`, `checksum` and `encoder`, and it caught two things by itself — a stale `output.txt` comparison that was really a line-ending artefact, and `WriteToAFile_Test`'s `output.txt` being the file the program writes rather than its stdout.
+The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 
-The question is whether that script should be checked in, which would make the "no runner" line in CLAUDE.md false and would have to be rewritten, or whether the principle is worth more than the convenience. This is a decision about what the repository is, not a coding task, and it should not be settled by drift.
+It went in because it costs nothing to keep true. Each test's module dependencies come from its own `#include "..."` lines, so there is no list to fall out of sync and a new module needs no edit to it. It had also already earned its keep by catching two things nobody was looking for: an `output.txt` comparison that looked like staleness and was really a line-ending artefact, and `WriteToAFile_Test`'s `output.txt` being the file the program *writes* rather than its stdout, which made the comparison meaningless.
+
+Two things were fixed before it was checked in, neither of which mattered while it lived in a scratch directory. It used a `<( ... )` process substitution, which is a bashism that works under Git Bash and fails under a real POSIX `sh`; it is now written to `sh` and verified under `dash`. And it now deletes the stray `output.txt` that `WriteToAFile_Test` drops into the working directory, which a runner living in the repository would otherwise cause to be committed by accident.
+
+## What is not here
+
+This list held only additions. Nothing on it was a defect, and the four stub files — `comsec`, `comsafe`, `comgenbuf`, `matrixlib` — are deliberately still stubs; CLAUDE.md's "Known gaps" section is where those live, not here.
