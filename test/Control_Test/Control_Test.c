@@ -426,6 +426,205 @@ static void hysteresisWidthCase ( void )
             ( uint8_t ) ( hysteresisGetOutputu32 ( &driveru32 ) == FALSE ) );
 }
 
+/* ------------------------------------------------------- pid, Q16 fixed */
+
+/*
+ * The fixed point width, added 06/08/2026, for parts with no FPU. A gain of
+ * 1.0 is 65536.
+ *
+ * It differs from the float variant in one place: there is no ts. The
+ * integral is a running sum of errors and the derivative a plain difference,
+ * so the caller folds the period into the gains once when converting from
+ * continuous ones. Every expected value below is therefore hand computable as
+ * gain times term, with no period anywhere.
+ *
+ * Two things only this width can get wrong, and both are checked: the
+ * integral accumulator is int64_t, because a running sum of errors is exactly
+ * what an int32_t loses; and each gain product is formed in int64_t before it
+ * is shifted back down, because a Q16 gain against a realistic error passes
+ * thirty two bits immediately.
+ */
+static void pidFixedPointCase ( void )
+{
+    pidci32_t driver;
+    uint32_t i = 0;
+
+    printf ( "pid fixed point\n" );
+
+    check ( "a NULL driver is rejected",
+            ( uint8_t ) ( pidIniti32 ( NULL, 65536, 0, 0,
+                                       10000, -10000, 10000, -10000,
+                                       10000, -10000, 10000, -10000 ) == FALSE ) );
+
+    /*
+     * There is no ts to reject, so a well formed driver pointer is the only
+     * thing Init can refuse. The float variant checks a ts of zero because
+     * pidControl divides by it; nothing here divides.
+     */
+    check ( "proportional only: kp of 2.0",
+            pidIniti32 ( &driver, ( 2 * 65536 ), 0, 0,
+                         10000, -10000, 10000, -10000,
+                         10000, -10000, 100000, -100000 ) );
+
+    pidControli32 ( &driver, 10 );
+    check ( "the output is the gain times the error",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 20 ) );
+
+    pidControli32 ( &driver, -10 );
+    check ( "and it follows the error negative",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == -20 ) );
+
+    /* A fractional gain is the reason for Q16 in the first place. */
+    check ( "kp of 0.5",
+            pidIniti32 ( &driver, 32768, 0, 0,
+                         10000, -10000, 10000, -10000,
+                         10000, -10000, 100000, -100000 ) );
+    pidControli32 ( &driver, 10 );
+    check ( "half of the error survives the fixed point",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 5 ) );
+
+    /* The proportional term is limited before the gain is applied. */
+    check ( "kp of 2.0 with the p term limited to 3",
+            pidIniti32 ( &driver, ( 2 * 65536 ), 0, 0,
+                         3, -3, 10000, -10000,
+                         10000, -10000, 100000, -100000 ) );
+    pidControli32 ( &driver, 100 );
+    check ( "the limit binds on the term, not on the output",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 6 ) );
+
+    /* Integral. One call is one period, so the accumulator is a plain sum. */
+    check ( "integral only: ki of 0.5",
+            pidIniti32 ( &driver, 0, 32768, 0,
+                         10000, -10000, 10000, -10000,
+                         10000, -10000, 100000, -100000 ) );
+
+    pidControli32 ( &driver, 10 );
+    check ( "one sample integrates one error",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 5 ) );
+    pidControli32 ( &driver, 10 );
+    check ( "two samples integrate two",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 10 ) );
+    pidControli32 ( &driver, 10 );
+    check ( "three samples integrate three",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 15 ) );
+
+    /*
+     * The anti windup bound. The accumulator is clamped rather than the term
+     * after its gain, so it cannot run away and the controller recovers as
+     * soon as the error changes sign. Clamping the term instead would let the
+     * accumulator keep climbing behind the limit and stall the recovery.
+     */
+    check ( "ki of 1.0 with the accumulator limited to 50",
+            pidIniti32 ( &driver, 0, 65536, 0,
+                         10000, -10000, 50, -50,
+                         10000, -10000, 100000, -100000 ) );
+
+    for ( i = 0; i < 100u; ++i )
+    {
+        pidControli32 ( &driver, 10 );
+    }
+
+    check ( "a long saturating run stops at the accumulator limit",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 50 ) );
+
+    pidControli32 ( &driver, -10 );
+    check ( "and one sample of the other sign moves it straight away",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 40 ) );
+
+    /* Derivative. Again one call is one period, so it is a difference. */
+    check ( "derivative only: kd of 2.0",
+            pidIniti32 ( &driver, 0, 0, ( 2 * 65536 ),
+                         10000, -10000, 10000, -10000,
+                         10000, -10000, 100000, -100000 ) );
+
+    pidControli32 ( &driver, 10 );
+    check ( "the first step is the whole error, since lastError starts cleared",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 20 ) );
+    pidControli32 ( &driver, 10 );
+    check ( "a steady error differentiates to nothing",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 0 ) );
+    pidControli32 ( &driver, 15 );
+    check ( "and a step of five gives twice that",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 10 ) );
+
+    /* The output limiter is separate from the three term limiters. */
+    check ( "kp of 10 with the output limited to 25",
+            pidIniti32 ( &driver, ( 10 * 65536 ), 0, 0,
+                         10000, -10000, 10000, -10000,
+                         10000, -10000, 25, -25 ) );
+    pidControli32 ( &driver, 100 );
+    check ( "the output limit binds",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 25 ) );
+    pidControli32 ( &driver, -100 );
+    check ( "in both directions",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == -25 ) );
+
+    /*
+     * The pinned width check. A gain of ten against an error of a hundred
+     * thousand is a Q16 product of 6.5e10, which is past thirty two bits. In
+     * int32_t it wraps and the sign of the output flips.
+     */
+    check ( "kp of 10 with room for a large output",
+            pidIniti32 ( &driver, ( 10 * 65536 ), 0, 0,
+                         1000000, -1000000, 10, -10,
+                         10, -10, 2000000, -2000000 ) );
+    pidControli32 ( &driver, 100000 );
+    check ( "a Q16 product past thirty two bits is not truncated",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 1000000 ) );
+
+    /*
+     * The other pinned width check, and it is narrower than it first looks.
+     * The clamp runs every call and iPartMaxLimit is an int32_t, so the
+     * accumulator can never end a call outside int32 range. What it can do is
+     * leave that range between the addition and the clamp: with the limit at
+     * the very top of int32, one more error overflows before anything bounds
+     * it. An int32_t accumulator wraps to a large negative there and the
+     * clamp then pins it to iMin instead of iMax, so the output comes back
+     * with the wrong sign entirely.
+     */
+    check ( "ki of 1.0 with the accumulator limit at the top of int32",
+            pidIniti32 ( &driver, 0, 65536, 0,
+                         10, -10, 2147483647, ( -2147483647 - 1 ),
+                         10, -10, 2000000000, -2000000000 ) );
+
+    for ( i = 0; i < 30000u; ++i )
+    {
+        pidControli32 ( &driver, 100000 );
+    }
+
+    check ( "the accumulator saturates at its limit rather than wrapping",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 2000000000 ) );
+    check ( "and it is still positive, so it never went round the bottom",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) > 0 ) );
+
+    /* The two Change functions. */
+    check ( "changing coefficients on a NULL driver is refused",
+            ( uint8_t ) ( pidChangeCoefficientsi32 ( NULL, 0, 0, 0 ) == FALSE ) );
+    check ( "changing limits on a NULL driver is refused",
+            ( uint8_t ) ( pidChangeLimitsi32 ( NULL, 0, 0, 0, 0, 0, 0, 0, 0 ) == FALSE ) );
+
+    check ( "re-init proportional only",
+            pidIniti32 ( &driver, 65536, 0, 0,
+                         10000, -10000, 10000, -10000,
+                         10000, -10000, 100000, -100000 ) );
+    pidControli32 ( &driver, 10 );
+    check ( "a gain of one passes the error through",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 10 ) );
+
+    check ( "the gain is changed to 3.0",
+            pidChangeCoefficientsi32 ( &driver, ( 3 * 65536 ), 0, 0 ) );
+    pidControli32 ( &driver, 10 );
+    check ( "and the next iteration uses it",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 30 ) );
+
+    check ( "the output limit is tightened to 12",
+            pidChangeLimitsi32 ( &driver, 10000, -10000, 10000, -10000,
+                                 10000, -10000, 12, -12 ) );
+    pidControli32 ( &driver, 10 );
+    check ( "and it binds on the next iteration",
+            ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 12 ) );
+}
+
 int main ( void )
 {
     pidInitCase ( );
@@ -443,6 +642,8 @@ int main ( void )
     hysteresisCase ( );
     printf ( "\n" );
     hysteresisWidthCase ( );
+    printf ( "\n" );
+    pidFixedPointCase ( );
 
     printf ( "\n" );
 
