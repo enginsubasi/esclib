@@ -1,8 +1,8 @@
 # esclib backlog
 
-Date: 2026-08-05
+Created 2026-08-05, last updated 2026-08-06.
 
-Candidate work, ordered by value. Each entry says what is missing, why it matters, and what the first concrete step is. Nothing here is committed work — this is the list to pick from.
+Every item on this list has been built. Each entry now records what was actually done and, where the outcome differed from the proposal, why. One decision is still open; it is the last section.
 
 ## 1. Run the test suite once on a host compiler — DONE 05/08/2026
 
@@ -26,30 +26,50 @@ Fixed and regenerated in commits `315ebe6`, `ebdace6` and `bb5b864`.
 
 Implemented in commits `e6290d9`, `a559589`, `0e30dc6` and `f1b8fc2`. `Protocol_Test` grew from the old print-and-look case to 88 asserted checks, including a round trip that builds a frame carrying all three framing bytes and feeds the wire bytes back.
 
-**Still open from this item.** The companion `checksum` module — LRC/XOR, sum8, sum16, Fletcher16, Adler32. Stateless, same signature shape as `crc16`, and the natural thing to install into the hook above when a full CRC is more than the link needs. The hook now exists, so this is no longer blocked on a design decision.
+**The companion `checksum` module is done too, on 05/08/2026.** `checksumXor`, `checksumSum8`, `checksumSum16`, `checksumFletcher16` and `checksumAdler32`, stateless, in the `crc` group. Each returns its **own natural width** rather than a common one, so only the `uint16_t` pair fits the hook above — widening `checksumSum8` to sixteen bits would make it fit and would be a lie about how much protection it carries. Fletcher16 and Adler32 were checked against their published vectors rather than against this implementation, and `checksumFletcher16` was installed into `comstxetxInit` and round-tripped a payload carrying STX and DLE to prove the hook claim in situ. Implemented in `e4c9ce4`; `Checksum_Test` asserts 15 checks.
 
-## 3. `interp` — table interpolation
+## 3. `interp` — table interpolation — DONE 05/08/2026
 
-**State.** `searchClosest` answers which table entry to read, and CLAUDE.md points at it as what a calibration or linearisation table needs. Nothing returns a value *between* two entries, so every caller writes that arithmetic itself.
+`interp` gives the value *between* two entries of an ascending table, which is the half of a calibration curve `searchClosest` does not answer.
 
-**Shape.** A stateless value module like `complex`, not a driver: linear interpolation over an ascending x table, with the ends clamped.
+It became a **driver rather than the stateless module this entry proposed**. The reason is the library's own rule: ascending order is a precondition here exactly as it is for the binary searches, and CLAUDE.md already records what a violated precondition costs. A stateless function has nowhere to check it and checking per call is O(N) on a per-sample path, so `interpInit` verifies strict ascent once, at boot, and `interpCalculate` divides without testing the divisor. Reverse lookup needed no function of its own — a second `interp_t` with the tables exchanged reads the curve backwards.
 
-**The trap.** It cannot include `search.h`. It has to carry its own bracketing search — a few lines, and a deliberate duplication rather than an oversight. Worth stating in the module's own banner so the next reader does not "fix" it.
+The bracketing search is duplicated from `searchUpperBound` on purpose, as this entry predicted, and the banner says so.
 
-## 4. `ramp` — setpoint profile with an acceleration limit
+Design in `specs/2026-08-05-interp-design.md`, plan in `plans/2026-08-05-interp.md`, implemented in `ae1850a`, `08cd41a`, `484aba3` and `052cacf`. `Interp_Test` asserts 60 checks.
 
-**State.** `slew` bounds the rate of change and nothing else — one derivative. `pidControl` takes an error that is already computed, so setpoint generation lives entirely outside the library.
+## 4. `ramp` — setpoint profile with an acceleration limit — DONE 05/08/2026
 
-**Shape.** A driver-struct module that walks a setpoint toward a target under an acceleration limit and reports arrival. Sits between `slew` and `pid`, and now has `softtimer` underneath it for anything time-based.
+`ramp` walks a setpoint toward a target under both a velocity and an acceleration limit and comes to rest exactly on it. The braking point is not computed: `sqrtf ( 2 * a * remaining )` is the fastest the ramp could be going and still stop on the target, so deceleration starts by itself the moment the velocity meets that envelope.
 
-## 5. `encoder` — quadrature decoder
+The profile is trapezoidal rather than the pure acceleration limit this entry described. Without a velocity cap the peak speed of a long move grows without bound, and the cap cannot be added from outside — chaining `slew` after `ramp` would alter the velocity `ramp` computes its braking from.
 
-**State.** `bininp` gives a debounced level and a rising edge. Nothing turns two channels into a position count.
+`softtimer` is not underneath it after all. `ramp` takes `ts` at `Init` the way `pid` does and counts nothing itself, so it needs no timer.
 
-**Shape.** A driver-struct module fed the two debounced inputs, tracking direction and position. The natural feedback counterpart to `dcMotor`.
+Design in `specs/2026-08-05-ramp-design.md`, plan in `plans/2026-08-05-ramp.md`, implemented in `63479bd`, `aa9e82b` and `9e29302`. `Ramp_Test` asserts 55 checks.
 
-## 6. Scalar primitives in `basicmath`
+## 5. `encoder` — quadrature decoder — DONE 06/08/2026
 
-**State.** `basicmath` operates on arrays only — min, max, sum, mean, median, range. There is no scalar clamp, no range remap, no interpolation between two values.
+`encoder` turns two quadrature channels into a signed position at four counts per cycle, closing the loop `dcMotor` opens.
 
-**Shape.** `mathClamp`, `mathMap`, `mathLerp` and their typed variants, added to the existing module rather than a new one. The cheapest item here, and the three lines most often rewritten by hand in an embedded project.
+Its one real decision was what to do when both channels changed between two samples. A step was missed and its direction is unrecoverable, so the module refuses to guess: the position stands still and `encoderGetErrorCount` records it, the way `comstxetxGetRejectCount` counts a bad frame. A table answering ±2 there would look right on a clean signal and drift silently on a noisy one.
+
+`encoderInit` takes the levels the pins are sitting at. That is not a convenience — without it the first `encoderUpdate` reads as a transition that never happened.
+
+Implemented in `2e0fd20`. `Encoder_Test` asserts 44 checks, and all three of its claims were confirmed by mutation: guessing the missed step, ignoring the initial pin levels, and treating a masked register read as low.
+
+## 6. Scalar primitives in `basicmath` — DONE 05/08/2026
+
+`mathClamp` in all three widths, `mathMap` in float and `i32`, `mathLerp` in float. Added to `basicmath` rather than a new module, as this entry proposed.
+
+`mathMap` and `mathLerp` deliberately do not clamp — a value outside the input range extrapolates, which is why `mathClamp` is separate rather than folded in. `mathMapi32` carries every intermediate in `int64_t` for `interp`'s reason, and differs from it in one place: its denominator may be negative, because unlike a table the input range is free to descend, so its round-to-nearest takes the magnitude of half the divisor first.
+
+Implemented in `681e070` and `ae49b80`, tested inside the existing `Math_Test`, which now asserts 111 checks.
+
+## Nothing is outstanding except one decision
+
+Every module entry on this list is built. What remains is the open question carried over from item 1: **whether a test runner belongs in the tree.**
+
+CLAUDE.md records that this repository deliberately has no build system and no test runner. Every suite run since 05/08/2026 has used a throwaway script in a scratch directory that derives each test's module sources from its own `#include "..."` lines, so it carries no list and needs no maintenance. It has been run for `softtimer`, `comstxetx`, `interp`, `ramp`, `checksum` and `encoder`, and it caught two things by itself — a stale `output.txt` comparison that was really a line-ending artefact, and `WriteToAFile_Test`'s `output.txt` being the file the program writes rather than its stdout.
+
+The question is whether that script should be checked in, which would make the "no runner" line in CLAUDE.md false and would have to be rewritten, or whether the principle is worth more than the convenience. This is a decision about what the repository is, not a coding task, and it should not be settled by drift.
