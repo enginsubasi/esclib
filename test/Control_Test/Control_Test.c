@@ -331,6 +331,101 @@ static void hysteresisCase ( void )
             ( uint8_t ) ( hysteresisGetOutput ( &driver ) == FALSE ) );
 }
 
+/*
+ * The integer widths, added 06/08/2026. hysteresisControl is two comparisons
+ * and no arithmetic at all, so these carry no edge case the float variant
+ * does not — which is exactly why the checks below are about the band and the
+ * strictness of the thresholds rather than about overflow.
+ *
+ * The two ends of each range are worth one check each anyway, because a
+ * threshold sitting on INT32_MIN or on zero is where a comparison written the
+ * wrong way round would still look reasonable.
+ */
+static void hysteresisWidthCase ( void )
+{
+    hysteresisi32_t driveri32;
+    hysteresisu32_t driveru32;
+
+    printf ( "hysteresis integer widths\n" );
+
+    check ( "i32 NULL driver is rejected",
+            ( uint8_t ) ( hysteresisIniti32 ( NULL, 10, 5 ) == FALSE ) );
+    check ( "i32 an inverted pair is rejected",
+            ( uint8_t ) ( hysteresisIniti32 ( &driveri32, 5, 10 ) == FALSE ) );
+    check ( "i32 equal thresholds are accepted, that is a comparator",
+            hysteresisIniti32 ( &driveri32, 5, 5 ) );
+
+    check ( "i32 Init", hysteresisIniti32 ( &driveri32, 10, -10 ) );
+    check ( "the output starts cleared",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == FALSE ) );
+
+    hysteresisControli32 ( &driveri32, 0 );
+    check ( "a value inside a band spanning zero changes nothing",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == FALSE ) );
+
+    hysteresisControli32 ( &driveri32, 10 );
+    check ( "exactly at the upper threshold is not above it",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == FALSE ) );
+
+    hysteresisControli32 ( &driveri32, 11 );
+    check ( "above it sets the output",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == TRUE ) );
+
+    hysteresisControli32 ( &driveri32, -10 );
+    check ( "exactly at the lower threshold is not below it",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == TRUE ) );
+
+    hysteresisControli32 ( &driveri32, -11 );
+    check ( "below it clears the output",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == FALSE ) );
+
+    /* A band pinned at the bottom of the range. */
+    check ( "i32 Init at the bottom of the range",
+            hysteresisIniti32 ( &driveri32, INT32_MIN + 1, INT32_MIN ) );
+    hysteresisControli32 ( &driveri32, INT32_MAX );
+    check ( "the widest possible input sets it",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == TRUE ) );
+    hysteresisControli32 ( &driveri32, INT32_MIN );
+    check ( "and the lowest possible input is not below the floor threshold",
+            ( uint8_t ) ( hysteresisGetOutputi32 ( &driveri32 ) == TRUE ) );
+
+    check ( "u32 NULL driver is rejected",
+            ( uint8_t ) ( hysteresisInitu32 ( NULL, 10u, 5u ) == FALSE ) );
+    check ( "u32 an inverted pair is rejected",
+            ( uint8_t ) ( hysteresisInitu32 ( &driveru32, 5u, 10u ) == FALSE ) );
+
+    check ( "u32 Init", hysteresisInitu32 ( &driveru32, 200u, 100u ) );
+    hysteresisControlu32 ( &driveru32, 150u );
+    check ( "a value inside the band changes nothing",
+            ( uint8_t ) ( hysteresisGetOutputu32 ( &driveru32 ) == FALSE ) );
+    hysteresisControlu32 ( &driveru32, 201u );
+    check ( "above the upper threshold sets it",
+            ( uint8_t ) ( hysteresisGetOutputu32 ( &driveru32 ) == TRUE ) );
+    hysteresisControlu32 ( &driveru32, 99u );
+    check ( "below the lower threshold clears it",
+            ( uint8_t ) ( hysteresisGetOutputu32 ( &driveru32 ) == FALSE ) );
+
+    /*
+     * A lower threshold of zero can never be crossed, because no unsigned
+     * input sits below it. That makes the output latch on for good, which is
+     * a use rather than a mistake, and Init accepts it.
+     */
+    check ( "u32 Init with a lower threshold of zero",
+            hysteresisInitu32 ( &driveru32, 100u, 0u ) );
+    hysteresisControlu32 ( &driveru32, 101u );
+    check ( "it sets on the way up",
+            ( uint8_t ) ( hysteresisGetOutputu32 ( &driveru32 ) == TRUE ) );
+    hysteresisControlu32 ( &driveru32, 0u );
+    check ( "and zero itself cannot clear it, so the output latches",
+            ( uint8_t ) ( hysteresisGetOutputu32 ( &driveru32 ) == TRUE ) );
+
+    check ( "u32 Init at the top of the range",
+            hysteresisInitu32 ( &driveru32, 0xFFFFFFFFu, 0xFFFFFFFEu ) );
+    hysteresisControlu32 ( &driveru32, 0xFFFFFFFFu );
+    check ( "the largest input is not above the largest threshold",
+            ( uint8_t ) ( hysteresisGetOutputu32 ( &driveru32 ) == FALSE ) );
+}
+
 int main ( void )
 {
     pidInitCase ( );
@@ -346,6 +441,8 @@ int main ( void )
     pidChangeCase ( );
     printf ( "\n" );
     hysteresisCase ( );
+    printf ( "\n" );
+    hysteresisWidthCase ( );
 
     printf ( "\n" );
 
