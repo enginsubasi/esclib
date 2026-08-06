@@ -37,6 +37,13 @@ typedef struct
     int32_t output;
 } deadbandi32_t;
 
+typedef struct
+{
+    uint32_t threshold;
+    uint8_t mode;
+    uint32_t output;
+} deadbandu32_t;
+
 /* ENUMS */
 
 enum DEADBAND_MODE
@@ -56,6 +63,10 @@ float deadbandGetOutput ( const deadband_t* const driver );
 uint8_t deadbandIniti32 ( deadbandi32_t* driver, int32_t threshold, uint8_t mode, int32_t outputInit );
 void deadbandIterationi32 ( deadbandi32_t* driver, int32_t newData );
 int32_t deadbandGetOutputi32 ( const deadbandi32_t* const driver );
+
+uint8_t deadbandInitu32 ( deadbandu32_t* driver, uint32_t threshold, uint8_t mode, uint32_t outputInit );
+void deadbandIterationu32 ( deadbandu32_t* driver, uint32_t newData );
+uint32_t deadbandGetOutputu32 ( const deadbandu32_t* const driver );
 
 #ifdef __cplusplus
 }

@@ -35,6 +35,12 @@ typedef struct
     int32_t output;
 } slewi32_t;
 
+typedef struct
+{
+    uint32_t maxStep;
+    uint32_t output;
+} slewu32_t;
+
 /* ENUMS */
 
 /* EXTERNS */
@@ -48,6 +54,10 @@ float slewGetOutput ( const slew_t* const driver );
 uint8_t slewIniti32 ( slewi32_t* driver, int32_t maxStep, int32_t outputInit );
 void slewIterationi32 ( slewi32_t* driver, int32_t newData );
 int32_t slewGetOutputi32 ( const slewi32_t* const driver );
+
+uint8_t slewInitu32 ( slewu32_t* driver, uint32_t maxStep, uint32_t outputInit );
+void slewIterationu32 ( slewu32_t* driver, uint32_t newData );
+uint32_t slewGetOutputu32 ( const slewu32_t* const driver );
 
 #ifdef __cplusplus
 }

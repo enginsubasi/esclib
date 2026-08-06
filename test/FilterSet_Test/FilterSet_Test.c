@@ -66,6 +66,7 @@ static void slewCase ( void )
 {
     slew_t driver;
     slewi32_t driveri32;
+    slewu32_t driveru32;
     uint32_t i = 0;
     uint8_t ramped = TRUE;
 
@@ -126,6 +127,55 @@ static void slewCase ( void )
     slewIterationi32 ( &driveri32, INT32_MIN );
     check ( "and does not overflow the other way",
             ( uint8_t ) ( slewGetOutputi32 ( &driveri32 ) == ( INT32_MAX - 10 ) ) );
+
+    /*
+     * The unsigned width, added 06/08/2026. It is not a transliteration of
+     * the signed one: an unsigned value has no room below zero, so a
+     * subtraction that would go there wraps to near UINT32_MAX instead of
+     * going negative, and the downward saturation has to be written against
+     * maxStep rather than against a floor constant.
+     */
+    check ( "u32 NULL driver is rejected",
+            ( uint8_t ) ( slewInitu32 ( NULL, 10u, 0u ) == FALSE ) );
+    check ( "u32 zero maxStep is rejected",
+            ( uint8_t ) ( slewInitu32 ( &driveru32, 0u, 0u ) == FALSE ) );
+
+    check ( "u32 Init", slewInitu32 ( &driveru32, 10u, 0u ) );
+    slewIterationu32 ( &driveru32, 100u );
+    check ( "u32 steps by maxStep",
+            ( uint8_t ) ( slewGetOutputu32 ( &driveru32 ) == 10u ) );
+
+    slewIterationu32 ( &driveru32, 12u );
+    check ( "a move smaller than maxStep is taken in one call",
+            ( uint8_t ) ( slewGetOutputu32 ( &driveru32 ) == 12u ) );
+
+    /*
+     * The pinned edge. Stepping down from below maxStep must land on zero.
+     * Computing output - maxStep first would wrap to near UINT32_MAX and send
+     * the output to the far end of the range instead of the near one.
+     */
+    check ( "u32 Init just above zero", slewInitu32 ( &driveru32, 10u, 5u ) );
+    slewIterationu32 ( &driveru32, 0u );
+    check ( "stepping below zero saturates at zero rather than wrapping",
+            ( uint8_t ) ( slewGetOutputu32 ( &driveru32 ) == 0u ) );
+
+    check ( "u32 Init at the top of the range",
+            slewInitu32 ( &driveru32, 10u, 0xFFFFFFFFu ) );
+    slewIterationu32 ( &driveru32, 0u );
+    check ( "the widest possible move down does not wrap",
+            ( uint8_t ) ( slewGetOutputu32 ( &driveru32 ) == ( 0xFFFFFFFFu - 10u ) ) );
+
+    check ( "u32 Init at the bottom of the range",
+            slewInitu32 ( &driveru32, 10u, 0u ) );
+    slewIterationu32 ( &driveru32, 0xFFFFFFFFu );
+    check ( "and the widest possible move up does not wrap either",
+            ( uint8_t ) ( slewGetOutputu32 ( &driveru32 ) == 10u ) );
+
+    check ( "u32 Init near the ceiling",
+            slewInitu32 ( &driveru32, 10u, ( 0xFFFFFFFFu - 5u ) ) );
+    slewIterationu32 ( &driveru32, 0xFFFFFFFFu );
+    check ( "stepping past the ceiling saturates there",
+            ( uint8_t ) ( slewGetOutputu32 ( &driveru32 ) == 0xFFFFFFFFu ) );
 }
 
 /* -------------------------------------------------------------- deadband */
@@ -134,6 +184,7 @@ static void deadbandCase ( void )
 {
     deadband_t driver;
     deadbandi32_t driveri32;
+    deadbandu32_t driveru32;
 
     printf ( "deadband\n" );
 
@@ -181,6 +232,58 @@ static void deadbandCase ( void )
     deadbandIterationi32 ( &driveri32, 0 );
     check ( "DB_DRAG lands one threshold short",
             ( uint8_t ) ( deadbandGetOutputi32 ( &driveri32 ) == -5 ) );
+
+    /*
+     * The unsigned width, added 06/08/2026. The lower band edge is where it
+     * differs from the signed one: subtracting a threshold from an output
+     * near zero wraps to near UINT32_MAX, which would put the lower edge
+     * above the upper one and make the band read every sample as below it.
+     */
+    check ( "u32 NULL driver is rejected",
+            ( uint8_t ) ( deadbandInitu32 ( NULL, 5u, DB_SNAP, 0u ) == FALSE ) );
+    check ( "u32 zero threshold is rejected",
+            ( uint8_t ) ( deadbandInitu32 ( &driveru32, 0u, DB_SNAP, 0u ) == FALSE ) );
+    check ( "u32 unknown mode is rejected",
+            ( uint8_t ) ( deadbandInitu32 ( &driveru32, 5u, 7u, 0u ) == FALSE ) );
+
+    check ( "u32 Init in DB_SNAP",
+            deadbandInitu32 ( &driveru32, 5u, DB_SNAP, 100u ) );
+    deadbandIterationu32 ( &driveru32, 103u );
+    check ( "a move inside the band holds the output",
+            ( uint8_t ) ( deadbandGetOutputu32 ( &driveru32 ) == 100u ) );
+    deadbandIterationu32 ( &driveru32, 106u );
+    check ( "DB_SNAP jumps the output onto the input",
+            ( uint8_t ) ( deadbandGetOutputu32 ( &driveru32 ) == 106u ) );
+
+    check ( "u32 Init in DB_DRAG",
+            deadbandInitu32 ( &driveru32, 5u, DB_DRAG, 100u ) );
+    deadbandIterationu32 ( &driveru32, 106u );
+    check ( "DB_DRAG leaves the output trailing by the threshold",
+            ( uint8_t ) ( deadbandGetOutputu32 ( &driveru32 ) == 101u ) );
+    deadbandIterationu32 ( &driveru32, 94u );
+    check ( "and trails on the way down as well",
+            ( uint8_t ) ( deadbandGetOutputu32 ( &driveru32 ) == 99u ) );
+
+    /*
+     * The pinned edge. With the output at 2 and a threshold of 5 the lower
+     * edge has to clamp to zero. Computed by subtraction it wraps to
+     * 0xFFFFFFFD, which is above the upper edge, and every sample then reads
+     * as below the band and snaps the output onto itself.
+     */
+    check ( "u32 Init just above zero",
+            deadbandInitu32 ( &driveru32, 5u, DB_SNAP, 2u ) );
+    deadbandIterationu32 ( &driveru32, 1u );
+    check ( "a sample inside a band clipped at zero still holds",
+            ( uint8_t ) ( deadbandGetOutputu32 ( &driveru32 ) == 2u ) );
+    deadbandIterationu32 ( &driveru32, 0u );
+    check ( "and so does a sample at zero itself",
+            ( uint8_t ) ( deadbandGetOutputu32 ( &driveru32 ) == 2u ) );
+
+    check ( "u32 Init at the top of the range",
+            deadbandInitu32 ( &driveru32, 5u, DB_SNAP, 0xFFFFFFFFu ) );
+    deadbandIterationu32 ( &driveru32, 0xFFFFFFFFu );
+    check ( "building the upper band edge does not wrap",
+            ( uint8_t ) ( deadbandGetOutputu32 ( &driveru32 ) == 0xFFFFFFFFu ) );
 }
 
 /* ---------------------------------------------------------------- median */

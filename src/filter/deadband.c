@@ -3,7 +3,7 @@
   *
   * @file      deadband.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.2.0
   * @date      02/08/2026
   *
   * @brief     Deadband filter.
@@ -23,6 +23,10 @@
   * @note      This is not the hysteresis module. That one turns a value into a
   *            boolean with two thresholds; this one passes the value through
   *            and holds it.
+  * 06/08/2026 The u32 variants are added. This file carried float @n
+  *            and i32 only, while emaf and median next to it @n
+  *            carried all three widths. Both ends saturate; an @n
+  *            unsigned step below zero wraps rather than clipping. @n
   *
   ******************************************************************************
   */
@@ -214,6 +218,124 @@ void deadbandIterationi32 ( deadbandi32_t* driver, int32_t newData )
  * @return  Current output value.
  */
 int32_t deadbandGetOutputi32 ( const deadbandi32_t* const driver )
+{
+    return ( driver->output );
+}
+
+/**
+ * @brief   Initializes an unsigned dead band filter.
+ * @param[out] driver      Filter state to initialize.
+ * @param[in]  threshold   How far the input must move before the output does.
+ * @param[in]  mode        DB_SNAP or DB_DRAG.
+ * @param[in]  outputInit  Value the output starts at.
+ * @return  TRUE on success, FALSE when driver is NULL, threshold is zero, or
+ *          mode is neither DB_SNAP nor DB_DRAG.
+ * @note    A threshold of zero is rejected. The band would be empty and the
+ *          filter would pass everything through while reporting a successful
+ *          init, which is a filter that does nothing.
+ */
+uint8_t deadbandInitu32 ( deadbandu32_t* driver, uint32_t threshold, uint8_t mode, uint32_t outputInit )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( threshold != 0 ) &&
+            ( ( mode == DB_SNAP ) || ( mode == DB_DRAG ) ) )
+    {
+        driver->threshold = threshold;
+        driver->mode = mode;
+        driver->output = outputInit;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Holds the unsigned output still until the input leaves the band.
+ * @param[in,out] driver   Filter state.
+ * @param[in]     newData  Sample to test against the band.
+ * @note    Both band edges saturate rather than wrapping. An unsigned
+ *          subtraction below zero wraps to near UINT32_MAX, which would put
+ *          the lower edge above the upper one and make the band swallow
+ *          everything.
+ * @note    DB_DRAG leaves the output one threshold behind the input, so the
+ *          band travels with it. DB_SNAP jumps the output onto the input.
+ */
+void deadbandIterationu32 ( deadbandu32_t* driver, uint32_t newData )
+{
+    uint32_t upper = 0;
+    uint32_t lower = 0;
+
+    if ( driver->output > ( UINT32_MAX - driver->threshold ) )
+    {
+        upper = UINT32_MAX;
+    }
+    else
+    {
+        upper = driver->output + driver->threshold;
+    }
+
+    if ( driver->output < driver->threshold )
+    {
+        lower = 0;
+    }
+    else
+    {
+        lower = driver->output - driver->threshold;
+    }
+
+    if ( newData > upper )
+    {
+        if ( driver->mode == DB_DRAG )
+        {
+            driver->output = newData - driver->threshold;
+        }
+        else
+        {
+            driver->output = newData;
+        }
+    }
+    else if ( newData < lower )
+    {
+        if ( driver->mode == DB_DRAG )
+        {
+            /*
+             * newData is below lower, which is at least zero, so it may sit
+             * closer to zero than one threshold. Adding would be safe in
+             * range here, but the saturation is written out so the reader
+             * does not have to reconstruct that argument.
+             */
+            if ( newData > ( UINT32_MAX - driver->threshold ) )
+            {
+                driver->output = UINT32_MAX;
+            }
+            else
+            {
+                driver->output = newData + driver->threshold;
+            }
+        }
+        else
+        {
+            driver->output = newData;
+        }
+    }
+    else
+    {
+        /* Inside the band. The output holds. */
+    }
+}
+
+/**
+ * @brief   Returns the current filter output.
+ * @param[in]  driver  Initialized filter.
+ * @return  The dead banded value.
+ */
+uint32_t deadbandGetOutputu32 ( const deadbandu32_t* const driver )
 {
     return ( driver->output );
 }
