@@ -3,7 +3,7 @@
   *
   * @file      ramp.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.2
+  * @version   0.3.0
   * @date      05/08/2026
   *
   * @brief     Setpoint profile under a velocity and an acceleration limit.
@@ -20,6 +20,10 @@
   * 05/08/2026 Created @n
   * 05/08/2026 The profile itself: rampIteration, with the square root @n
   *            velocity envelope and the final step clamp. @n
+  * 06/08/2026 The Q16 fixed point variant is added, for parts with @n
+  *            no FPU. sqrtf is replaced by an integer square root, @n
+  *            and the limits are per sample so no period is @n
+  *            carried. @n
   *
   ******************************************************************************
   */
@@ -223,6 +227,252 @@ float rampGetVelocity ( const ramp_t* const driver )
  *          consuming read bininpGetRisingValue is.
  */
 uint8_t rampIsArrived ( const ramp_t* const driver )
+{
+    uint8_t retVal = FALSE;
+
+    retVal = driver->arrived;
+
+    return ( retVal );
+}
+
+/*
+ * Q16 fixed point. A limit of 1.0 unit is 65536.
+ *
+ * There is no ts here. The float variant takes a period and writes its limits
+ * in units per second; this one carries them per sample, which removes the
+ * two multiplications by ts from the update and, more to the point, keeps a
+ * floating point period out of a variant whose whole purpose is to avoid one.
+ * alphabetaIniti32 drops dt for the same reason.
+ */
+#define RAMP_Q               16
+#define RAMP_ONE             65536
+
+/**
+ * @brief   Integer square root of a 64-bit value.
+ * @param[in] value  Value to take the root of.
+ * @return  The largest integer whose square does not exceed value.
+ * @note    The bit by bit method, which needs no division and no floating
+ *          point. The float variant calls sqrtf here instead, and replacing
+ *          that call is the only real work in this whole variant.
+ * @note    The velocity envelope feeds this a Q32 product, and the square
+ *          root of a Q32 value is a Q16 one, so the fixed point scale comes
+ *          out right with no shifting of its own.
+ */
+static uint64_t rampSquareRoot ( uint64_t value )
+{
+    uint64_t retVal = 0;
+    uint64_t rest = 0;
+    uint64_t bit = 0;
+
+    rest = value;
+    bit = ( ( uint64_t ) 1 ) << 62;
+
+    while ( bit > rest )
+    {
+        bit >>= 2;
+    }
+
+    while ( bit != 0 )
+    {
+        if ( rest >= ( retVal + bit ) )
+        {
+            rest = rest - ( retVal + bit );
+            retVal = ( retVal >> 1 ) + bit;
+        }
+        else
+        {
+            retVal = retVal >> 1;
+        }
+
+        bit >>= 2;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Initializes a fixed point setpoint ramp.
+ * @param[out] driver           Ramp state to initialize.
+ * @param[in]  maxVelocity      Largest velocity in Q16 units per sample, so
+ *                              65536 is one unit per sample.
+ * @param[in]  maxAcceleration  Largest change of velocity in Q16 units per
+ *                              sample squared. This is the step the velocity
+ *                              may take on one call.
+ * @param[in]  positionInit     Where the ramp starts, in plain units.
+ * @return  TRUE on success, FALSE when driver is NULL or either limit is not
+ *          strictly positive.
+ * @note    Both limits are per sample rather than per second, so the caller
+ *          converts once, at Init, in whatever arithmetic it likes, instead
+ *          of the module carrying a floating point period.
+ * @note    The ramp starts at rest and reports itself arrived, because no
+ *          move is pending until rampIterationi32 is handed a target.
+ */
+uint8_t rampIniti32 ( rampi32_t* driver, int32_t maxVelocity, int32_t maxAcceleration, int32_t positionInit )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( maxVelocity > 0 ) && ( maxAcceleration > 0 ) )
+    {
+        driver->maxVelocity = ( int64_t ) maxVelocity;
+        driver->maxAcceleration = ( int64_t ) maxAcceleration;
+
+        driver->position = ( ( int64_t ) positionInit ) << RAMP_Q;
+        driver->velocity = 0;
+        driver->arrived = TRUE;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Advances the fixed point setpoint one step toward the target.
+ * @param[in,out] driver  Initialized ramp.
+ * @param[in]     target  Where the setpoint is heading, in plain units. May
+ *                        change between calls; the profile re-plans from
+ *                        where it is.
+ * @note    The velocity envelope is the whole module, exactly as in the float
+ *          variant. Two times the acceleration times the remaining distance,
+ *          both in Q16, is a Q32 product, and its integer square root is the
+ *          Q16 velocity from which the target is still reachable at rest.
+ * @note    That product is the range limit of this variant. It is formed in
+ *          int64_t and overflows once twice the acceleration times the
+ *          distance passes about 9.2e18 in Q32, which at an acceleration of
+ *          one unit per sample squared is a move of roughly 1e9 units.
+ * @note    The final clamp is discrete time's only correction, the same one
+ *          the float variant carries. Without it the last step passes the
+ *          target and the ramp oscillates about it.
+ */
+void rampIterationi32 ( rampi32_t* driver, int32_t target )
+{
+    int64_t targetQ = 0;
+    int64_t remaining = 0;
+    int64_t distance = 0;
+    int64_t envelope = 0;
+    int64_t desired = 0;
+    int64_t step = 0;
+    int64_t stepMagnitude = 0;
+
+    targetQ = ( ( int64_t ) target ) << RAMP_Q;
+
+    remaining = targetQ - driver->position;
+
+    distance = remaining;
+
+    if ( distance < 0 )
+    {
+        distance = -distance;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    envelope = ( int64_t ) rampSquareRoot ( ( uint64_t ) ( 2 * driver->maxAcceleration * distance ) );
+
+    if ( envelope > driver->maxVelocity )
+    {
+        desired = driver->maxVelocity;
+    }
+    else
+    {
+        desired = envelope;
+    }
+
+    if ( remaining < 0 )
+    {
+        desired = -desired;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( ( desired - driver->velocity ) > driver->maxAcceleration )
+    {
+        driver->velocity += driver->maxAcceleration;
+    }
+    else if ( ( desired - driver->velocity ) < -driver->maxAcceleration )
+    {
+        driver->velocity -= driver->maxAcceleration;
+    }
+    else
+    {
+        driver->velocity = desired;
+    }
+
+    // The velocity is already per sample, so the step is the velocity itself.
+    step = driver->velocity;
+
+    stepMagnitude = step;
+
+    if ( stepMagnitude < 0 )
+    {
+        stepMagnitude = -stepMagnitude;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( stepMagnitude >= distance )
+    {
+        driver->position = targetQ;
+        driver->velocity = 0;
+        driver->arrived = TRUE;
+    }
+    else
+    {
+        driver->position += step;
+        driver->arrived = FALSE;
+    }
+}
+
+/**
+ * @brief   Returns the current setpoint.
+ * @param[in]  driver  Initialized ramp.
+ * @return  The position the profile has reached, in plain units with the Q16
+ *          fraction dropped.
+ */
+int32_t rampGetOutputi32 ( const rampi32_t* const driver )
+{
+    int32_t retVal = 0;
+
+    retVal = ( int32_t ) ( driver->position >> RAMP_Q );
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Returns the current velocity of the setpoint.
+ * @param[in]  driver  Initialized ramp.
+ * @return  Q16 units per sample, signed. Zero once the target is reached.
+ * @note    Q16 rather than plain units, for the reason
+ *          alphabetaGetVelocityi32 reports Q16 too: a ramp spends the
+ *          beginning and the end of every move below one unit per sample, and
+ *          truncating that would report a standing zero while it moved.
+ */
+int32_t rampGetVelocityi32 ( const rampi32_t* const driver )
+{
+    int32_t retVal = 0;
+
+    retVal = ( int32_t ) driver->velocity;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Reports whether the ramp has come to rest on its target.
+ * @param[in]  driver  Initialized ramp.
+ * @return  TRUE once the position sits exactly on the target with zero
+ *          velocity, FALSE while the profile is still running.
+ */
+uint8_t rampIsArrivedi32 ( const rampi32_t* const driver )
 {
     uint8_t retVal = FALSE;
 

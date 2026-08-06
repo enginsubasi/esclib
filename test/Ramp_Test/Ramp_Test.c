@@ -482,6 +482,227 @@ static void alreadyThereCase ( void )
             ( uint8_t ) ( rampIsArrived ( &driver ) == TRUE ) );
 }
 
+/* ------------------------------------------------------ Q16 fixed point */
+
+/*
+ * The fixed point width, added 06/08/2026, for parts with no FPU. A limit of
+ * one unit is 65536.
+ *
+ * It differs from the float variant in two places and the checks below pin
+ * both. There is no ts: the limits are per sample, which takes the period out
+ * of the update. And sqrtf is replaced by an integer square root, which is
+ * the only real work in the variant — the envelope feeds it a Q32 product and
+ * the root of a Q32 value is a Q16 one, so the scale comes out with no
+ * shifting of its own.
+ *
+ * The limits below make the arithmetic checkable by hand: an acceleration of
+ * one unit per sample squared and a velocity cap of ten units per sample. The
+ * velocity therefore climbs by exactly one unit per call and reaches the cap
+ * after ten, having covered 1+2+...+10 = 55 units.
+ */
+static void fixedPointCase ( void )
+{
+    rampi32_t driver;
+    uint32_t i = 0;
+    uint32_t steps = 0;
+    uint8_t everPassed = FALSE;
+    uint8_t everReversed = FALSE;
+    int32_t arrivalVelocity = 0;
+    int32_t velocityBefore = 0;
+
+    printf ( "ramp fixed point\n" );
+
+    check ( "NULL driver is rejected",
+            ( uint8_t ) ( rampIniti32 ( NULL, 655360, 65536, 0 ) == FALSE ) );
+    check ( "a zero maxVelocity is rejected",
+            ( uint8_t ) ( rampIniti32 ( &driver, 0, 65536, 0 ) == FALSE ) );
+    check ( "a negative maxVelocity is rejected",
+            ( uint8_t ) ( rampIniti32 ( &driver, -1, 65536, 0 ) == FALSE ) );
+    check ( "a zero maxAcceleration is rejected",
+            ( uint8_t ) ( rampIniti32 ( &driver, 655360, 0, 0 ) == FALSE ) );
+
+    check ( "Init", rampIniti32 ( &driver, 655360, 65536, 0 ) );
+    check ( "the position starts where it was put",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == 0 ) );
+    check ( "the ramp starts at rest",
+            ( uint8_t ) ( rampGetVelocityi32 ( &driver ) == 0 ) );
+    check ( "and with no move pending it counts as arrived",
+            ( uint8_t ) ( rampIsArrivedi32 ( &driver ) == TRUE ) );
+
+    rampIterationi32 ( &driver, 1000 );
+    check ( "one step from rest gives exactly one velocity increment",
+            ( uint8_t ) ( rampGetVelocityi32 ( &driver ) == 65536 ) );
+    check ( "and moves the position by that much",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == 1 ) );
+    check ( "and the ramp is not arrived",
+            ( uint8_t ) ( rampIsArrivedi32 ( &driver ) == FALSE ) );
+
+    for ( i = 0; i < 9u; ++i )
+    {
+        rampIterationi32 ( &driver, 1000 );
+    }
+
+    check ( "ten steps reach the cap exactly",
+            ( uint8_t ) ( rampGetVelocityi32 ( &driver ) == 655360 ) );
+    check ( "and the distance covered is the area under the ramp",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == 55 ) );
+
+    rampIterationi32 ( &driver, 1000 );
+    check ( "the velocity holds at the cap while cruising",
+            ( uint8_t ) ( rampGetVelocityi32 ( &driver ) == 655360 ) );
+
+    /*
+     * The same pinned pair the float variant carries. The position is checked
+     * on every step, because a missing final clamp shows up as one step past
+     * the target followed by a turn around and leaves no trace in the
+     * converged value. The arrival velocity is checked separately, because
+     * the clamp masks a wrong brake point: braking at a fixed distance still
+     * lands exactly on the target, and only arriving at speed gives it away.
+     */
+    check ( "re-init", rampIniti32 ( &driver, 655360, 65536, 0 ) );
+
+    for ( i = 0; i < 400u; ++i )
+    {
+        velocityBefore = rampGetVelocityi32 ( &driver );
+
+        rampIterationi32 ( &driver, 1000 );
+
+        if ( rampGetOutputi32 ( &driver ) > 1000 )
+        {
+            everPassed = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( rampGetVelocityi32 ( &driver ) < 0 )
+        {
+            everReversed = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( ( rampIsArrivedi32 ( &driver ) == TRUE ) && ( steps == 0 ) )
+        {
+            steps = i + 1u;
+            arrivalVelocity = velocityBefore;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "the position never passed the target on any step",
+            ( uint8_t ) ( everPassed == FALSE ) );
+    check ( "the velocity never reversed",
+            ( uint8_t ) ( everReversed == FALSE ) );
+    check ( "the ramp arrived", ( uint8_t ) ( rampIsArrivedi32 ( &driver ) == TRUE ) );
+    check ( "it arrived within the run",
+            ( uint8_t ) ( ( steps > 0 ) && ( steps < 400u ) ) );
+    check ( "the position lands exactly on the target",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == 1000 ) );
+    check ( "and the velocity is exactly zero",
+            ( uint8_t ) ( rampGetVelocityi32 ( &driver ) == 0 ) );
+    /*
+     * With the envelope the ramp is down to about 4.5 units per sample on the
+     * step that arrives; braking at a fixed remaining distance instead slams
+     * in at the full cap of 10. Half the cap sits between the two with margin
+     * on both sides. The fraction is looser than the float variant's quarter
+     * because these limits are coarser: ten steps to the cap here against
+     * fifty there, so the last step before arrival is proportionally bigger.
+     */
+    check ( "it had braked below the cap before arriving, so the envelope ran",
+            ( uint8_t ) ( arrivalVelocity < ( 655360 / 2 ) ) );
+
+    /* The mirror. A sign error in the envelope shows up here and nowhere else. */
+    check ( "re-init for the negative direction",
+            rampIniti32 ( &driver, 655360, 65536, 0 ) );
+
+    rampIterationi32 ( &driver, -1000 );
+    check ( "the first step moves the other way",
+            ( uint8_t ) ( rampGetVelocityi32 ( &driver ) == -65536 ) );
+
+    everPassed = FALSE;
+
+    for ( i = 0; i < 400u; ++i )
+    {
+        rampIterationi32 ( &driver, -1000 );
+
+        if ( rampGetOutputi32 ( &driver ) < -1000 )
+        {
+            everPassed = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "it never passed the target going down either",
+            ( uint8_t ) ( everPassed == FALSE ) );
+    check ( "and lands exactly on it",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == -1000 ) );
+
+    /*
+     * A move too short to reach the cap must stay under it, which is the
+     * triangular profile. Peak velocity over a distance d at an acceleration
+     * of one is about sqrt( d ), so ten units peaks near three.
+     */
+    check ( "re-init for a short move", rampIniti32 ( &driver, 655360, 65536, 0 ) );
+
+    velocityBefore = 0;
+
+    for ( i = 0; i < 400u; ++i )
+    {
+        rampIterationi32 ( &driver, 10 );
+
+        if ( rampGetVelocityi32 ( &driver ) > velocityBefore )
+        {
+            velocityBefore = rampGetVelocityi32 ( &driver );
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "a short move never reaches the cap",
+            ( uint8_t ) ( velocityBefore < 655360 ) );
+    check ( "but it does get moving",
+            ( uint8_t ) ( velocityBefore > 65536 ) );
+    check ( "and still lands exactly on the target",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == 10 ) );
+
+    /* A target the ramp is already sitting on. */
+    check ( "re-init on the target", rampIniti32 ( &driver, 655360, 65536, 5 ) );
+    rampIterationi32 ( &driver, 5 );
+    check ( "nothing moves",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == 5 ) );
+    check ( "and it reports arrival at once",
+            ( uint8_t ) ( rampIsArrivedi32 ( &driver ) == TRUE ) );
+
+    /*
+     * The pinned range check. Q16 in an int32_t holds about 32767 units, so a
+     * move of a hundred thousand is only reachable because the state is
+     * int64_t.
+     */
+    check ( "re-init for a long move", rampIniti32 ( &driver, 655360, 65536, 0 ) );
+
+    for ( i = 0; i < 20000u; ++i )
+    {
+        rampIterationi32 ( &driver, 100000 );
+    }
+
+    check ( "a move far past the Q16 thirty two bit ceiling arrives exactly",
+            ( uint8_t ) ( rampGetOutputi32 ( &driver ) == 100000 ) );
+    check ( "at rest",
+            ( uint8_t ) ( rampGetVelocityi32 ( &driver ) == 0 ) );
+}
+
 int main ( void )
 {
     initCase ( );
@@ -502,6 +723,8 @@ int main ( void )
     movingTargetCase ( );
     printf ( "\n" );
     alreadyThereCase ( );
+    printf ( "\n" );
+    fixedPointCase ( );
 
     printf ( "\n" );
 
