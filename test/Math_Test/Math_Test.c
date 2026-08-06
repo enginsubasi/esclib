@@ -256,6 +256,9 @@ static void statisticCase ( void )
     static const int32_t d1[ 5 ] = { 1, 2, 3, 4, 5 };
     static const int32_t d2[ 5 ] = { 2, 4, 6, 8, 10 };
     static const int32_t d3[ 5 ] = { 10, 8, 6, 4, 2 };
+    static const uint32_t e1[ 5 ] = { 1u, 2u, 3u, 4u, 5u };
+    static const uint32_t e2[ 5 ] = { 2u, 4u, 6u, 8u, 10u };
+    static const uint32_t e3[ 5 ] = { 10u, 8u, 6u, 4u, 2u };
 
     printf ( "statistic\n" );
 
@@ -297,6 +300,22 @@ static void statisticCase ( void )
     check ( "i32 covariance", ( uint8_t ) ( statCovariancei32 ( d1, d2, 5u ) == 4 ) );
     check ( "i32 covariance carries the sign",
             ( uint8_t ) ( statCovariancei32 ( d1, d3, 5u ) == -4 ) );
+
+    /*
+     * statCovarianceu32 takes unsigned arrays and returns a signed result,
+     * which is the only honest signature: covariance is negative whenever the
+     * two arrays move in opposite directions, whatever the data type is. The
+     * falling case below is the whole reason this function cannot mirror
+     * statVarianceu32 and return uint32_t, and it is the check that fails if
+     * the deviations are taken in the non negative direction without
+     * restoring their signs.
+     */
+    check ( "u32 covariance of two rising arrays",
+            ( uint8_t ) ( statCovarianceu32 ( e1, e2, 5u ) == 4 ) );
+    check ( "u32 covariance goes negative on unsigned data",
+            ( uint8_t ) ( statCovarianceu32 ( e1, e3, 5u ) == -4 ) );
+    check ( "zero length covarianceu32",
+            ( uint8_t ) ( statCovarianceu32 ( e1, e2, 0u ) == 0 ) );
 
     check ( "zero length variance", nearly ( statVariance ( tf, 0u ), 0.0f ) );
     check ( "zero length standard deviation",

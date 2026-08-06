@@ -3,7 +3,7 @@
   *
   * @file      statistic.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.2.0
   * @date      03/01/2020
   *
   * @brief     Statistic function library file.
@@ -33,6 +33,10 @@
   * 01/08/2026 statVarianceu32, statStandardDeviationu32 and @n
   *            statCovariancei32 are added, filling the gaps in the @n
   *            typed variants. @n
+  * 06/08/2026 statCovarianceu32 is added, the last missing width in @n
+  *            this file. It takes unsigned arrays but returns @n
+  *            int32_t, because covariance is a signed quantity @n
+  *            whatever the data is. @n
   *
   * @note      Every function returns zero for a zero length array.
   *
@@ -314,6 +318,87 @@ int32_t statCovariancei32 ( const int32_t* const array1, const int32_t* const ar
         for ( i = 0; i < length; ++i )
         {
             retVal += ( ( array1[ i ] - average1 ) * ( array2[ i ] - average2 ) );
+        }
+
+        retVal /= ( int32_t ) length;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Calculates the population covariance of two unsigned 32-bit arrays.
+ * @param[in] array1  First array.
+ * @param[in] array2  Second array, of the same length.
+ * @param[in] length  Number of elements in each array.
+ * @return  Population covariance of the two arrays, or zero when length is
+ *          zero.
+ * @note    The return type is int32_t, not uint32_t. Covariance is a signed
+ *          quantity whatever the data is: a negative result is the answer
+ *          that the two arrays move in opposite directions, and it is the
+ *          main thing anyone asks covariance for. Only the two inputs are
+ *          unsigned, which is what the u32 suffix names here.
+ * @note    This is why statVarianceu32 can return uint32_t and this cannot.
+ *          Variance squares one deviation, so the sign cancels and taking
+ *          the difference in the non negative direction loses nothing.
+ *          Covariance multiplies two different deviations and the sign of
+ *          that product is the result, so each difference is taken in the
+ *          non negative direction and its sign restored by hand.
+ * @note    All arithmetic, including the two means, is done in integers with
+ *          truncating division, so the result is less precise than
+ *          statCovariance().
+ * @note    The product of two deviations overflows int32_t when the arrays
+ *          span more than about 46000 either side of their means, which the
+ *          caller must avoid.
+ */
+int32_t statCovarianceu32 ( const uint32_t* const array1, const uint32_t* const array2, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t sum1 = 0;
+    uint32_t sum2 = 0;
+    uint32_t average1 = 0;
+    uint32_t average2 = 0;
+    int32_t difference1 = 0;
+    int32_t difference2 = 0;
+    int32_t retVal = 0;
+
+    if ( length != 0 )
+    {
+        for ( i = 0; i < length; ++i )
+        {
+            sum1 += array1[ i ];
+            sum2 += array2[ i ];
+        }
+
+        // Average values of the arrays.
+        average1 = sum1 / length;
+        average2 = sum2 / length;
+
+        for ( i = 0; i < length; ++i )
+        {
+            if ( array1[ i ] > average1 )
+            {
+                difference1 = ( int32_t ) ( array1[ i ] - average1 );
+            }
+            else
+            {
+                difference1 = -( int32_t ) ( average1 - array1[ i ] );
+            }
+
+            if ( array2[ i ] > average2 )
+            {
+                difference2 = ( int32_t ) ( array2[ i ] - average2 );
+            }
+            else
+            {
+                difference2 = -( int32_t ) ( average2 - array2[ i ] );
+            }
+
+            retVal += ( difference1 * difference2 );
         }
 
         retVal /= ( int32_t ) length;
