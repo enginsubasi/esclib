@@ -241,8 +241,8 @@ static void deadbandCase ( void )
      */
     check ( "u32 NULL driver is rejected",
             ( uint8_t ) ( deadbandInitu32 ( NULL, 5u, DB_SNAP, 0u ) == FALSE ) );
-    check ( "u32 zero threshold is rejected",
-            ( uint8_t ) ( deadbandInitu32 ( &driveru32, 0u, DB_SNAP, 0u ) == FALSE ) );
+    check ( "u32 zero threshold is allowed, the same as the other two widths",
+            deadbandInitu32 ( &driveru32, 0u, DB_SNAP, 0u ) );
     check ( "u32 unknown mode is rejected",
             ( uint8_t ) ( deadbandInitu32 ( &driveru32, 5u, 7u, 0u ) == FALSE ) );
 
@@ -404,6 +404,134 @@ static void alphabetaCase ( void )
     check ( "the prediction runs one dt ahead of the position",
             near ( alphabetaGetPrediction ( &driver, 0.01f ),
                     alphabetaGetPosition ( &driver ) + 0.5f, 0.05f ) );
+}
+
+/*
+ * The Q16 fixed point width, added 06/08/2026, for parts with no FPU. A
+ * coefficient of 1.0 is 65536.
+ *
+ * It differs from the float variant in one place and the checks below pin it:
+ * there is no dt. The velocity is carried in units per sample rather than per
+ * second, which takes the period out of the update entirely — passing one as
+ * a float would put back the arithmetic this variant exists to avoid.
+ *
+ * The first two iterations are hand computed. With both gains at 0.5 and the
+ * filter starting at rest, a step to 100 puts the position at 50 and the
+ * velocity at 50 per sample; the second sample of 100 then lands the
+ * prediction exactly on the measurement, so the residual is zero and both
+ * states hold.
+ */
+static void alphabetai32Case ( void )
+{
+    alphabetai32_t driver;
+    uint32_t i = 0;
+    int32_t truth = 0;
+    uint8_t tracked = TRUE;
+
+    printf ( "alphabeta fixed point\n" );
+
+    check ( "NULL driver is rejected",
+            ( uint8_t ) ( alphabetaIniti32 ( NULL, 32768, 32768, 0 ) == FALSE ) );
+    check ( "a zero alpha is rejected",
+            ( uint8_t ) ( alphabetaIniti32 ( &driver, 0, 32768, 0 ) == FALSE ) );
+    check ( "an alpha above one is rejected",
+            ( uint8_t ) ( alphabetaIniti32 ( &driver, 65537, 32768, 0 ) == FALSE ) );
+    check ( "an alpha of exactly one is accepted",
+            alphabetaIniti32 ( &driver, 65536, 32768, 0 ) );
+    check ( "a zero beta is rejected",
+            ( uint8_t ) ( alphabetaIniti32 ( &driver, 32768, 0, 0 ) == FALSE ) );
+
+    /* The stability bound is 4 - 2 * alpha, so alpha of 0.5 allows beta of 3. */
+    check ( "a beta on the stability bound is accepted",
+            alphabetaIniti32 ( &driver, 32768, ( 3 * 65536 ), 0 ) );
+    check ( "and one past it is rejected",
+            ( uint8_t ) ( alphabetaIniti32 ( &driver, 32768, ( 3 * 65536 ) + 1, 0 ) == FALSE ) );
+
+    check ( "Init", alphabetaIniti32 ( &driver, 32768, 32768, 0 ) );
+    check ( "the position starts where it was put",
+            ( uint8_t ) ( alphabetaGetPositioni32 ( &driver ) == 0 ) );
+    check ( "and the velocity starts at zero",
+            ( uint8_t ) ( alphabetaGetVelocityi32 ( &driver ) == 0 ) );
+
+    alphabetaIterationi32 ( &driver, 100 );
+    check ( "a step of 100 moves the position half way, by alpha",
+            ( uint8_t ) ( alphabetaGetPositioni32 ( &driver ) == 50 ) );
+    check ( "and gives it fifty units per sample of velocity, by beta",
+            ( uint8_t ) ( alphabetaGetVelocityi32 ( &driver ) == ( 50 * 65536 ) ) );
+
+    alphabetaIterationi32 ( &driver, 100 );
+    check ( "the second sample lands the prediction on the measurement",
+            ( uint8_t ) ( alphabetaGetPositioni32 ( &driver ) == 100 ) );
+    check ( "so the residual is zero and the velocity holds",
+            ( uint8_t ) ( alphabetaGetVelocityi32 ( &driver ) == ( 50 * 65536 ) ) );
+
+    /*
+     * The property the filter exists for: a constant velocity ramp is tracked
+     * with no steady state lag, and the velocity estimate converges on the
+     * true rate. A plain smoother lags a ramp for ever.
+     */
+    check ( "re-init", alphabetaIniti32 ( &driver, 32768, 13107, 0 ) );
+
+    for ( i = 1u; i <= 200u; ++i )
+    {
+        truth = ( int32_t ) i * 10;
+        alphabetaIterationi32 ( &driver, truth );
+    }
+
+    check ( "a constant velocity ramp is tracked without lag",
+            ( uint8_t ) ( ( alphabetaGetPositioni32 ( &driver ) >= ( truth - 1 ) ) &&
+                          ( alphabetaGetPositioni32 ( &driver ) <= ( truth + 1 ) ) ) );
+    check ( "and the velocity converges on ten units per sample",
+            ( uint8_t ) ( ( alphabetaGetVelocityi32 ( &driver ) > ( 9 * 65536 ) ) &&
+                          ( alphabetaGetVelocityi32 ( &driver ) < ( 11 * 65536 ) ) ) );
+
+    check ( "the prediction runs one sample ahead of the position",
+            ( uint8_t ) ( ( alphabetaGetPredictioni32 ( &driver, 1 ) >=
+                            ( alphabetaGetPositioni32 ( &driver ) + 9 ) ) &&
+                          ( alphabetaGetPredictioni32 ( &driver, 1 ) <=
+                            ( alphabetaGetPositioni32 ( &driver ) + 11 ) ) ) );
+    check ( "and ten samples ahead is ten times as far",
+            ( uint8_t ) ( ( alphabetaGetPredictioni32 ( &driver, 10 ) >=
+                            ( alphabetaGetPositioni32 ( &driver ) + 95 ) ) &&
+                          ( alphabetaGetPredictioni32 ( &driver, 10 ) <=
+                            ( alphabetaGetPositioni32 ( &driver ) + 105 ) ) ) );
+
+    /*
+     * The pinned width check. The state is int64_t so Q16 does not cost
+     * sixteen bits of usable range. An encoder position of a million would
+     * overflow a Q16 int32_t, which holds about 32767 units.
+     */
+    check ( "Init at a position Q16 could not hold in thirty two bits",
+            alphabetaIniti32 ( &driver, 65536, 32768, 1000000 ) );
+    check ( "and it reads back intact",
+            ( uint8_t ) ( alphabetaGetPositioni32 ( &driver ) == 1000000 ) );
+
+    alphabetaIterationi32 ( &driver, 1000000 );
+    check ( "and stays intact through an iteration",
+            ( uint8_t ) ( alphabetaGetPositioni32 ( &driver ) == 1000000 ) );
+
+    /* A ramp that walks well past the Q16 int32_t ceiling. */
+    check ( "re-init high", alphabetaIniti32 ( &driver, 32768, 13107, 1000000 ) );
+    tracked = TRUE;
+
+    for ( i = 1u; i <= 100u; ++i )
+    {
+        truth = 1000000 + ( ( int32_t ) i * 10 );
+        alphabetaIterationi32 ( &driver, truth );
+
+        if ( ( alphabetaGetPositioni32 ( &driver ) < ( truth - 100 ) ) ||
+             ( alphabetaGetPositioni32 ( &driver ) > ( truth + 100 ) ) )
+        {
+            tracked = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    check ( "a ramp far above the Q16 thirty two bit ceiling still tracks",
+            tracked );
 }
 
 /* ---------------------------------------------------------------- biquad */
@@ -606,6 +734,8 @@ int main ( void )
     medianCase ( );
     printf ( "\n" );
     alphabetaCase ( );
+    printf ( "\n" );
+    alphabetai32Case ( );
     printf ( "\n" );
     biquadCase ( );
     printf ( "\n" );

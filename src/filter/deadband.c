@@ -228,17 +228,19 @@ int32_t deadbandGetOutputi32 ( const deadbandi32_t* const driver )
  * @param[in]  threshold   How far the input must move before the output does.
  * @param[in]  mode        DB_SNAP or DB_DRAG.
  * @param[in]  outputInit  Value the output starts at.
- * @return  TRUE on success, FALSE when driver is NULL, threshold is zero, or
- *          mode is neither DB_SNAP nor DB_DRAG.
- * @note    A threshold of zero is rejected. The band would be empty and the
- *          filter would pass everything through while reporting a successful
- *          init, which is a filter that does nothing.
+ * @return  TRUE on success, FALSE when driver is NULL or mode is neither
+ *          DB_SNAP nor DB_DRAG.
+ * @note    There is no range check on the threshold, because an unsigned one
+ *          cannot be negative and zero is legal here. A zero threshold gives
+ *          a band of no width, which passes every sample through unchanged;
+ *          deadbandInit and deadbandIniti32 accept it for the same reason and
+ *          the three widths must not disagree about what a valid filter is.
  */
 uint8_t deadbandInitu32 ( deadbandu32_t* driver, uint32_t threshold, uint8_t mode, uint32_t outputInit )
 {
     uint8_t retVal = FALSE;
 
-    if ( ( driver != NULL ) && ( threshold != 0 ) &&
+    if ( ( driver != NULL ) &&
             ( ( mode == DB_SNAP ) || ( mode == DB_DRAG ) ) )
     {
         driver->threshold = threshold;
