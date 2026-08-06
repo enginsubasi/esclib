@@ -3,7 +3,7 @@
   *
   * @file      maf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   2.3.0
+  * @version   2.4.0
   * @date      26/04/2020
   *
   * @brief     Moving average filter.
@@ -35,6 +35,9 @@
   *            silently and start the filter on a garbage sum. @n
   * 02/08/2026 The uint32_t sample bound and the truncating division are @n
   *            documented on the functions that carry them. @n
+  * 06/08/2026 The i32 variants are added. This file carried float and @n
+  *            u32 only, while emaf and median next to it carried all @n
+  *            three widths, and a bipolar sensor needs the signed one. @n
   *
   ******************************************************************************
   */
@@ -240,3 +243,124 @@ uint32_t mafGetOutputu32 ( const mafu32_t* const driver )
     return ( driver->output );
 }
 
+
+/**
+ * @brief   Initializes a signed moving average filter.
+ * @param[out] driver      Filter state to initialize.
+ * @param[in]  buffer      Caller owned window of at least length elements.
+ * @param[in]  length      Number of samples the window averages over.
+ * @param[in]  outputInit  Value the whole window is primed with, so the
+ *                         filter starts settled rather than at zero.
+ * @return  TRUE on success, FALSE when a pointer is NULL, length is zero, or
+ *          length times outputInit would not fit an int32_t.
+ * @note    The buffer is not copied. It must outlive the driver.
+ * @note    The running sum is the reason for the magnitude check. It holds
+ *          length times the window average, so a window primed near the ends
+ *          of int32_t would overflow it on the very first iteration. The
+ *          bound is taken against INT32_MAX in both directions, which costs
+ *          one value of headroom at the negative end and avoids a special
+ *          case for INT32_MIN.
+ * @note    The magnitude is taken in int64_t because negating INT32_MIN in
+ *          int32_t overflows. This runs once, at Init, and never on the
+ *          sample path.
+ */
+uint8_t mafIniti32 ( mafi32_t* driver, int32_t* buffer, uint32_t length, int32_t outputInit )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint8_t sumFits = FALSE;
+    int64_t magnitude = 0;
+
+    magnitude = ( int64_t ) outputInit;
+
+    if ( magnitude < 0 )
+    {
+        magnitude = -magnitude;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    // length * outputInit, without performing the multiply that would wrap.
+    if ( magnitude == 0 )
+    {
+        sumFits = TRUE;
+    }
+    else if ( ( int64_t ) length <= ( 2147483647 / magnitude ) )
+    {
+        sumFits = TRUE;
+    }
+    else
+    {
+        sumFits = FALSE;
+    }
+
+    if ( ( driver != NULL ) && ( buffer != NULL ) && ( length != 0 ) &&
+            ( sumFits == TRUE ) )
+    {
+        driver->buffer = buffer;
+        driver->length = length;
+        driver->output = outputInit;
+        driver->sumOfArray = ( int32_t ) driver->length * driver->output;
+        driver->index = 0;
+
+        for ( i = 0; i < length; ++i )
+        {
+            driver->buffer[ i ] = outputInit;
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Feeds one signed sample through the filter.
+ * @param[in,out] driver   Filter state.
+ * @param[in]     newData  Sample to add to the window.
+ * @note    The oldest sample is subtracted and the newest added, so the cost
+ *          per sample does not grow with the window length.
+ * @note    The division truncates toward zero, which means a negative average
+ *          rounds up rather than down. mafIterationu32 truncates too, and
+ *          matching the sibling in this file matters more than matching the
+ *          round to nearest that interp and mathMapi32 use, where the caller
+ *          is scaling a reading rather than averaging one.
+ */
+void mafIterationi32 ( mafi32_t* driver, int32_t newData )
+{
+    // Add new data to buffer array and sum. of buffer array.
+    driver->sumOfArray -= driver->buffer[ driver->index ];
+    driver->buffer[ driver->index ] = newData;
+    driver->sumOfArray += driver->buffer[ driver->index ];
+
+    // Calculate output.
+    driver->output = ( driver->sumOfArray / ( int32_t ) driver->length );
+
+    // Index control.
+    ++driver->index;
+
+    if ( driver->index >= driver->length )
+    {
+        driver->index = 0;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+
+/**
+ * @brief   Returns the current filter output.
+ * @param[in]  driver  Initialized filter.
+ * @return  Mean of the samples currently in the window, truncated toward zero.
+ */
+int32_t mafGetOutputi32 ( const mafi32_t* const driver )
+{
+    return ( driver->output );
+}

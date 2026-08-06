@@ -187,6 +187,96 @@ static void mafu32Case ( void )
             ( uint8_t ) ( mafInitu32 ( &driver, buffer, 0u, 0u ) == FALSE ) );
 }
 
+/* ---------------------------------------------------- maf, signed 32-bit */
+
+/*
+ * The signed variant is what a bipolar sensor needs, and it is the half of
+ * maf that did not exist until 06/08/2026 — the file carried float and u32
+ * only, while its neighbours emaf and median carried all three widths.
+ *
+ * Two things only the signed path can get wrong: the running sum going
+ * negative, and the Init magnitude check having to negate INT32_MIN.
+ */
+static void mafi32Case ( void )
+{
+    mafi32_t driver;
+    int32_t buffer[ 8 ];
+    uint32_t i = 0;
+
+    printf ( "mafi32\n" );
+
+    check ( "Init", mafIniti32 ( &driver, buffer, 8u, -100 ) );
+    check ( "a preloaded window reads back its own negative value",
+            ( uint8_t ) ( mafGetOutputi32 ( &driver ) == -100 ) );
+
+    for ( i = 0; i < 8u; ++i )
+    {
+        mafIterationi32 ( &driver, 200 );
+    }
+
+    check ( "a full window of a new value gives that value",
+            ( uint8_t ) ( mafGetOutputi32 ( &driver ) == 200 ) );
+
+    /*
+     * Walking a window from negative to positive is what the u32 variant
+     * cannot express at all. Four of eight samples replaced takes the mean
+     * from -100 to +50.
+     */
+    check ( "re-init", mafIniti32 ( &driver, buffer, 8u, -100 ) );
+
+    for ( i = 0; i < 4u; ++i )
+    {
+        mafIterationi32 ( &driver, 200 );
+    }
+
+    check ( "the mean crosses zero on the way up",
+            ( uint8_t ) ( mafGetOutputi32 ( &driver ) == 50 ) );
+
+    /*
+     * The division truncates toward zero, so a negative mean rounds up. This
+     * matches mafIterationu32 rather than the round to nearest interp uses,
+     * and the check records which one this file follows.
+     */
+    check ( "re-init at zero", mafIniti32 ( &driver, buffer, 4u, 0 ) );
+    mafIterationi32 ( &driver, -1 );
+    mafIterationi32 ( &driver, -1 );
+    mafIterationi32 ( &driver, -1 );
+
+    check ( "a negative mean truncates toward zero rather than down",
+            ( uint8_t ) ( mafGetOutputi32 ( &driver ) == 0 ) );
+
+    /* length * outputInit is computed into an int32_t sum, in both signs. */
+    check ( "a positive outputInit that overflows the window sum is rejected",
+            ( uint8_t ) ( mafIniti32 ( &driver, buffer, 1000u, 10000000 ) == FALSE ) );
+    check ( "and a negative one is rejected too",
+            ( uint8_t ) ( mafIniti32 ( &driver, buffer, 1000u, -10000000 ) == FALSE ) );
+    check ( "a preload that just fits is accepted",
+            mafIniti32 ( &driver, buffer, 8u, 100000000 ) );
+    check ( "and so does its negative",
+            mafIniti32 ( &driver, buffer, 8u, -100000000 ) );
+    check ( "a zero outputInit never overflows",
+            mafIniti32 ( &driver, buffer, 8u, 0 ) );
+
+    /*
+     * INT32_MIN is the value the magnitude check is written in int64_t for,
+     * because negating it in int32_t is undefined behaviour. This check
+     * confirms it is rejected; it does not distinguish the two widths, and no
+     * test can. Computing the magnitude in int32_t leaves it negative, the
+     * division against it yields zero, and the comparison rejects anyway — by
+     * accident rather than by reason, and only until a compiler optimises on
+     * the assumption that the overflow cannot happen.
+     */
+    check ( "the most negative outputInit is rejected",
+            ( uint8_t ) ( mafIniti32 ( &driver, buffer, 8u, ( -2147483647 - 1 ) ) == FALSE ) );
+
+    check ( "NULL driver is rejected",
+            ( uint8_t ) ( mafIniti32 ( NULL, buffer, 8u, 0 ) == FALSE ) );
+    check ( "NULL buffer is rejected",
+            ( uint8_t ) ( mafIniti32 ( &driver, NULL, 8u, 0 ) == FALSE ) );
+    check ( "a zero length is rejected",
+            ( uint8_t ) ( mafIniti32 ( &driver, buffer, 0u, 0 ) == FALSE ) );
+}
+
 /* ------------------------------------------------------- maf, float drift */
 
 /*
@@ -244,6 +334,8 @@ int main ( void )
     emafAlphaCase ( );
     printf ( "\n" );
     mafu32Case ( );
+    printf ( "\n" );
+    mafi32Case ( );
     printf ( "\n" );
     mafDriftCase ( );
 
