@@ -246,6 +246,118 @@ static void u8Case ( void )
     check ( "and keeps the newest three", ( uint8_t ) ( value == 47u ) );
 }
 
+/* ------------------------------------------------------ the i32 width --- */
+
+static void i32Case ( void )
+{
+    circBufi32_t driver;
+    int32_t store[ 4 ];
+    int32_t out = 0;
+    uint32_t i = 0;
+    uint8_t ok = TRUE;
+
+    printf ( "circBuf i32 variant\n" );
+
+    check ( "a NULL driver is rejected",
+            ( uint8_t ) ( circBufIniti32 ( NULL, store, 4u, BB_STOP ) == FALSE ) );
+    check ( "a NULL buffer is rejected",
+            ( uint8_t ) ( circBufIniti32 ( &driver, NULL, 4u, BB_STOP ) == FALSE ) );
+    check ( "a zero capacity is rejected",
+            ( uint8_t ) ( circBufIniti32 ( &driver, store, 0u, BB_STOP ) == FALSE ) );
+    check ( "a full init succeeds",
+            circBufIniti32 ( &driver, store, 4u, BB_STOP ) );
+    check ( "and it starts empty",
+            ( uint8_t ) ( ( circBufGetStatusi32 ( &driver ) == BS_EMPTY ) &&
+                          ( circBufGetLengthi32 ( &driver ) == 0u ) ) );
+
+    /*
+     * The whole reason this width exists. A ring of signed samples put through
+     * the u32 buffer has to be cast on the way in and on the way out, and a
+     * wrong cast there is silent: minus one comes back as four thousand
+     * million and nothing says so.
+     */
+    check ( "add minus one", circBufAddi32 ( &driver, -1 ) );
+    check ( "add the most negative value there is",
+            circBufAddi32 ( &driver, -2147483647 - 1 ) );
+    check ( "add the most positive", circBufAddi32 ( &driver, 2147483647 ) );
+    check ( "add zero", circBufAddi32 ( &driver, 0 ) );
+
+    check ( "the buffer is full",
+            ( uint8_t ) ( ( circBufGetStatusi32 ( &driver ) == BS_FULL ) &&
+                          ( circBufGetLengthi32 ( &driver ) == 4u ) ) );
+    check ( "and BB_STOP refuses a fifth",
+            ( uint8_t ) ( circBufAddi32 ( &driver, 7 ) == FALSE ) );
+
+    check ( "minus one comes back as minus one, not as four thousand million",
+            ( uint8_t ) ( ( circBufReadi32 ( &driver, &out ) == TRUE ) &&
+                          ( out == -1 ) ) );
+    check ( "and the most negative value survives",
+            ( uint8_t ) ( ( circBufReadi32 ( &driver, &out ) == TRUE ) &&
+                          ( out == ( -2147483647 - 1 ) ) ) );
+    check ( "and the most positive",
+            ( uint8_t ) ( ( circBufReadi32 ( &driver, &out ) == TRUE ) &&
+                          ( out == 2147483647 ) ) );
+    check ( "and zero",
+            ( uint8_t ) ( ( circBufReadi32 ( &driver, &out ) == TRUE ) &&
+                          ( out == 0 ) ) );
+
+    check ( "the buffer is empty again",
+            ( uint8_t ) ( circBufGetStatusi32 ( &driver ) == BS_EMPTY ) );
+    check ( "and reading it reports nothing",
+            ( uint8_t ) ( circBufReadi32 ( &driver, &out ) == FALSE ) );
+    check ( "leaving the destination at zero", ( uint8_t ) ( out == 0 ) );
+
+    /* Overwrite, which is the other behaviour and drops the oldest. */
+    check ( "re-init for overwrite",
+            circBufIniti32 ( &driver, store, 4u, BB_OVERWRITE ) );
+
+    for ( i = 0; i < 6u; ++i )
+    {
+        ( void ) circBufAddi32 ( &driver, -( int32_t ) i );
+    }
+
+    check ( "six negatives into a ring of four leaves it full",
+            ( uint8_t ) ( circBufGetLengthi32 ( &driver ) == 4u ) );
+
+    ( void ) circBufReadi32 ( &driver, &out );
+    check ( "and the oldest two were overwritten", ( uint8_t ) ( out == -2 ) );
+
+    /*
+     * A long run through every offset in the ring, with values that change
+     * sign, which is where a width substitution done wrong would show.
+     */
+    check ( "re-init for the long run",
+            circBufIniti32 ( &driver, store, 4u, BB_STOP ) );
+
+    ok = TRUE;
+
+    for ( i = 0; i < 200u; ++i )
+    {
+        int32_t sent = ( ( i % 2u ) == 0u ) ? ( int32_t ) i : -( int32_t ) i;
+
+        if ( circBufAddi32 ( &driver, sent ) != TRUE )
+        {
+            ok = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+
+        if ( ( circBufReadi32 ( &driver, &out ) != TRUE ) || ( out != sent ) )
+        {
+            ok = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    check ( "two hundred round trips of alternating sign, through every offset",
+            ok );
+}
+
 int main ( void )
 {
     initCase ( );
@@ -255,6 +367,8 @@ int main ( void )
     overwriteCase ( );
     printf ( "\n" );
     u8Case ( );
+    printf ( "\n" );
+    i32Case ( );
 
     printf ( "\n" );
 

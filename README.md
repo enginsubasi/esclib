@@ -104,7 +104,7 @@ variant exists to serve.
 | `basicarray` | 1D array limiting. | `i32` `u32` |
 | `basicmatrix` | 1D and 2D thresholding and limiting on a bare array. | `i32` `u32` `u8` |
 | `matrixlib` | Linear algebra on a matrix that carries its shape: add, multiply, transpose, invert. | — |
-| `complex` | Complex arithmetic and the polar conversions. | — |
+| `complex` | Complex arithmetic and the polar conversions. | `i32` (Q16, arithmetic only) |
 | `q16` | Q16 fixed-point arithmetic for the caller: multiply, divide, square root, conversions. | — |
 
 `mathMap` and `mathLerp` deliberately do not clamp — a value outside the input
@@ -144,7 +144,7 @@ is what `sortIsSorted` is for.
 |---|---|
 | `crc8` | SMBus packet error code (`crc8`) and Dallas 1-Wire (`crc8Dallas`). Two polynomials, not two spellings of one. |
 | `crc16` | MODBUS CRC-16, table driven (`crc16`) and bit by bit (`crc16Alt`). |
-| `crc32` | CRC-32. |
+| `crc32` | CRC-32/MPEG-2, table driven (`crc32`) and bit by bit (`crc32Alt`). The table is a kilobyte; the loop is 56 bytes. |
 | `checksum` | `checksumXor`, `checksumSum8`, `checksumSum16`, `checksumFletcher16`, `checksumAdler32`, each returning its own natural width. |
 
 `xor` and the two sums are blind to a reordering; `Fletcher16` sees it for
@@ -192,7 +192,7 @@ under one key and counter break every guarantee at once.
 
 | module | group | what it is for |
 |---|---|---|
-| `circBuf` | `inc/buffer` | Circular buffer in `u8` and `u32`, overwrite or stop on full. |
+| `circBuf` | `inc/buffer` | Circular buffer in `u8`, `u32` and `i32`, overwrite or stop on full. |
 | `softtimer` | `inc/timer` | One-shot and periodic timers counting calls to `softtimerTick`. The library's only time abstraction. |
 | `sched` | `inc/timer` | Table of periodic tasks. The tick marks them due, the main loop runs them, and a task that could not keep up is counted. |
 | `fsm` | `inc/fsm` | Table-driven state machine. An event no row accepts is counted, never guessed at. |

@@ -3,7 +3,7 @@
   *
   * @file      crc32.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.0.1
+  * @version   1.1.0
   * @date      10/07/2020
   *
   * @brief     CRC Calculation functions.
@@ -17,6 +17,10 @@
   * 01/08/2026 Parameters that are only read are declared const, so a @n
   *            caller can pass data it holds in flash without casting @n
   *            the qualifier away. @n
+  * 15/09/2026 crc32Alt added, the bit by bit form of the same @n
+  *            polynomial. crc16 has carried that pair since it was @n
+  *            written and crc32 did not, although its table is the @n
+  *            largest in the tree at a kilobyte. @n
   *
   ******************************************************************************
   */
@@ -114,3 +118,53 @@ uint32_t crc32 ( const uint8_t* const array, uint32_t size )
     return ( crc );
 }
 
+/**
+ * @brief   Calculates the CRC32 of a byte array bit by bit.
+ * @param[in] array  Bytes to run the CRC over.
+ * @param[in] size   Number of bytes.
+ * @return  The CRC32 value, seeded with 0xFFFFFFFF.
+ * @note    The same polynomial and the same answer as crc32, computed without
+ *          the table. That is the whole choice: crc32 spends a kilobyte of
+ *          flash — the largest constant in this library — to turn eight shifts
+ *          a byte into one lookup, and on a part where a kilobyte matters more
+ *          than throughput this is the one to take. crc16 has offered the same
+ *          pair since it was written; crc32 simply never did.
+ * @note    Polynomial 0x04C11DB7, most significant bit first, seeded with all
+ *          ones and not inverted at the end. That is CRC-32/MPEG-2, which is
+ *          not the CRC-32 of zip and Ethernet — those reflect the input and
+ *          the output and invert the result. The two agree on nothing, so a
+ *          caller talking to a peer that specifies "CRC-32" needs to know
+ *          which one it means.
+ * @note    The check value, the CRC of the nine ASCII bytes "123456789", is
+ *          0x0376E6E7. CRC_Test asserts that both functions produce it and
+ *          that they agree with each other over several buffers, which is the
+ *          only claim worth making about a second implementation of one
+ *          algorithm.
+ */
+uint32_t crc32Alt ( const uint8_t* const array, uint32_t size )
+{
+    uint32_t i = 0;         // Array index counter.
+    uint8_t j = 0;          // Bit shift counter.
+
+    uint32_t crc = 0xffffffff;
+
+    /* Loop until size. */
+    for ( i = 0; i < size; ++i )
+    {
+        crc = crc ^ ( ( ( uint32_t ) array[ i ] ) << 24 );
+
+        for ( j = 0 ; j < 8 ; ++j )
+        {
+            if ( crc & 0x80000000u )
+            {
+                crc = ( crc << 1 ) ^ 0x04C11DB7u;
+            }
+            else
+            {
+                crc = ( crc << 1 );
+            }
+        }
+    }
+
+    return ( crc );
+}

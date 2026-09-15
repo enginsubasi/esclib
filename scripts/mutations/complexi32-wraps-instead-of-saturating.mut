@@ -1,0 +1,36 @@
+# what: complexSaturate narrows without clamping, so a phasor past the range changes sign and a power reading reverses its direction of flow.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/complex/complex.c
+TEST ComplexMath_Test
+--- FIND
+static int32_t complexSaturate ( int64_t value )
+{
+    int32_t retVal = 0;
+
+    if ( value > ( int64_t ) COMPLEX_MAX )
+    {
+        retVal = COMPLEX_MAX;
+    }
+    else if ( value < ( int64_t ) COMPLEX_MIN )
+    {
+        retVal = COMPLEX_MIN;
+    }
+    else
+    {
+        retVal = ( int32_t ) value;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+static int32_t complexSaturate ( int64_t value )
+{
+    int32_t retVal = 0;
+
+    retVal = ( int32_t ) value;
+
+    return ( retVal );
+}
+--- END

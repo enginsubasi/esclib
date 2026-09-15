@@ -1,0 +1,38 @@
+# what: complexMuli32 writes the real part of the result before computing the imaginary one, so a result that is also an operand loses the value the second half still needs.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/complex/complex.c
+TEST ComplexMath_Test
+--- FIND
+void complexMuli32 ( const complexi32_t* const cprm1, const complexi32_t* const cprm2, complexi32_t* result )
+{
+    int64_t re = 0;
+    int64_t im = 0;
+
+    re = ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->re ) ) -
+            ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->im ) );
+
+    im = ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->im ) ) +
+            ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->re ) );
+
+    result->re = complexSaturate ( complexShiftRound ( re ) );
+    result->im = complexSaturate ( complexShiftRound ( im ) );
+}
+--- REPLACE
+void complexMuli32 ( const complexi32_t* const cprm1, const complexi32_t* const cprm2, complexi32_t* result )
+{
+    int64_t re = 0;
+    int64_t im = 0;
+
+    re = ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->re ) ) -
+            ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->im ) );
+
+    result->re = complexSaturate ( complexShiftRound ( re ) );
+
+    im = ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->im ) ) +
+            ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->re ) );
+
+    result->im = complexSaturate ( complexShiftRound ( im ) );
+}
+--- END

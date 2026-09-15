@@ -1,0 +1,127 @@
+# what: complexDivi32 adds where it must subtract, so the imaginary part of every quotient has the wrong sign — the same defect the float width carried.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/complex/complex.c
+TEST ComplexMath_Test
+--- FIND
+void complexDivi32 ( const complexi32_t* const cprm1, const complexi32_t* const cprm2, complexi32_t* result )
+{
+    int64_t denominator = 0;
+    int64_t re = 0;
+    int64_t im = 0;
+    int64_t half = 0;
+
+    denominator = complexShiftRound (
+            ( ( ( int64_t ) cprm2->re ) * ( ( int64_t ) cprm2->re ) ) +
+            ( ( ( int64_t ) cprm2->im ) * ( ( int64_t ) cprm2->im ) ) );
+
+    if ( denominator != 0 )
+    {
+        re = ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->re ) ) +
+                ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->im ) );
+
+        im = ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->re ) ) -
+                ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->im ) );
+
+        /* Both products are already Q32, so dividing by a Q16 denominator
+           leaves a Q16 quotient with no shift of its own. */
+        half = denominator / 2;
+
+        if ( half < 0 )
+        {
+            half = -half;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( re >= 0 )
+        {
+            re += half;
+        }
+        else
+        {
+            re -= half;
+        }
+
+        if ( im >= 0 )
+        {
+            im += half;
+        }
+        else
+        {
+            im -= half;
+        }
+
+        result->re = complexSaturate ( re / denominator );
+        result->im = complexSaturate ( im / denominator );
+    }
+    else
+    {
+        result->re = 0;
+        result->im = 0;
+    }
+}
+--- REPLACE
+void complexDivi32 ( const complexi32_t* const cprm1, const complexi32_t* const cprm2, complexi32_t* result )
+{
+    int64_t denominator = 0;
+    int64_t re = 0;
+    int64_t im = 0;
+    int64_t half = 0;
+
+    denominator = complexShiftRound (
+            ( ( ( int64_t ) cprm2->re ) * ( ( int64_t ) cprm2->re ) ) +
+            ( ( ( int64_t ) cprm2->im ) * ( ( int64_t ) cprm2->im ) ) );
+
+    if ( denominator != 0 )
+    {
+        re = ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->re ) ) +
+                ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->im ) );
+
+        im = ( ( ( int64_t ) cprm1->im ) * ( ( int64_t ) cprm2->re ) ) +
+                ( ( ( int64_t ) cprm1->re ) * ( ( int64_t ) cprm2->im ) );
+
+        /* Both products are already Q32, so dividing by a Q16 denominator
+           leaves a Q16 quotient with no shift of its own. */
+        half = denominator / 2;
+
+        if ( half < 0 )
+        {
+            half = -half;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( re >= 0 )
+        {
+            re += half;
+        }
+        else
+        {
+            re -= half;
+        }
+
+        if ( im >= 0 )
+        {
+            im += half;
+        }
+        else
+        {
+            im -= half;
+        }
+
+        result->re = complexSaturate ( re / denominator );
+        result->im = complexSaturate ( im / denominator );
+    }
+    else
+    {
+        result->re = 0;
+        result->im = 0;
+    }
+}
+--- END

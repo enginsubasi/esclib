@@ -43,6 +43,16 @@ typedef struct
     uint8_t status;
 } circBufu8_t;
 
+typedef struct
+{
+    int32_t* buffer;
+    uint32_t capacity;
+    uint32_t rp;
+    uint32_t wp;
+    uint8_t behaviour;
+    uint8_t status;
+} circBufi32_t;
+
 /* ENUMS */
 
 enum BUFFERSTATUS
@@ -74,6 +84,13 @@ uint32_t circBufGetLengthu8 ( const circBufu8_t* const driver );
 uint8_t circBufGetStatusu8 ( const circBufu8_t* const driver );
 uint8_t circBufAddu8 ( circBufu8_t* driver, uint8_t data );
 uint8_t circBufReadu8 ( circBufu8_t* driver, uint8_t* data );
+
+
+uint8_t circBufIniti32 ( circBufi32_t* driver, int32_t* buffer, uint32_t capacity, uint8_t behaviour );
+uint32_t circBufGetLengthi32 ( const circBufi32_t* const driver );
+uint8_t circBufGetStatusi32 ( const circBufi32_t* const driver );
+uint8_t circBufAddi32 ( circBufi32_t* driver, int32_t data );
+uint8_t circBufReadi32 ( circBufi32_t* driver, int32_t* data );
 #ifdef __cplusplus
 }
 #endif

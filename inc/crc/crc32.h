@@ -30,6 +30,7 @@
 /* FUNCTION PROTOTYPES */
 
 uint32_t crc32 ( const uint8_t* const array, uint32_t size );
+uint32_t crc32Alt ( const uint8_t* const array, uint32_t size );
 
 #ifdef __cplusplus
 }

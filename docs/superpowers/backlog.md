@@ -257,9 +257,23 @@ A fourth thing was an expectation of mine rather than a finding: the loop would 
 
 `scripts/samples.sh` builds and runs all of them, deriving library dependencies from each sample's own `#include` lines exactly as `run_tests.sh` does. **It found two defects on its first run, and both were the same two classes the test suite's first run found in 2026:** `sample/DFT` had not compiled for years — it called `time()` without `<time.h>`, which a modern compiler makes an error rather than a warning — and `sample/FunctionPointerBasic` ended `main` with `return ( 1 );`, so it reported failure on every successful run. The other three carried three warnings between them. All of it is clean now and CI gates on it.
 
+## 20. The last three width gaps — DONE 15/09/2026
+
+Three that had been visible for a while and each had a clear precedent already in the tree, which is what separated them from symmetry for its own sake.
+
+**`circBufi32`.** The ring came in `u8` and `u32`, and a ring of *signed* samples is ordinary — a converter reading that swings about zero, a control error, an encoder delta. A caller holding one had to cast on the way in and on the way out, and either cast is silent when it is wrong: minus one comes back as four thousand million. The five functions are the `u32` ones generated rather than retyped, because nothing in their bodies depends on the element type — they index an array and compare indices — so only the signatures differ. Generating them is what makes it impossible for the two widths to drift apart in the body, which is the thing that would actually go wrong.
+
+**`crc32Alt`.** `crc16` has offered a table and a bit-by-bit loop for one polynomial since it was written, for the caller who would rather spend eight shifts a byte than the flash. `crc32` never did, although its table is the **largest constant in the library**. Measured: the table is 1024 bytes and the loop is 56. A caller copying only `crc32Alt` out of the tree saves a kilobyte.
+
+**`complexi32`.** Q16 arithmetic, for the one caller that genuinely wants complex numbers without an FPU: phasor work, where an energy meter multiplies a voltage phasor by a current and an impedance measurement divides one by the other. Four operations and an `Init`, and **the polar pair is deliberately absent** — a fixed-point magnitude needs a square root and a fixed-point angle needs an `atan2`, which together are a CORDIC with a table, an iteration count and a range reduction. That is a module of its own rather than a width of this one, and a version built on a float `atan2` would defeat the entire reason the width exists. Saying so is better than shipping half of it.
+
+Two details in `complexi32` are worth keeping. Its `complexMuli32` computes **both** parts into locals before writing either, which is what makes an aliased result safe there where `matrixMul` refuses one: the imaginary part needs the operands' real parts, so writing `result->re` first would destroy one of them. And its `complexDivi32` carried the same sign defect the float width once had — the test pins it in both, which is the point of pinning it at all.
+
+Eleven new symbols, six new mutations, all caught. Everything stayed clean under the strict profile without a single cast being added, which is the first change since that gate went in and a fair test of whether it was set at a sensible level.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, and the composition tests and worked examples that had never existed. Nothing is outstanding, and for the first time nothing is reserved either.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, and the last three width gaps. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

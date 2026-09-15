@@ -1,5 +1,5 @@
 /*
- * Covers crc8, crc8Dallas, crc16, crc16Alt and crc32.
+ * Covers crc8, crc8Dallas, crc16, crc16Alt, crc32 and crc32Alt.
  *
  * Asserts rather than printing values for a human to compare, so it needs no
  * output.txt and returns non zero on failure.
@@ -185,6 +185,81 @@ static void crc8SensitivityCase ( void )
             ( uint8_t ) ( crc8 ( oneZero, 1u ) == crc8 ( twoZeros, 2u ) ) );
     check ( "and crc8Dallas cannot either",
             ( uint8_t ) ( crc8Dallas ( oneZero, 1u ) == crc8Dallas ( twoZeros, 2u ) ) );
+}
+
+/* ------------------------------------------------------------ crc32Alt */
+
+static void crc32AltCase ( void )
+{
+    printf ( "crc32Alt\n" );
+
+    /*
+     * The same polynomial without the table. The only claim worth making about
+     * a second implementation of one algorithm is that it agrees with the
+     * first, so every fixture in this file is run through both.
+     */
+    check ( "an empty array returns the 0xFFFFFFFF seed",
+            ( uint8_t ) ( crc32Alt ( checkVector, 0u ) == 0xFFFFFFFFu ) );
+
+    check ( "the published CRC-32/MPEG-2 check value over \"123456789\"",
+            ( uint8_t ) ( crc32Alt ( checkVector, 9u ) == 0x0376E6E7u ) );
+
+    check ( "a six byte frame",
+            ( uint8_t ) ( crc32Alt ( modbusFrame, 6u ) == 0xD5CFCF4Bu ) );
+    check ( "a single zero byte",
+            ( uint8_t ) ( crc32Alt ( oneZero, 1u ) == 0x4E08BFB4u ) );
+    check ( "a single 0xFF byte",
+            ( uint8_t ) ( crc32Alt ( oneFF, 1u ) == 0xFFFFFF00u ) );
+    check ( "two zero bytes",
+            ( uint8_t ) ( crc32Alt ( twoZeros, 2u ) == 0x00B7647Du ) );
+
+    check ( "and it agrees with the table on every one of them",
+            ( uint8_t ) ( ( crc32Alt ( checkVector, 0u ) == crc32 ( checkVector, 0u ) ) &&
+                          ( crc32Alt ( checkVector, 9u ) == crc32 ( checkVector, 9u ) ) &&
+                          ( crc32Alt ( modbusFrame, 6u ) == crc32 ( modbusFrame, 6u ) ) &&
+                          ( crc32Alt ( oneZero, 1u ) == crc32 ( oneZero, 1u ) ) &&
+                          ( crc32Alt ( oneFF, 1u ) == crc32 ( oneFF, 1u ) ) &&
+                          ( crc32Alt ( twoZeros, 2u ) == crc32 ( twoZeros, 2u ) ) &&
+                          ( crc32Alt ( ds18b20Rom, 8u ) == crc32 ( ds18b20Rom, 8u ) ) &&
+                          ( crc32Alt ( smbusWrite, 3u ) == crc32 ( smbusWrite, 3u ) ) &&
+                          ( crc32Alt ( modbusSwapped, 6u ) == crc32 ( modbusSwapped, 6u ) ) ) );
+
+    /*
+     * A byte at a time through the whole range, which is the only way to be
+     * sure the two agree everywhere rather than on the handful of fixtures
+     * that happened to be here.
+     */
+    {
+        uint8_t every[ 256 ];
+        uint32_t i = 0;
+        uint8_t agree = TRUE;
+
+        for ( i = 0; i < 256u; ++i )
+        {
+            every[ i ] = ( uint8_t ) i;
+        }
+
+        for ( i = 0; i <= 256u; ++i )
+        {
+            if ( crc32Alt ( every, i ) != crc32 ( every, i ) )
+            {
+                agree = FALSE;
+            }
+            else
+            {
+                /* Intentionally blank. */
+            }
+        }
+
+        check ( "and over every prefix of a buffer holding all 256 byte values",
+                agree );
+    }
+
+    /* It sees a flipped bit and a reordering, as the table version does. */
+    check ( "it sees a single flipped bit",
+            ( uint8_t ) ( crc32Alt ( modbusFlipped, 6u ) != crc32Alt ( modbusFrame, 6u ) ) );
+    check ( "and two bytes exchanged",
+            ( uint8_t ) ( crc32Alt ( modbusSwapped, 6u ) != crc32Alt ( modbusFrame, 6u ) ) );
 }
 
 /* ---------------------------------------------------------------- crc16 */
@@ -377,6 +452,8 @@ int main ( void )
     crc16EquivalenceCase ( );
     printf ( "\n" );
     crc32Case ( );
+    printf ( "\n" );
+    crc32AltCase ( );
     printf ( "\n" );
     sensitivityCase ( );
 
