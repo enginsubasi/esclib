@@ -234,7 +234,23 @@ STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails the test that pins it
 sh scripts/size.sh           # code size per module
 sh scripts/runtime.sh        # which compiler runtime helpers each module needs
+sh scripts/samples.sh        # build and run every example under sample/
 ```
+
+## Examples
+
+`sample/` holds three worked examples that use the library, each one a stack
+rather than a single call:
+
+| example | what it puts together |
+|---|---|
+| `FilteredScale` | `pack` → `median` → `biquad` → `interp`. A 24-bit converter read, one bad sample thrown away, mains hum notched out, counts turned into kilograms. |
+| `MotionLoop` | `ramp` → `encoder` → `pid` → `dcMotor`. Four modules that disagree about what a number means, and the conversions between them. |
+| `FramedLink` | `comstxetx` + `crc16` + `comgenbuf`. The ISR/main-loop split, with a payload that contains the framing bytes themselves. |
+
+The hardware is faked in each, so they build and run anywhere; on a real board
+that one function is all that changes. The other directories under `sample/`
+teach C rather than this library and predate it.
 
 The whole library is 17 kB of code on a Cortex-M0 at `-Os`, and **zero bytes of
 RAM** — the caller owns every buffer, which `scripts/check.sh` enforces rather

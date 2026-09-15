@@ -241,9 +241,25 @@ The same run found the matching omission in `checksum`, whose own notes compare 
 
 **And nothing pulls in double precision.** Several banners claim the library is single precision throughout and nothing had ever checked it. `scripts/runtime.sh` reports the helpers per module and fails on a `__aeabi_d*`, which is the one rule in that report rather than an observation.
 
+## 19. Composition, and the examples nobody was building — DONE 15/09/2026
+
+Thirty-four tests, every one of them exercising a single module. Modules may not include each other, so they only ever meet in caller code — and the repository contained none. Whether their units, buffer sizes and callback shapes line up was the first thing a consumer would find out and the last thing anything here checked.
+
+`test/Integration_Test/` is that caller code. Three real stacks: `comstxetx` → `comgenbuf` → `comsafe` on the receive path, `ramp` → `encoder` → `pid` → `dcMotor` for motion, `pack` → `median` → `biquad` → `interp` for a measurement. **It found three things while it was being written, and not one of them was a defect in any module.**
+
+- A frame the transport drops is, to the safety layer above it, a frame that was *lost*. `comsafe` treats a gap in its sequence as a fault by design, so the next good frame is refused too and the caller has to decide the channel is trustworthy again. Both modules behave exactly as documented; the consequence only exists where they meet.
+- The first draft never called `biquadReset`, so a notch sat climbing toward a reading that was already there. `biquad`'s own banner says to reset it and says why, and the draft did it wrong anyway — which is a fair measure of how easy that is to miss.
+- **`dcMotorBridgeState` has to be called before `dcMotorSetSpeed`.** The reversal interlock zeroes the duty before it moves the pins, so the other order has it wipe the value just written, and the motor stops every time the loop changes its mind. That one is asserted on its own, because it is the kind of thing that costs somebody a day and cannot show up in `DcMotor_Test`.
+
+A fourth thing was an expectation of mine rather than a finding: the loop would not overshoot at a low proportional gain, so the reversal interlock was never exercised in the stack at all. The gain was raised until it did, which is both more realistic and the only way that check means anything.
+
+**And `sample/` did not use the library.** Five directories of C tutorials — void pointers, function pointers, a DFT, byte and bit representation, file logging — and nothing showing how to consume a module, for a library whose entire model is copying one `.h`/`.c` pair into a project. Three worked examples were added: `FilteredScale`, `MotionLoop` and `FramedLink`, each a stack rather than a single call, with the hardware faked so they build and run anywhere. The old tutorials stay; they teach something else.
+
+`scripts/samples.sh` builds and runs all of them, deriving library dependencies from each sample's own `#include` lines exactly as `run_tests.sh` does. **It found two defects on its first run, and both were the same two classes the test suite's first run found in 2026:** `sample/DFT` had not compiled for years — it called `time()` without `<time.h>`, which a modern compiler makes an error rather than a warning — and `sample/FunctionPointerBasic` ended `main` with `return ( 1 );`, so it reported failure on every successful run. The other three carried three warnings between them. All of it is clean now and CI gates on it.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, with a measurement pass over what the fixed point variants cost. Nothing is outstanding, and for the first time nothing is reserved either.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, and the composition tests and worked examples that had never existed. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

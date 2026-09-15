@@ -29,7 +29,7 @@ int main ( void )
     // check outputs
     // change stg. see effect
 
-    return ( 1 );
+    return ( 0 );
 }
 
 int func1 ( int arg1, int arg2 )

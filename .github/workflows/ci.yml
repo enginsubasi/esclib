@@ -45,6 +45,11 @@ jobs:
       - name: Mutations
         run: sh scripts/mutate.sh
 
+      # The examples under sample/ are documentation, and documentation that
+      # does not compile is worse than none.
+      - name: Samples
+        run: sh scripts/samples.sh
+
       # Code size per module, for the log rather than as a gate. This is how a
       # module that quietly doubled gets noticed.
       - name: Size
@@ -71,3 +76,4 @@ jobs:
           dash -n scripts/mutate.sh
           dash -n scripts/size.sh
           dash -n scripts/runtime.sh
+          dash -n scripts/samples.sh

@@ -2,7 +2,7 @@
 
 int main ( void )
 {
-    float x = 37.370, xre;
+    float x = 37.370f;
 
     void *vtof = &x;
 

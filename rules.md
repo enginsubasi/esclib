@@ -185,6 +185,12 @@ modules of their own.
 - Every module with functions has a test under `test/<Name>_Test/`, a standalone
   `main()` that builds from the test file plus the module sources its
   `#include "..."` lines name.
+- **And the stacks have one too.** Modules may not include each other, so they
+  only ever meet in caller code, and whether their units, buffer sizes and
+  callback shapes line up is not a property any single-module test can check.
+  `test/Integration_Test/` is that caller code: it asserts the three real
+  stacks — the receive path, the motion loop and the measurement chain — and it
+  is where a defect that exists only at a seam belongs.
 - **Every exported symbol is referenced by at least one test.**
 - New tests assert and return non-zero on failure. They do not print values for
   a human to compare — seven older tests do, and they are legacy, not a pattern
@@ -218,6 +224,7 @@ warnings, no exceptions** — a new warning is a regression, not background nois
 ```bash
 sh run_tests.sh              # build and run every test
 sh run_tests.sh Ramp_Test    # or just one, mid-change
+sh scripts/samples.sh        # build and run every example under sample/
 sh scripts/check.sh          # warnings, headers, symbol coverage, static storage
 STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails its test

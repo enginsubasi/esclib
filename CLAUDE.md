@@ -90,6 +90,7 @@ STRICT=1 sh scripts/check.sh   # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh           # every known defect still fails the test that pins it
 sh scripts/size.sh             # code size per module
 sh scripts/runtime.sh          # which compiler runtime helpers each module needs
+sh scripts/samples.sh          # build and run every example under sample/
 sh scripts/doc.sh              # the Doxygen reference into doc/, which is .gitignore'd
 ```
 
@@ -102,7 +103,7 @@ sh run_tests.sh FirGoertzel_Test
 
 `scripts/check.sh` is the whole Verification section below in one command, and its exit status is the number of checks that failed. It defaults to `arm-none-eabi-gcc` and falls back to `gcc`; it never runs what it builds, so either works.
 
-`.github/workflows/ci.yml` runs `scripts/check.sh` in both profiles, `run_tests.sh`, `scripts/mutate.sh`, `scripts/size.sh`, `scripts/runtime.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
+`.github/workflows/ci.yml` runs `scripts/check.sh` in both profiles, `run_tests.sh`, `scripts/mutate.sh`, `scripts/samples.sh`, `scripts/size.sh`, `scripts/runtime.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
 
 A single test still builds directly, and that is often what you want mid-change:
 
@@ -130,7 +131,7 @@ arm-none-eabi-gcc -c -Wall -Iinc/<module> src/<module>/<file>.c -o /dev/null
 inc/<module>/<name>.h   ←→   src/<module>/<name>.c    strict 1:1 pair
 drv/<name>.h, <name>.c                                 hardware drivers, header and source side by side
 template/inc/generic.h, template/src/generic.c         copy these to start a new module
-sample/                                                standalone C examples, not part of the library
+sample/                                                standalone examples, built by scripts/samples.sh
 ```
 
 Modules are **fully independent**: every `.c` includes only its own header (plus `<math.h>` and `<stddef.h>` where needed). No module includes another module's header. Do not introduce cross-module includes — that independence is what makes single-module copy-out work.
@@ -260,7 +261,9 @@ This section listed four stubs for years and is now empty. `comgenbuf` and `matr
 
 ## Testing
 
-Thirty-four test programs cover every module, and **every one of the 342 exported symbols is referenced by at least one of them**. `sh scripts/check.sh` verifies that claim, so it is checked on every push rather than remembered.
+Thirty-five test programs cover every module, and **every one of the 342 exported symbols is referenced by at least one of them**. `sh scripts/check.sh` verifies that claim, so it is checked on every push rather than remembered.
+
+**`Integration_Test` is the odd one out and the point of it is in its name.** Every other test exercises one module, and since a module may not include another's header, modules only ever meet in *caller* code — of which this repository contained none. Whether their units, buffer sizes and callback shapes line up is not a property any single-module test can check. It asserts three real stacks: `comstxetx` → `comgenbuf` → `comsafe` on the receive path, `ramp` → `encoder` → `pid` → `dcMotor` for motion, and `pack` → `median` → `biquad` → `interp` for a measurement. Writing it found three things, none of them a defect in any module: a frame the transport drops is, to the safety layer above it, a frame that was *lost*, so the next good one is refused too and the caller has to decide the channel is trustworthy again; a notch left unreset spends thousands of samples climbing to a reading that was already there, which `biquad`'s own banner warns about and the first draft did anyway; and `dcMotorBridgeState` must be called **before** `dcMotorSetSpeed`, because the reversal interlock zeroes the duty before it moves the pins, so the other order has it wipe the value just written and the motor stops every time the loop changes its mind. That last one is asserted on its own, because it is the kind of thing that costs somebody a day and cannot show up anywhere else.
 
 **The assert style is the house style now.** Twenty-seven tests assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure: `ShiftRegister_Test`, `Filter_Test`, `FilterSet_Test`, `SortSearch_Test`, `Math_Test`, `ArrayMatrix_Test`, `CRC_Test`, `Logic_Test`, `Protocol_Test`, `DcMotor_Test`, `Buffer_Test`, `ComplexMath_Test`, `Control_Test`, `SoftTimer_Test`, `Interp_Test`, `Ramp_Test`, `Checksum_Test`, `Encoder_Test`, `Pack_Test`, `FirGoertzel_Test`, `Q16_Test`, `Sched_Test`, `Fsm_Test`, `ComGenBuf_Test`, `MatrixLib_Test`, `ComSafe_Test` and `ComSec_Test`. Write new tests that way.
 

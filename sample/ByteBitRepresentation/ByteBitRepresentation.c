@@ -30,7 +30,7 @@ int main ( void )
 
     printf ( "%u\r\n",testUnion.byte );
 
-    printf ( "%d %d\r\n", sizeof ( testUnion ), sizeof ( testUnion.bit ) );
+    printf ( "%zu %zu\r\n", sizeof ( testUnion ), sizeof ( testUnion.bit ) );
 
     return ( 0 );
 }
