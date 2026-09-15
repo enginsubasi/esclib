@@ -1,5 +1,6 @@
 /*
- * Covers dcmotor.
+ * Covers dcmotor: the bridge states, the duty cycle, and the reversal
+ * interlock between them.
  *
  * Asserts rather than printing values for a human to compare, so it needs no
  * output.txt and returns non zero on failure.
@@ -40,22 +41,71 @@ static uint32_t highCalls = 0;
 static uint32_t lowCalls = 0;
 static uint32_t pwmCalls = 0;
 
+/*
+ * Order of the first call to each probe since the last reset. Checking that
+ * the duty reached zero is not enough on a reversal: it has to have reached
+ * zero before the bridge pins moved, and only an order marker can tell those
+ * two apart.
+ */
+static uint32_t sequence = 0;
+static uint32_t highOrder = 0;
+static uint32_t lowOrder = 0;
+static uint32_t pwmOrder = 0;
+
 static void probeHigh ( uint8_t state )
 {
     highState = state;
     ++highCalls;
+    ++sequence;
+
+    if ( highOrder == 0u )
+    {
+        highOrder = sequence;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
 }
 
 static void probeLow ( uint8_t state )
 {
     lowState = state;
     ++lowCalls;
+    ++sequence;
+
+    if ( lowOrder == 0u )
+    {
+        lowOrder = sequence;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
 }
 
 static void probePwm ( float duty )
 {
     pwmValue = duty;
     ++pwmCalls;
+    ++sequence;
+
+    if ( pwmOrder == 0u )
+    {
+        pwmOrder = sequence;
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+}
+
+/* A nan without including math.h, which no test in this tree needs otherwise. */
+static float makeNan ( void )
+{
+    volatile float zero = 0.0f;
+
+    return ( zero / zero );
 }
 
 static void probeReset ( void )
@@ -66,6 +116,10 @@ static void probeReset ( void )
     highCalls = 0;
     lowCalls = 0;
     pwmCalls = 0;
+    sequence = 0;
+    highOrder = 0;
+    lowOrder = 0;
+    pwmOrder = 0;
 }
 
 /* ------------------------------------------------------------------ init */
@@ -165,11 +219,153 @@ static void bridgeCase ( void )
             ( uint8_t ) ( ( highState == FALSE ) && ( lowState == TRUE ) ) );
 }
 
+/* ------------------------------------------------------------------ speed */
+
+static void speedCase ( void )
+{
+    dcmotor_t driver;
+
+    printf ( "dcMotorSetSpeed\n" );
+
+    check ( "Init", dcMotorInit ( &driver, probeHigh, probeLow, probePwm ) );
+    check ( "a fresh driver reports a duty of zero",
+            ( uint8_t ) ( dcMotorGetSpeed ( &driver ) == 0.0f ) );
+
+    probeReset ( );
+    dcMotorSetSpeed ( &driver, 0.5f );
+    check ( "a duty inside the range reaches the callback",
+            ( uint8_t ) ( pwmValue == 0.5f ) );
+    check ( "and is reported back",
+            ( uint8_t ) ( dcMotorGetSpeed ( &driver ) == 0.5f ) );
+    check ( "with one call, and no pin moves",
+            ( uint8_t ) ( ( pwmCalls == 1u ) && ( highCalls == 0u ) &&
+                          ( lowCalls == 0u ) ) );
+
+    /*
+     * Clamped rather than rejected, so what the driver installed is what
+     * dcMotorGetSpeed reports, not what the caller asked for.
+     */
+    probeReset ( );
+    dcMotorSetSpeed ( &driver, 1.5f );
+    check ( "a duty above one clamps to full drive",
+            ( uint8_t ) ( ( pwmValue == 1.0f ) &&
+                          ( dcMotorGetSpeed ( &driver ) == 1.0f ) ) );
+
+    probeReset ( );
+    dcMotorSetSpeed ( &driver, -0.25f );
+    check ( "a negative duty clamps to a standstill",
+            ( uint8_t ) ( ( pwmValue == 0.0f ) &&
+                          ( dcMotorGetSpeed ( &driver ) == 0.0f ) ) );
+
+    /*
+     * A nan compares false against both bounds, so the obvious two sided
+     * clamp would hand one straight to the hardware. This is the same defect
+     * pidInit guards against by rejecting a zero ts.
+     */
+    probeReset ( );
+    dcMotorSetSpeed ( &driver, 1.0f );
+    dcMotorSetSpeed ( &driver, makeNan ( ) );
+    check ( "a nan lands at a standstill rather than reaching the hardware",
+            ( uint8_t ) ( ( pwmValue == 0.0f ) &&
+                          ( dcMotorGetSpeed ( &driver ) == 0.0f ) ) );
+
+    dcMotorSetSpeed ( &driver, 0.0f );
+    check ( "the lower endpoint goes through unchanged",
+            ( uint8_t ) ( dcMotorGetSpeed ( &driver ) == 0.0f ) );
+
+    dcMotorSetSpeed ( &driver, 1.0f );
+    check ( "and so does full drive",
+            ( uint8_t ) ( dcMotorGetSpeed ( &driver ) == 1.0f ) );
+}
+
+/* -------------------------------------------------------------- reversal */
+
+static void reversalCase ( void )
+{
+    dcmotor_t driver;
+
+    printf ( "reversal\n" );
+
+    check ( "Init", dcMotorInit ( &driver, probeHigh, probeLow, probePwm ) );
+
+    /*
+     * The hazard this guards. A motor turning at speed is a generator, and
+     * throwing the bridge across it puts the supply and the back emf in
+     * series through the winding. Checking the duty ended at zero is not
+     * enough — it has to have reached zero before the pins moved.
+     */
+    dcMotorBridgeState ( &driver, BRIDGE_FORWARD );
+    dcMotorSetSpeed ( &driver, 0.8f );
+    probeReset ( );
+    dcMotorBridgeState ( &driver, BRIDGE_BACKWARD );
+
+    check ( "reversing zeroes the duty",
+            ( uint8_t ) ( dcMotorGetSpeed ( &driver ) == 0.0f ) );
+    check ( "and tells the hardware so",
+            ( uint8_t ) ( ( pwmCalls == 1u ) && ( pwmValue == 0.0f ) ) );
+    check ( "before either bridge pin moves",
+            ( uint8_t ) ( ( pwmOrder != 0u ) && ( highOrder != 0u ) &&
+                          ( lowOrder != 0u ) && ( pwmOrder < highOrder ) &&
+                          ( pwmOrder < lowOrder ) ) );
+    check ( "and the direction still changed",
+            ( uint8_t ) ( ( highState == FALSE ) && ( lowState == TRUE ) ) );
+
+    /* The other way round is the same move. */
+    dcMotorSetSpeed ( &driver, 0.6f );
+    probeReset ( );
+    dcMotorBridgeState ( &driver, BRIDGE_FORWARD );
+    check ( "backward to forward is the same reversal",
+            ( uint8_t ) ( ( dcMotorGetSpeed ( &driver ) == 0.0f ) &&
+                          ( pwmCalls == 1u ) ) );
+
+    /*
+     * Nothing else is a reversal. Releasing, locking, and picking a direction
+     * up from a released bridge all leave the duty where the caller put it.
+     */
+    dcMotorSetSpeed ( &driver, 0.7f );
+    probeReset ( );
+    dcMotorBridgeState ( &driver, BRIDGE_LOCK );
+    check ( "locking the bridge leaves the duty alone",
+            ( uint8_t ) ( ( dcMotorGetSpeed ( &driver ) == 0.7f ) &&
+                          ( pwmCalls == 0u ) ) );
+
+    probeReset ( );
+    dcMotorBridgeState ( &driver, BRIDGE_NO );
+    check ( "releasing it leaves the duty alone too",
+            ( uint8_t ) ( ( dcMotorGetSpeed ( &driver ) == 0.7f ) &&
+                          ( pwmCalls == 0u ) ) );
+
+    probeReset ( );
+    dcMotorBridgeState ( &driver, BRIDGE_FORWARD );
+    check ( "and taking a direction from a released bridge is not a reversal",
+            ( uint8_t ) ( ( dcMotorGetSpeed ( &driver ) == 0.7f ) &&
+                          ( pwmCalls == 0u ) ) );
+
+    probeReset ( );
+    dcMotorBridgeState ( &driver, BRIDGE_FORWARD );
+    check ( "nor is asking for the direction already held",
+            ( uint8_t ) ( ( dcMotorGetSpeed ( &driver ) == 0.7f ) &&
+                          ( pwmCalls == 0u ) ) );
+
+    /*
+     * The duty is not restored after a reversal. Putting the previous torque
+     * back one pwm period later is the hazard again with a delay on it.
+     */
+    dcMotorSetSpeed ( &driver, 0.9f );
+    dcMotorBridgeState ( &driver, BRIDGE_BACKWARD );
+    check ( "the duty is not restored once the reversal is done",
+            ( uint8_t ) ( dcMotorGetSpeed ( &driver ) == 0.0f ) );
+}
+
 int main ( void )
 {
     initCase ( );
     printf ( "\n" );
     bridgeCase ( );
+    printf ( "\n" );
+    speedCase ( );
+    printf ( "\n" );
+    reversalCase ( );
 
     printf ( "\n" );
 

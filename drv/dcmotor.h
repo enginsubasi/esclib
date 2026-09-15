@@ -29,6 +29,9 @@ typedef struct
     void ( *bridgeHigh )( uint8_t );
     void ( *bridgeLow )( uint8_t );
     void ( *pwm )( float );
+
+    float duty;
+    uint8_t state;
 } dcmotor_t;
 
 /* ENUMS */
@@ -49,6 +52,8 @@ uint8_t dcMotorInit ( dcmotor_t *driver,
                     void ( *bridgeLowFnc )( uint8_t ),
                     void ( *pwmFnc )( float ));
 void dcMotorBridgeState ( dcmotor_t *driver, uint8_t bridgeState );
+void dcMotorSetSpeed ( dcmotor_t *driver, float duty );
+float dcMotorGetSpeed ( const dcmotor_t* const driver );
 
 #ifdef __cplusplus
 }
