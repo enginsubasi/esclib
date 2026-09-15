@@ -1,0 +1,295 @@
+# what: The bits one padding character leaves unused are not checked, the same defect on the other padding length.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+uint8_t textBase64Decode ( const uint8_t* const source, uint32_t length,
+                           uint8_t* destination, uint32_t capacity,
+                           uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint32_t groups = length / 4u;
+    uint32_t padding = 0u;
+    uint32_t decoded = 0u;
+    uint32_t g = 0u;
+    uint32_t j = 0u;
+    uint32_t i = 0u;
+    uint32_t value = 0u;
+    uint32_t quad = 0u;
+    uint32_t w = 0u;
+
+    if ( ( length % 4u ) != 0u )
+    {
+        sound = FALSE;
+    }
+    else if ( length > 0u )
+    {
+        /* Padding is counted from the end, which is the only place it may
+           be. A padding character anywhere else fails the alphabet below. */
+        if ( ( uint32_t ) source[ length - 1u ] == TEXT_ASCII_EQUALS )
+        {
+            ++padding;
+
+            if ( ( uint32_t ) source[ length - 2u ] == TEXT_ASCII_EQUALS )
+            {
+                ++padding;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    for ( i = 0u; ( i < ( length - padding ) ) && ( sound == TRUE ); ++i )
+    {
+        sound = textBase64Value ( source[ i ], &value );
+    }
+
+    /* The canonical form: the bits padding leaves unused are zero. */
+    if ( ( sound == TRUE ) && ( padding == 2u ) )
+    {
+        ( void ) textBase64Value ( source[ length - 3u ], &value );
+
+        if ( ( value & 0x0Fu ) != 0u )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else if ( ( sound == TRUE ) && ( padding == 1u ) )
+    {
+        ( void ) textBase64Value ( source[ length - 2u ], &value );
+
+        if ( ( value & 0x03u ) != 0u )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    decoded = ( groups * 3u ) - padding;
+
+    if ( ( sound == TRUE ) && ( decoded <= capacity ) )
+    {
+        for ( g = 0u; g < groups; ++g )
+        {
+            quad = 0u;
+
+            for ( j = 0u; j < 4u; ++j )
+            {
+                /* Padding is not a digit and reads as zero bits, which the
+                   canonical check above has already required them to be. */
+                value = 0u;
+                ( void ) textBase64Value ( source[ ( 4u * g ) + j ], &value );
+                quad = ( quad << 6 ) | value;
+            }
+
+            if ( w < decoded )
+            {
+                destination[ w ] = ( uint8_t ) ( ( quad >> 16 ) & 0xFFu );
+                ++w;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            if ( w < decoded )
+            {
+                destination[ w ] = ( uint8_t ) ( ( quad >> 8 ) & 0xFFu );
+                ++w;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            if ( w < decoded )
+            {
+                destination[ w ] = ( uint8_t ) ( quad & 0xFFu );
+                ++w;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+
+        *written = decoded;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t textBase64Decode ( const uint8_t* const source, uint32_t length,
+                           uint8_t* destination, uint32_t capacity,
+                           uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint32_t groups = length / 4u;
+    uint32_t padding = 0u;
+    uint32_t decoded = 0u;
+    uint32_t g = 0u;
+    uint32_t j = 0u;
+    uint32_t i = 0u;
+    uint32_t value = 0u;
+    uint32_t quad = 0u;
+    uint32_t w = 0u;
+
+    if ( ( length % 4u ) != 0u )
+    {
+        sound = FALSE;
+    }
+    else if ( length > 0u )
+    {
+        /* Padding is counted from the end, which is the only place it may
+           be. A padding character anywhere else fails the alphabet below. */
+        if ( ( uint32_t ) source[ length - 1u ] == TEXT_ASCII_EQUALS )
+        {
+            ++padding;
+
+            if ( ( uint32_t ) source[ length - 2u ] == TEXT_ASCII_EQUALS )
+            {
+                ++padding;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    for ( i = 0u; ( i < ( length - padding ) ) && ( sound == TRUE ); ++i )
+    {
+        sound = textBase64Value ( source[ i ], &value );
+    }
+
+    /* The canonical form: the bits padding leaves unused are zero. */
+    if ( ( sound == TRUE ) && ( padding == 2u ) )
+    {
+        ( void ) textBase64Value ( source[ length - 3u ], &value );
+
+        if ( ( value & 0x0Fu ) != 0u )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else if ( ( sound == TRUE ) && ( padding == 1u ) )
+    {
+        ( void ) textBase64Value ( source[ length - 2u ], &value );
+
+        if ( FALSE == TRUE )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    decoded = ( groups * 3u ) - padding;
+
+    if ( ( sound == TRUE ) && ( decoded <= capacity ) )
+    {
+        for ( g = 0u; g < groups; ++g )
+        {
+            quad = 0u;
+
+            for ( j = 0u; j < 4u; ++j )
+            {
+                /* Padding is not a digit and reads as zero bits, which the
+                   canonical check above has already required them to be. */
+                value = 0u;
+                ( void ) textBase64Value ( source[ ( 4u * g ) + j ], &value );
+                quad = ( quad << 6 ) | value;
+            }
+
+            if ( w < decoded )
+            {
+                destination[ w ] = ( uint8_t ) ( ( quad >> 16 ) & 0xFFu );
+                ++w;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            if ( w < decoded )
+            {
+                destination[ w ] = ( uint8_t ) ( ( quad >> 8 ) & 0xFFu );
+                ++w;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            if ( w < decoded )
+            {
+                destination[ w ] = ( uint8_t ) ( quad & 0xFFu );
+                ++w;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+
+        *written = decoded;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END

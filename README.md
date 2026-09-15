@@ -241,12 +241,23 @@ under one key and counter break every guarantee at once.
 | `encoder` | `inc/encoder` | Quadrature decoding at four counts per cycle. A missed step is counted, never guessed. |
 | `logic` | `inc/logic` | D and RS flip-flops. |
 | `pack` | `inc/pack` | Multi-byte values to and from a byte buffer, either endianness, with the signed and 24-bit readers that C has no type for. |
+| `text` | `inc/text` | Bytes and numbers to ASCII and back: hexadecimal, strict base64, and decimal with overflow refused — Q16 included, to a chosen number of places. |
 
 `pack` is the line the two protocol modules leave to their caller. `comstxetx`
 hands over a payload of bytes; turning four of them into a reading is where the
 hand-written version goes wrong, so it lives here instead. Nothing in it casts a
 buffer pointer to a wider type — that assumes the machine's endianness, assumes
 alignment a Cortex-M0 will fault on, and aliases.
+
+`text` is the same line for an ASCII link. Nothing in `src/` uses stdio, so a
+project on this library had no `printf` and wrote these by hand, and each has
+one place the hand-written version is wrong: `atoi` wraps silently on a number
+past the type, negating the most negative `int32_t` is undefined, a Q16 value
+rounded to two places has to carry `0.999` into `1.00`, and `0.05` read back has
+to be five hundredths rather than five tenths. Base64 is read strictly — padding
+only at the end, unused bits zero — because a lenient decoder gives one payload
+several encodings. Nothing writes a terminating zero: every buffer here is a
+pointer and a length.
 
 ### Drivers — `drv/`
 

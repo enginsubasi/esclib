@@ -1,0 +1,215 @@
+# what: A point with nothing after it is accepted, so "1." parses — a field cut off mid-number read as a whole one.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+uint8_t textToQ16 ( const uint8_t* const source, uint32_t length,
+                    int32_t* value )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint8_t negative = FALSE;
+    uint32_t start = 0u;
+    uint32_t point = length;
+    uint32_t i = 0u;
+    uint32_t integer = 0u;
+    uint32_t fraction = 0u;
+    uint32_t scale = 1u;
+    uint32_t limit = TEXT_I32_POSITIVE_LIMIT;
+    uint64_t magnitude = 0u;
+
+    if ( ( length > 0u ) && ( ( uint32_t ) source[ 0 ] == TEXT_ASCII_MINUS ) )
+    {
+        negative = TRUE;
+        start = 1u;
+        limit = TEXT_I32_NEGATIVE_LIMIT;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    /* The first point, if there is one. A second is caught below, as a
+       character in the fraction that is not a digit. */
+    for ( i = start; ( i < length ) && ( point == length ); ++i )
+    {
+        if ( ( uint32_t ) source[ i ] == TEXT_ASCII_POINT )
+        {
+            point = i;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    sound = textParseDigits ( source, start, point, TEXT_Q16_INTEGER_LIMIT,
+                              &integer );
+
+    if ( ( sound == TRUE ) && ( point < length ) )
+    {
+        if ( ( point + 1u ) >= length )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        for ( i = point + 1u; ( i < length ) && ( sound == TRUE ); ++i )
+        {
+            if ( ( ( uint32_t ) source[ i ] < TEXT_ASCII_ZERO ) ||
+                 ( ( uint32_t ) source[ i ] > TEXT_ASCII_NINE ) )
+            {
+                sound = FALSE;
+            }
+            else if ( ( i - point ) <= TEXT_Q16_READ_DIGITS )
+            {
+                fraction = ( fraction * 10u ) +
+                           ( ( uint32_t ) source[ i ] - TEXT_ASCII_ZERO );
+                scale = scale * 10u;
+            }
+            else
+            {
+                /* Checked, and past the depth that can move the result. */
+            }
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( sound == TRUE )
+    {
+        magnitude = ( ( uint64_t ) integer ) << TEXT_Q16_SHIFT;
+        magnitude = magnitude +
+                    ( ( ( ( ( uint64_t ) fraction ) << TEXT_Q16_SHIFT ) +
+                        ( ( uint64_t ) scale / 2u ) ) / ( uint64_t ) scale );
+
+        if ( magnitude <= ( uint64_t ) limit )
+        {
+            *value = textSigned ( ( uint32_t ) magnitude, negative );
+
+            retVal = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t textToQ16 ( const uint8_t* const source, uint32_t length,
+                    int32_t* value )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint8_t negative = FALSE;
+    uint32_t start = 0u;
+    uint32_t point = length;
+    uint32_t i = 0u;
+    uint32_t integer = 0u;
+    uint32_t fraction = 0u;
+    uint32_t scale = 1u;
+    uint32_t limit = TEXT_I32_POSITIVE_LIMIT;
+    uint64_t magnitude = 0u;
+
+    if ( ( length > 0u ) && ( ( uint32_t ) source[ 0 ] == TEXT_ASCII_MINUS ) )
+    {
+        negative = TRUE;
+        start = 1u;
+        limit = TEXT_I32_NEGATIVE_LIMIT;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    /* The first point, if there is one. A second is caught below, as a
+       character in the fraction that is not a digit. */
+    for ( i = start; ( i < length ) && ( point == length ); ++i )
+    {
+        if ( ( uint32_t ) source[ i ] == TEXT_ASCII_POINT )
+        {
+            point = i;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    sound = textParseDigits ( source, start, point, TEXT_Q16_INTEGER_LIMIT,
+                              &integer );
+
+    if ( ( sound == TRUE ) && ( point < length ) )
+    {
+        if ( FALSE == TRUE )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        for ( i = point + 1u; ( i < length ) && ( sound == TRUE ); ++i )
+        {
+            if ( ( ( uint32_t ) source[ i ] < TEXT_ASCII_ZERO ) ||
+                 ( ( uint32_t ) source[ i ] > TEXT_ASCII_NINE ) )
+            {
+                sound = FALSE;
+            }
+            else if ( ( i - point ) <= TEXT_Q16_READ_DIGITS )
+            {
+                fraction = ( fraction * 10u ) +
+                           ( ( uint32_t ) source[ i ] - TEXT_ASCII_ZERO );
+                scale = scale * 10u;
+            }
+            else
+            {
+                /* Checked, and past the depth that can move the result. */
+            }
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( sound == TRUE )
+    {
+        magnitude = ( ( uint64_t ) integer ) << TEXT_Q16_SHIFT;
+        magnitude = magnitude +
+                    ( ( ( ( ( uint64_t ) fraction ) << TEXT_Q16_SHIFT ) +
+                        ( ( uint64_t ) scale / 2u ) ) / ( uint64_t ) scale );
+
+        if ( magnitude <= ( uint64_t ) limit )
+        {
+            *value = textSigned ( ( uint32_t ) magnitude, negative );
+
+            retVal = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END

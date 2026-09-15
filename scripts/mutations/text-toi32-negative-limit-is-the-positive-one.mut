@@ -1,0 +1,75 @@
+# what: Both sides of zero get the positive limit, so the most negative int32_t is refused although it fits.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+uint8_t textToI32 ( const uint8_t* const source, uint32_t length,
+                    int32_t* value )
+{
+    uint8_t retVal = FALSE;
+    uint8_t negative = FALSE;
+    uint32_t start = 0u;
+    uint32_t limit = TEXT_I32_POSITIVE_LIMIT;
+    uint32_t magnitude = 0u;
+
+    if ( ( length > 0u ) && ( ( uint32_t ) source[ 0 ] == TEXT_ASCII_MINUS ) )
+    {
+        negative = TRUE;
+        start = 1u;
+        limit = TEXT_I32_NEGATIVE_LIMIT;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( textParseDigits ( source, start, length, limit, &magnitude ) == TRUE )
+    {
+        *value = textSigned ( magnitude, negative );
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t textToI32 ( const uint8_t* const source, uint32_t length,
+                    int32_t* value )
+{
+    uint8_t retVal = FALSE;
+    uint8_t negative = FALSE;
+    uint32_t start = 0u;
+    uint32_t limit = TEXT_I32_POSITIVE_LIMIT;
+    uint32_t magnitude = 0u;
+
+    if ( ( length > 0u ) && ( ( uint32_t ) source[ 0 ] == TEXT_ASCII_MINUS ) )
+    {
+        negative = TRUE;
+        start = 1u;
+        limit = TEXT_I32_POSITIVE_LIMIT;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( textParseDigits ( source, start, length, limit, &magnitude ) == TRUE )
+    {
+        *value = textSigned ( magnitude, negative );
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END

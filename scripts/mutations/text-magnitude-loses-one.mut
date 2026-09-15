@@ -1,0 +1,39 @@
+# what: The magnitude of a negative value is taken as -( value + 1 ) and the one is never added back, so minus one prints as zero.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+static uint32_t textMagnitude ( int32_t value )
+{
+    uint32_t retVal = 0u;
+
+    if ( value < 0 )
+    {
+        retVal = ( ( uint32_t ) ( -( value + 1 ) ) ) + 1u;
+    }
+    else
+    {
+        retVal = ( uint32_t ) value;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+static uint32_t textMagnitude ( int32_t value )
+{
+    uint32_t retVal = 0u;
+
+    if ( value < 0 )
+    {
+        retVal = ( uint32_t ) ( -( value + 1 ) );
+    }
+    else
+    {
+        retVal = ( uint32_t ) value;
+    }
+
+    return ( retVal );
+}
+--- END

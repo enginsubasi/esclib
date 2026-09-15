@@ -1,0 +1,57 @@
+# what: Lower case hexadecimal is refused, which refuses half the hexadecimal there is.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+static uint8_t textHexValue ( uint8_t character, uint32_t* nibble )
+{
+    uint8_t retVal = TRUE;
+    uint32_t c = ( uint32_t ) character;
+
+    if ( ( c >= TEXT_ASCII_ZERO ) && ( c <= TEXT_ASCII_NINE ) )
+    {
+        *nibble = c - TEXT_ASCII_ZERO;
+    }
+    else if ( ( c >= TEXT_ASCII_UPPER_A ) && ( c <= TEXT_ASCII_UPPER_F ) )
+    {
+        *nibble = ( c - TEXT_ASCII_UPPER_A ) + 10u;
+    }
+    else if ( ( c >= TEXT_ASCII_LOWER_A ) && ( c <= TEXT_ASCII_LOWER_F ) )
+    {
+        *nibble = ( c - TEXT_ASCII_LOWER_A ) + 10u;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+static uint8_t textHexValue ( uint8_t character, uint32_t* nibble )
+{
+    uint8_t retVal = TRUE;
+    uint32_t c = ( uint32_t ) character;
+
+    if ( ( c >= TEXT_ASCII_ZERO ) && ( c <= TEXT_ASCII_NINE ) )
+    {
+        *nibble = c - TEXT_ASCII_ZERO;
+    }
+    else if ( ( c >= TEXT_ASCII_UPPER_A ) && ( c <= TEXT_ASCII_UPPER_F ) )
+    {
+        *nibble = ( c - TEXT_ASCII_UPPER_A ) + 10u;
+    }
+    else if ( FALSE == TRUE )
+    {
+        *nibble = ( c - TEXT_ASCII_LOWER_A ) + 10u;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

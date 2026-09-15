@@ -1,0 +1,99 @@
+# what: An odd length is decoded, silently dropping the last digit — a truncated field read as a shorter one.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+uint8_t textHexDecode ( const uint8_t* const source, uint32_t length,
+                        uint8_t* destination, uint32_t capacity,
+                        uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint32_t i = 0u;
+    uint32_t high = 0u;
+    uint32_t low = 0u;
+
+    if ( ( ( length % 2u ) != 0u ) || ( ( length / 2u ) > capacity ) )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    for ( i = 0u; ( i < length ) && ( sound == TRUE ); ++i )
+    {
+        sound = textHexValue ( source[ i ], &high );
+    }
+
+    if ( sound == TRUE )
+    {
+        for ( i = 0u; i < ( length / 2u ); ++i )
+        {
+            ( void ) textHexValue ( source[ 2u * i ], &high );
+            ( void ) textHexValue ( source[ ( 2u * i ) + 1u ], &low );
+
+            destination[ i ] = ( uint8_t ) ( ( high << 4 ) | low );
+        }
+
+        *written = length / 2u;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t textHexDecode ( const uint8_t* const source, uint32_t length,
+                        uint8_t* destination, uint32_t capacity,
+                        uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint32_t i = 0u;
+    uint32_t high = 0u;
+    uint32_t low = 0u;
+
+    if ( ( length / 2u ) > capacity )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    for ( i = 0u; ( i < length ) && ( sound == TRUE ); ++i )
+    {
+        sound = textHexValue ( source[ i ], &high );
+    }
+
+    if ( sound == TRUE )
+    {
+        for ( i = 0u; i < ( length / 2u ); ++i )
+        {
+            ( void ) textHexValue ( source[ 2u * i ], &high );
+            ( void ) textHexValue ( source[ ( 2u * i ) + 1u ], &low );
+
+            destination[ i ] = ( uint8_t ) ( ( high << 4 ) | low );
+        }
+
+        *written = length / 2u;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END

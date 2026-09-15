@@ -1,0 +1,182 @@
+# what: A final group holding one byte gets one padding character and a spurious digit instead of two padding characters, so "f" encodes to ZgA= rather than Zg==.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+uint8_t textBase64Encode ( const uint8_t* const source, uint32_t length,
+                           uint8_t* destination, uint32_t capacity,
+                           uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint32_t full = length / 3u;
+    uint32_t rest = length % 3u;
+    uint32_t groups = full;
+    uint32_t g = 0u;
+    uint32_t i = 0u;
+    uint32_t w = 0u;
+    uint32_t triple = 0u;
+
+    if ( rest != 0u )
+    {
+        ++groups;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( groups <= ( capacity / 4u ) )
+    {
+        for ( g = 0u; g < full; ++g )
+        {
+            i = 3u * g;
+
+            triple = ( ( ( uint32_t ) source[ i ] ) << 16 ) |
+                     ( ( ( uint32_t ) source[ i + 1u ] ) << 8 ) |
+                     ( ( uint32_t ) source[ i + 2u ] );
+
+            destination[ w ] = textBase64Character ( ( triple >> 18 ) & 0x3Fu );
+            destination[ w + 1u ] =
+                textBase64Character ( ( triple >> 12 ) & 0x3Fu );
+            destination[ w + 2u ] =
+                textBase64Character ( ( triple >> 6 ) & 0x3Fu );
+            destination[ w + 3u ] = textBase64Character ( triple & 0x3Fu );
+
+            w = w + 4u;
+        }
+
+        i = 3u * full;
+
+        if ( rest == 1u )
+        {
+            triple = ( ( uint32_t ) source[ i ] ) << 16;
+
+            destination[ w ] = textBase64Character ( ( triple >> 18 ) & 0x3Fu );
+            destination[ w + 1u ] =
+                textBase64Character ( ( triple >> 12 ) & 0x3Fu );
+            destination[ w + 2u ] = ( uint8_t ) TEXT_ASCII_EQUALS;
+            destination[ w + 3u ] = ( uint8_t ) TEXT_ASCII_EQUALS;
+
+            w = w + 4u;
+        }
+        else if ( rest == 2u )
+        {
+            triple = ( ( ( uint32_t ) source[ i ] ) << 16 ) |
+                     ( ( ( uint32_t ) source[ i + 1u ] ) << 8 );
+
+            destination[ w ] = textBase64Character ( ( triple >> 18 ) & 0x3Fu );
+            destination[ w + 1u ] =
+                textBase64Character ( ( triple >> 12 ) & 0x3Fu );
+            destination[ w + 2u ] =
+                textBase64Character ( ( triple >> 6 ) & 0x3Fu );
+            destination[ w + 3u ] = ( uint8_t ) TEXT_ASCII_EQUALS;
+
+            w = w + 4u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        *written = w;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t textBase64Encode ( const uint8_t* const source, uint32_t length,
+                           uint8_t* destination, uint32_t capacity,
+                           uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint32_t full = length / 3u;
+    uint32_t rest = length % 3u;
+    uint32_t groups = full;
+    uint32_t g = 0u;
+    uint32_t i = 0u;
+    uint32_t w = 0u;
+    uint32_t triple = 0u;
+
+    if ( rest != 0u )
+    {
+        ++groups;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( groups <= ( capacity / 4u ) )
+    {
+        for ( g = 0u; g < full; ++g )
+        {
+            i = 3u * g;
+
+            triple = ( ( ( uint32_t ) source[ i ] ) << 16 ) |
+                     ( ( ( uint32_t ) source[ i + 1u ] ) << 8 ) |
+                     ( ( uint32_t ) source[ i + 2u ] );
+
+            destination[ w ] = textBase64Character ( ( triple >> 18 ) & 0x3Fu );
+            destination[ w + 1u ] =
+                textBase64Character ( ( triple >> 12 ) & 0x3Fu );
+            destination[ w + 2u ] =
+                textBase64Character ( ( triple >> 6 ) & 0x3Fu );
+            destination[ w + 3u ] = textBase64Character ( triple & 0x3Fu );
+
+            w = w + 4u;
+        }
+
+        i = 3u * full;
+
+        if ( rest == 1u )
+        {
+            triple = ( ( uint32_t ) source[ i ] ) << 16;
+
+            destination[ w ] = textBase64Character ( ( triple >> 18 ) & 0x3Fu );
+            destination[ w + 1u ] =
+                textBase64Character ( ( triple >> 12 ) & 0x3Fu );
+            destination[ w + 2u ] =
+                textBase64Character ( ( triple >> 6 ) & 0x3Fu );
+            destination[ w + 3u ] = ( uint8_t ) TEXT_ASCII_EQUALS;
+
+            w = w + 4u;
+        }
+        else if ( rest == 2u )
+        {
+            triple = ( ( ( uint32_t ) source[ i ] ) << 16 ) |
+                     ( ( ( uint32_t ) source[ i + 1u ] ) << 8 );
+
+            destination[ w ] = textBase64Character ( ( triple >> 18 ) & 0x3Fu );
+            destination[ w + 1u ] =
+                textBase64Character ( ( triple >> 12 ) & 0x3Fu );
+            destination[ w + 2u ] =
+                textBase64Character ( ( triple >> 6 ) & 0x3Fu );
+            destination[ w + 3u ] = ( uint8_t ) TEXT_ASCII_EQUALS;
+
+            w = w + 4u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        *written = w;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END

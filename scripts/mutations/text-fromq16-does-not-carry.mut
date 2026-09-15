@@ -1,0 +1,199 @@
+# what: A fraction that rounds up to a whole one is not carried into the integer part, so 0.999 at two places prints as 0.00.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/text/text.c
+TEST Text_Test
+--- FIND
+uint8_t textFromQ16 ( int32_t value, uint32_t decimals, uint8_t* destination,
+                      uint32_t capacity, uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint32_t magnitude = textMagnitude ( value );
+    uint32_t integer = 0u;
+    uint32_t scale = 0u;
+    uint32_t fraction = 0u;
+    uint32_t sign = 0u;
+    uint32_t integerDigits = 0u;
+    uint32_t total = 0u;
+    uint64_t scaled = 0u;
+
+    if ( decimals <= TEXT_Q16_DECIMALS_MAX )
+    {
+        integer = magnitude >> TEXT_Q16_SHIFT;
+        scale = textPowerOfTen ( decimals );
+
+        scaled = ( ( ( uint64_t ) ( magnitude & TEXT_Q16_FRACTION_MASK ) ) *
+                   ( uint64_t ) scale ) + TEXT_Q16_HALF;
+        fraction = ( uint32_t ) ( scaled >> TEXT_Q16_SHIFT );
+
+        /* The carry: a fraction that rounded up to a whole one. */
+        if ( fraction >= scale )
+        {
+            fraction = fraction - scale;
+            ++integer;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( ( value < 0 ) && ( ( integer != 0u ) || ( fraction != 0u ) ) )
+        {
+            sign = 1u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        integerDigits = textDigits ( integer );
+        total = sign + integerDigits;
+
+        if ( decimals > 0u )
+        {
+            total = total + 1u + decimals;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( total <= capacity )
+        {
+            if ( sign == 1u )
+            {
+                destination[ 0 ] = ( uint8_t ) TEXT_ASCII_MINUS;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            textWriteDigits ( integer, integerDigits, destination, sign );
+
+            if ( decimals > 0u )
+            {
+                destination[ sign + integerDigits ] =
+                    ( uint8_t ) TEXT_ASCII_POINT;
+                textWriteDigits ( fraction, decimals, destination,
+                                  sign + integerDigits + 1u );
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            *written = total;
+
+            retVal = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t textFromQ16 ( int32_t value, uint32_t decimals, uint8_t* destination,
+                      uint32_t capacity, uint32_t* written )
+{
+    uint8_t retVal = FALSE;
+    uint32_t magnitude = textMagnitude ( value );
+    uint32_t integer = 0u;
+    uint32_t scale = 0u;
+    uint32_t fraction = 0u;
+    uint32_t sign = 0u;
+    uint32_t integerDigits = 0u;
+    uint32_t total = 0u;
+    uint64_t scaled = 0u;
+
+    if ( decimals <= TEXT_Q16_DECIMALS_MAX )
+    {
+        integer = magnitude >> TEXT_Q16_SHIFT;
+        scale = textPowerOfTen ( decimals );
+
+        scaled = ( ( ( uint64_t ) ( magnitude & TEXT_Q16_FRACTION_MASK ) ) *
+                   ( uint64_t ) scale ) + TEXT_Q16_HALF;
+        fraction = ( uint32_t ) ( scaled >> TEXT_Q16_SHIFT );
+
+        /* The carry: a fraction that rounded up to a whole one. */
+        if ( FALSE == TRUE )
+        {
+            fraction = fraction - scale;
+            ++integer;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( ( value < 0 ) && ( ( integer != 0u ) || ( fraction != 0u ) ) )
+        {
+            sign = 1u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        integerDigits = textDigits ( integer );
+        total = sign + integerDigits;
+
+        if ( decimals > 0u )
+        {
+            total = total + 1u + decimals;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( total <= capacity )
+        {
+            if ( sign == 1u )
+            {
+                destination[ 0 ] = ( uint8_t ) TEXT_ASCII_MINUS;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            textWriteDigits ( integer, integerDigits, destination, sign );
+
+            if ( decimals > 0u )
+            {
+                destination[ sign + integerDigits ] =
+                    ( uint8_t ) TEXT_ASCII_POINT;
+                textWriteDigits ( fraction, decimals, destination,
+                                  sign + integerDigits + 1u );
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            *written = total;
+
+            retVal = TRUE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END
