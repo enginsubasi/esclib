@@ -1,0 +1,18 @@
+# what: biquadShifti32 truncates instead of rounding, which puts half a count of standing offset on a symmetric signal.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/biquad.c
+TEST FilterSet_Test
+--- FIND
+    if ( value >= 0 )
+    {
+        retVal = ( value + BIQUAD_HALF ) >> BIQUAD_Q;
+    }
+    else
+    {
+        retVal = - ( ( -value + BIQUAD_HALF ) >> BIQUAD_Q );
+    }
+--- REPLACE
+    retVal = value >> BIQUAD_Q;
+--- END

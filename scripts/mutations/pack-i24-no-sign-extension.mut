@@ -1,0 +1,22 @@
+# what: packGetI24be stops sign extending, which is the load cell bug: minus ten counts reads as sixteen million.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/pack/pack.c
+TEST Pack_Test
+--- FIND
+    raw = packGetU24be ( buffer, index );
+
+    if ( raw < 0x800000u )
+    {
+        retVal = ( int32_t ) raw;
+    }
+    else
+    {
+        retVal = ( int32_t ) raw - 16777216;
+    }
+--- REPLACE
+    raw = packGetU24be ( buffer, index );
+
+    retVal = ( int32_t ) raw;
+--- END

@@ -1,0 +1,40 @@
+# what: The obvious two sided clamp, which a nan passes straight through to the hardware because it compares false against both bounds.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE drv/dcmotor.c
+TEST DcMotor_Test
+--- FIND
+    if ( duty > 1.0f )
+    {
+        applied = 1.0f;
+    }
+    else if ( duty > 0.0f )
+    {
+        applied = duty;
+    }
+    else
+    {
+        applied = 0.0f;
+    }
+--- REPLACE
+    applied = duty;
+
+    if ( applied > 1.0f )
+    {
+        applied = 1.0f;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( applied < 0.0f )
+    {
+        applied = 0.0f;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+--- END

@@ -1,0 +1,25 @@
+# what: crc8Dallas is given the SMBus polynomial and shift direction, so the two CRC8s become the same function.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/crc8.c
+TEST CRC_Test
+--- FIND
+            if ( crc & 0x01 )
+            {
+                crc = ( uint8_t ) ( ( crc >> 1 ) ^ 0x8C );
+            }
+            else
+            {
+                crc = ( uint8_t ) ( crc >> 1 );
+            }
+--- REPLACE
+            if ( crc & 0x80 )
+            {
+                crc = ( uint8_t ) ( ( crc << 1 ) ^ 0x07 );
+            }
+            else
+            {
+                crc = ( uint8_t ) ( crc << 1 );
+            }
+--- END

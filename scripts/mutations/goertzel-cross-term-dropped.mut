@@ -1,0 +1,12 @@
+# what: The squared magnitude loses its cross term, so the reading depends on where the block happened to start.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/goertzel.c
+TEST FirGoertzel_Test
+--- FIND
+        squared = ( driver->s1 * driver->s1 ) + ( driver->s2 * driver->s2 ) -
+                    ( driver->coeff * driver->s1 * driver->s2 );
+--- REPLACE
+        squared = ( driver->s1 * driver->s1 ) + ( driver->s2 * driver->s2 );
+--- END

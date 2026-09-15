@@ -69,13 +69,22 @@ An `output.txt` difference is reported and never counted as a failure, because r
 Two more scripts sit under `scripts/`, added 15/09/2026, and follow the same no-maintenance rule — their file lists come from the tree, so a new module needs no edit to either:
 
 ```bash
-sh scripts/check.sh    # -Wall -Wextra over src/ and drv/, header coexistence, symbol coverage
+sh scripts/check.sh    # -Wall -Wextra, header coexistence, symbol coverage, static storage
+sh scripts/mutate.sh   # every known defect still fails the test that pins it
+sh scripts/size.sh     # code size per module, for reading rather than gating
 sh scripts/doc.sh      # the Doxygen reference into doc/, which is .gitignore'd
+```
+
+`run_tests.sh` also takes a single test name, which is what `mutate.sh` uses and
+what you want mid-change:
+
+```bash
+sh run_tests.sh FirGoertzel_Test
 ```
 
 `scripts/check.sh` is the whole Verification section below in one command, and its exit status is the number of checks that failed. It defaults to `arm-none-eabi-gcc` and falls back to `gcc`; it never runs what it builds, so either works.
 
-`.github/workflows/ci.yml` runs `scripts/check.sh`, `run_tests.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
+`.github/workflows/ci.yml` runs `scripts/check.sh`, `run_tests.sh`, `scripts/mutate.sh`, `scripts/size.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
 
 A single test still builds directly, and that is often what you want mid-change:
 
@@ -220,6 +229,7 @@ That runs the three checks this section used to spell out by hand, and exits wit
 - **Warnings.** Every `.c` under `src/` and `drv/` under `-Wall -Wextra`, each with its own `inc/<module>` on the include path.
 - **Headers.** Every header `#include`d into one translation unit, which is what catches a duplicate include guard or a clashing typedef. Each must also be independently includable on its own.
 - **Symbols.** Every `' T '` symbol from the objects is grepped for in `test/*/*.c`, and checked against the module prefixes derived from the source file names — so an untested export and an unprefixed one both fail here.
+- **Storage.** Every module object's `.data` and `.bss` must both be empty. The caller owns all storage and a module holds no static state of its own, which was stated in `rules.md` and checked nowhere until 15/09/2026; a writable static is the rule being broken and lands in one of those two sections. A read-only table is `.rodata` and counts as code, which is why `crc16` carries one and still passes.
 
 The script keeps its objects, so `arm-none-eabi-nm` over the directory it names still answers a one-off question about the symbol table.
 
@@ -237,7 +247,9 @@ Twenty-seven test programs cover every module that has functions, and **every on
 
 The seven older printing tests — `MAF_Test`, `EMAF_Test`, `Complex_Test`, `PID_Test`, `Hysteresis_Test`, `CircularBufferTest`, `WriteToAFile_Test` — predate that decision, and only five of them have an `output.txt` at all. Three of them are now shadowed rather than replaced: `Buffer_Test` covers what `CircularBufferTest` does not reach (the whole `u8` half, both overflow behaviours, the status reporting), `ComplexMath_Test` does the same for `Complex_Test`, and `Control_Test` for `PID_Test` and `Hysteresis_Test` (the four separate limiters, both `Change` functions, the argument checks). The printing originals are left alone; when one of these modules changes, the assert-style test is the one that has to keep passing. The first assert-style tests exist because a bug lived precisely where the printing tests did not look: `MAF_Test` and `EMAF_Test` only ever touched the float variants, and the `u32` ones were where the defects were.
 
-Several tests aim a specific check at a specific fixed bug, so the regression fails rather than passing quietly. When touching one of these, that check is the one to keep:
+Several tests aim a specific check at a specific fixed bug, so the regression fails rather than passing quietly. When touching one of these, that check is the one to keep.
+
+**And the table below is executable.** `scripts/mutations/` holds one file per defect: the exact block to replace, what to replace it with, and the test that has to fail because of it. `sh scripts/mutate.sh` applies each in turn, runs only that test, and reverts — a mutation the test does not catch is reported as loudly as a build failure, and CI gates on it. This exists because a pin that stops biting is precisely the silent failure the pins were written to prevent: soften an assertion while tidying a test and nothing else in the tree would notice. Adding one costs a file and no list needs updating. Ten are recorded so far; the older rows of this table do not all have one yet, and adding them is the obvious next pass.
 
 | test | bug it pins |
 |---|---|

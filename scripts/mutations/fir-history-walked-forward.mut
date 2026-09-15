@@ -1,0 +1,31 @@
+# what: fir applies its taps to the history in the wrong direction.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/fir.c
+TEST FirGoertzel_Test
+--- FIND
+        accumulator += driver->taps[ i ] * driver->history[ h ];
+
+        if ( h == 0 )
+        {
+            h = driver->length - 1u;
+        }
+        else
+        {
+            --h;
+        }
+--- REPLACE
+        accumulator += driver->taps[ i ] * driver->history[ h ];
+
+        ++h;
+
+        if ( h >= driver->length )
+        {
+            h = 0;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+--- END

@@ -10,3 +10,4 @@
 *.txt   text
 *.cbp   text
 *.sh    text eol=lf
+*.mut   text eol=lf

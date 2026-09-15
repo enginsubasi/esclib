@@ -1,0 +1,26 @@
+# what: The bridge reverses with the duty still up, putting the supply and the back emf in series through the winding.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE drv/dcmotor.c
+TEST DcMotor_Test
+--- FIND
+    if ( reversing == TRUE )
+    {
+        driver->duty = 0.0f;
+        driver->pwm ( 0.0f );
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+--- REPLACE
+    if ( reversing == TRUE )
+    {
+        /* Intentionally blank */
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+--- END

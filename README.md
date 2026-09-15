@@ -182,8 +182,15 @@ project. The two scripts in the tree build only the tests and ship nothing.
 
 ```bash
 sh run_tests.sh              # build and run every test with a host compiler
-sh scripts/check.sh          # warnings, header coexistence, symbol coverage
+sh run_tests.sh Ramp_Test    # or just one
+sh scripts/check.sh          # warnings, headers, symbol coverage, static storage
+sh scripts/mutate.sh         # every known defect still fails the test that pins it
+sh scripts/size.sh           # code size per module
 ```
+
+The whole library is 17 kB of code on a Cortex-M0 at `-Os`, and **zero bytes of
+RAM** — the caller owns every buffer, which `scripts/check.sh` enforces rather
+than assumes.
 
 `run_tests.sh` derives each test's module dependencies from its own `#include`
 lines, so neither script needs an edit when a module is added.

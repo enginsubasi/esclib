@@ -1,0 +1,18 @@
+# what: firShifti32 truncates toward minus infinity instead of rounding.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/fir.c
+TEST FirGoertzel_Test
+--- FIND
+    if ( value >= 0 )
+    {
+        retVal = ( value + FIR_HALF ) >> FIR_Q;
+    }
+    else
+    {
+        retVal = - ( ( -value + FIR_HALF ) >> FIR_Q );
+    }
+--- REPLACE
+    retVal = value >> FIR_Q;
+--- END

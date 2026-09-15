@@ -5,7 +5,7 @@
 # Run from the repository root:
 #     sh scripts/check.sh
 #
-# Three things are checked, and all three are rules the tree already holds:
+# Four things are checked, and all four are rules the tree already holds:
 #
 #   1. Warnings.   Every .c under src/ and drv/ compiles clean under
 #                  -Wall -Wextra. A new warning is a regression here, not
@@ -15,6 +15,9 @@
 #                  duplicate include guard or a clashing typedef.
 #   3. Symbols.    Every exported symbol is referenced by at least one test,
 #                  and every exported symbol carries its module prefix.
+#   4. Storage.    No module holds static state of its own. The caller owns
+#                  every buffer, so a module's .data and .bss must both be
+#                  empty — a writable static is the rule being broken.
 #
 # Like run_tests.sh this needs no maintenance: the file lists come from the
 # tree and the include directories come from the layout, so adding a module
@@ -24,6 +27,7 @@
 #     CC   compiler to use, default arm-none-eabi-gcc, falling back to gcc.
 #          Any compiler works; the sources are never executed by this script.
 #     NM   symbol lister, default derived from CC.
+#     SIZE section sizer, default derived from CC.
 #
 # Exit status is the number of checks that failed.
 
@@ -46,12 +50,17 @@ if [ -z "$NM" ]; then
     command -v "$NM" >/dev/null 2>&1 || NM=nm
 fi
 
+if [ -z "$SIZE" ]; then
+    SIZE=$(printf '%s' "$CC" | sed 's/gcc$/size/')
+    command -v "$SIZE" >/dev/null 2>&1 || SIZE=size
+fi
+
 outdir=$(mktemp -d 2>/dev/null || echo /tmp/esclib_check.$$)
 mkdir -p "$outdir/objs"
 
 failed=0
 
-echo "using CC=$CC NM=$NM"
+echo "using CC=$CC NM=$NM SIZE=$SIZE"
 echo
 
 # ---------------------------------------------------------------------------
@@ -184,6 +193,46 @@ if [ "$uncalled" -eq 0 ] && [ "$unprefixed" -eq 0 ]; then
     echo "OK  $symcount exported symbols, all tested and all prefixed"
 else
     echo "FAIL  $uncalled untested, $unprefixed unprefixed, of $symcount"
+    failed=$((failed + 1))
+fi
+echo
+
+# ---------------------------------------------------------------------------
+# 4. Static storage
+# ---------------------------------------------------------------------------
+echo "== storage =="
+
+# "The caller owns all storage. The module never allocates and never holds
+# static state of its own." That rule is stated in rules.md and until now
+# nothing checked it. A writable static shows up as .data when it has an
+# initializer and .bss when it does not, so both being empty is the whole
+# test. A read only table is .rodata and counts as code, which is why crc16
+# may carry one and still pass here.
+statefull=0
+objcount=0
+
+for o in "$outdir"/objs/*.o; do
+    [ -f "$o" ] || continue
+
+    objcount=$((objcount + 1))
+
+    line=$($SIZE "$o" 2>/dev/null | tail -1)
+    dataSize=$(printf '%s' "$line" | awk '{print $2}')
+    bssSize=$(printf '%s' "$line" | awk '{print $3}')
+
+    [ -n "$dataSize" ] || dataSize=0
+    [ -n "$bssSize" ] || bssSize=0
+
+    if [ "$dataSize" -ne 0 ] || [ "$bssSize" -ne 0 ]; then
+        echo "STATIC STATE  $(basename "$o" .o): data $dataSize, bss $bssSize"
+        statefull=$((statefull + 1))
+    fi
+done
+
+if [ "$statefull" -eq 0 ]; then
+    echo "OK  $objcount modules, none holds static state"
+else
+    echo "FAIL  $statefull of $objcount modules hold static state"
     failed=$((failed + 1))
 fi
 echo

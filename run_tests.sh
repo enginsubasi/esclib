@@ -5,6 +5,10 @@
 # Run from the repository root:
 #     sh run_tests.sh
 #
+# One test only, which is what scripts/mutate.sh uses and what you want
+# mid-change:
+#     sh run_tests.sh FirGoertzel_Test
+#
 # This is the one exception to the rule that esclib has no build system. It
 # builds nothing that ships: the library is still consumed by copying module
 # source pairs into a target project, and nothing here produces an artifact.
@@ -27,6 +31,9 @@ CC=${CC:-gcc}
 CFLAGS=${CFLAGS:-}
 LINKONLY=${LINKONLY:-0}
 
+# Optional single test name. Empty means every test.
+ONLY=${1:-}
+
 if [ ! -d inc ] || [ ! -d test ]; then
     echo "run from the repository root (no inc/ or test/ here)" >&2
     exit 126
@@ -43,6 +50,11 @@ skipped=""
 
 for d in test/*/; do
     name=$(basename "$d")
+
+    if [ -n "$ONLY" ] && [ "$name" != "$ONLY" ]; then
+        continue
+    fi
+
     main=$(ls "$d"*.c 2>/dev/null | head -1)
 
     if [ -z "$main" ]; then
@@ -147,6 +159,11 @@ done
 # and eventually gets committed by accident.
 if [ -f output.txt ]; then
     rm -f output.txt
+fi
+
+if [ -n "$ONLY" ] && [ "$built" -eq 0 ] && [ "$buildfail" -eq 0 ]; then
+    echo "no test named $ONLY" >&2
+    exit 126
 fi
 
 echo

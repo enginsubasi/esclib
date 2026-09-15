@@ -98,7 +98,11 @@ Every stateful module has the same shape, and a new one must match it.
 - One `typedef struct { ... } <prefix>_t;` holding all state. Always a typedef —
   the caller never writes the `struct` keyword.
 - **The caller owns all storage.** Buffers are passed into `Init` as pointers.
-  The module never allocates and never holds static state of its own.
+  The module never allocates and never holds static state of its own. That is
+  checkable rather than aspirational: a writable static lands in `.data` or
+  `.bss`, so both must be empty in every module object, and `scripts/check.sh`
+  fails the tree when one is not. A read-only table is `.rodata` and is fine —
+  it is `crc16`'s lookup table, not state.
 - The first parameter of every function is `<prefix>_t* driver`.
 - Names are the module prefix plus a verb: `xxxInit`, then
   `xxxUpdate` / `xxxIteration` / `xxxControl` / `xxxReceive`, then
@@ -183,6 +187,12 @@ modules of their own.
 - When a bug is fixed, the test gets a check aimed at that specific bug, so the
   regression fails rather than passing quietly. `CLAUDE.md` keeps the table of
   which test pins which bug.
+- **And the pin gets a mutation.** A file under `scripts/mutations/`
+  reintroduces the defect and names the test that has to fail because of it.
+  Without one, a pin that stops biting — an assertion softened while tidying a
+  test — is exactly the silent failure the pin existed to prevent, and nothing
+  would notice. `sh scripts/mutate.sh` applies each in turn and reports any
+  that survived.
 
 ## 10. Verification before commit
 
@@ -191,8 +201,15 @@ warnings, no exceptions** — a new warning is a regression, not background nois
 
 ```bash
 sh run_tests.sh              # build and run every test
-sh scripts/check.sh          # warnings, header coexistence, symbol coverage
+sh run_tests.sh Ramp_Test    # or just one, mid-change
+sh scripts/check.sh          # warnings, headers, symbol coverage, static storage
+sh scripts/mutate.sh         # every known defect still fails its test
+sh scripts/size.sh           # code size per module, for reading rather than gating
 ```
+
+The first four are gates and CI runs all of them on every push. `size.sh` is
+not a gate: it prints what each module costs, which is how a cost argument in a
+file banner gets checked and how a module that quietly doubled gets noticed.
 
 Commit messages are terse and prefixed: `+` for an addition, `*` for a fix or an
 update. `+ bininpGetRisingValue function`, `* bugfix`.

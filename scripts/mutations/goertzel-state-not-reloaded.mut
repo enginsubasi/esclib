@@ -1,0 +1,15 @@
+# what: The recurrence state survives the end of a block, so every block after the first is a mixture of itself and everything before it.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/goertzel.c
+TEST FirGoertzel_Test
+--- FIND
+        driver->s1 = 0.0f;
+        driver->s2 = 0.0f;
+        driver->count = 0;
+        driver->ready = TRUE;
+--- REPLACE
+        driver->count = 0;
+        driver->ready = TRUE;
+--- END

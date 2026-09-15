@@ -1,0 +1,18 @@
+# what: mathLerpi32 truncates instead of rounding to nearest, so a lerp walked across a range in steps drifts steadily behind.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/basicmath.c
+TEST Math_Test
+--- FIND
+    if ( num >= 0 )
+    {
+        num += ( MATH_LERP_ONE / 2 );
+    }
+    else
+    {
+        num -= ( MATH_LERP_ONE / 2 );
+    }
+--- REPLACE
+    /* Intentionally blank */
+--- END

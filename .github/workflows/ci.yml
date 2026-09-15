@@ -35,6 +35,16 @@ jobs:
       - name: Tests
         run: sh run_tests.sh
 
+      # Reintroduce each known defect and require the test that pins it to
+      # fail. A mutation that survives is a check that has stopped biting.
+      - name: Mutations
+        run: sh scripts/mutate.sh
+
+      # Code size per module, for the log rather than as a gate. This is how a
+      # module that quietly doubled gets noticed.
+      - name: Size
+        run: sh scripts/size.sh
+
       # Every source set links for a bare metal target without being run.
       - name: Cross link
         run: CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
@@ -47,3 +57,5 @@ jobs:
           dash -n run_tests.sh
           dash -n scripts/check.sh
           dash -n scripts/doc.sh
+          dash -n scripts/mutate.sh
+          dash -n scripts/size.sh

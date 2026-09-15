@@ -147,9 +147,27 @@ Two decisions are recorded rather than hidden. The coefficient is taken at the f
 
 `FirGoertzel_Test` is new, 89 checks, every expected value from an independent model run before the C was. Four mutations were confirmed: walking the history forward, truncating the fixed point shift, dropping the cross term from the squared magnitude, and not reloading the state at the block end.
 
+## 13. The tests were never tested — DONE 15/09/2026
+
+Six modules into this round of work, the process had a hole worth more than another module.
+
+The testing rule here is that a fixed bug earns a check aimed at it, so the regression fails rather than passing quietly, and `CLAUDE.md` keeps a table of which test pins which bug. **Nothing checked that those pins still bite.** Soften an assertion while tidying a test and the pin dies silently — which is exactly the failure the pin was written to prevent. Eight mutations were run by hand across this session's work and all eight were thrown away afterwards.
+
+`scripts/mutate.sh` keeps them. One file per defect under `scripts/mutations/`: the literal block to replace, its replacement, and the test that must fail. The runner applies each, runs only that test through `run_tests.sh` (which grew a single-test argument for this), reverts, and reports anything that survived. A mutation whose block no longer matches reports STALE rather than passing quietly, and one that does not compile reports BROKEN, because a mutant that cannot build proves nothing.
+
+Three implementation notes worth keeping. The replacement is a **literal substring match**, not a regex and not a patch: a regex would need every metacharacter in a block of C escaped, and a patch goes stale the moment anything above it moves. Carriage returns are stripped on both sides, because on Windows the `.c` files check out CRLF and the mutation blocks LF, and a block differing only in line endings would look stale; the original is restored from a byte-for-byte copy, so nothing is reformatted. And `awk` forbids a space between a user-defined function name and its paren — the one place in this tree that cannot follow the house style.
+
+Ten mutations are recorded, all ten caught: `fir`'s history direction and shift, `goertzel`'s cross term and block reload, `biquad`'s shift, `dcMotor`'s reversal interlock and its nan clamp, `mathLerpi32`'s rounding, `pack`'s 24-bit sign extension, and `crc8Dallas` being handed the SMBus polynomial. The runner was itself checked with a deliberate no-op mutation, which it correctly reported as SURVIVED — otherwise "ten caught" would have been unearned.
+
+**Two smaller things came with it.** `scripts/check.sh` gained a fourth check: every module object's `.data` and `.bss` must be empty. "The caller owns all storage and the module holds no static state of its own" was stated in `rules.md` and checked nowhere; it turns out to be true across all 38 modules and is now enforced. It was verified by smuggling a writable static into `slew.c`, which it caught.
+
+And `scripts/size.sh` reports code size per module. The documentation here argues about cost constantly — that a 256-byte table is the wrong trade for an 8-bit CRC, that a cosine at boot links the whole software float library, that `maf` is O(1) where `fir` is O(N) — and none of it had ever been measured. It has now: the whole library is **17250 bytes of code on a Cortex-M0 at `-Os` and zero bytes of RAM**, `crc8` is 104 bytes against tabled `crc16`'s 616, and `biquad` is the largest module at 1628.
+
+CI runs the mutations as a gate and prints the size table into the log. The CI itself was confirmed green for the first time in this pass — four runs, including the cross link, so the apt `gcc-arm-none-eabi` does carry `--specs=nosys.specs` after all.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, and the mutation harness that keeps the tests honest. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 
