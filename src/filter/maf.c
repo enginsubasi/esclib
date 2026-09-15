@@ -3,7 +3,7 @@
   *
   * @file      maf.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   2.4.0
+  * @version   2.4.1
   * @date      26/04/2020
   *
   * @brief     Moving average filter.
@@ -13,6 +13,10 @@
   *
   * @par History
   * 26/04/2020 Created @n
+  * 15/09/2026 The conversions of length to float are written out, @n
+  *            so -Wconversion can be a gate. A uint32_t past 2^24 @n
+  *            is not exact in a binary32, which bounds the length @n
+  *            this filter divides by correctly at sixteen million. @n
   * 07/06/2020 Naming style changed @n
   * 24/08/2020 Data type changed from double to float. @n
   * 29/07/2026 The u32 variants declared by maf.h are implemented. @n
@@ -65,7 +69,7 @@ uint8_t mafInit ( maf_t* driver, float* buffer, uint32_t length, float outputIni
         driver->buffer = buffer;
         driver->length = length;
         driver->output = outputInit;
-        driver->sumOfArray = driver->length * driver->output;
+        driver->sumOfArray = ( float ) driver->length * driver->output;
         driver->index = 0;
 
         for ( i = 0; i < length; ++i )
@@ -105,7 +109,7 @@ void mafIteration ( maf_t* driver, float newData )
     driver->sumOfArray += driver->buffer[ driver->index ];
 
     // Calculate output.
-    driver->output = ( driver->sumOfArray / driver->length );
+    driver->output = ( driver->sumOfArray / ( float ) driver->length );
 
     // Index control.
     ++driver->index;

@@ -3,7 +3,7 @@
   *
   * @file      statistic.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.2.0
+  * @version   0.2.1
   * @date      03/01/2020
   *
   * @brief     Statistic function library file.
@@ -13,6 +13,8 @@
   *
   * @par History
   * 03/01/2020 Created. @n
+  * 15/09/2026 Every conversion of length to float is written out, @n
+  *            so -Wconversion can be a gate. @n
   * 03/01/2020 Standard deviation added. @n
   * 29/07/2026 Divide by zero guards added. The pending TODO notes @n
   *            about a zero length array are resolved. @n
@@ -69,7 +71,7 @@ float statVariance ( const float* const array, uint32_t length )
         }
 
         // Average value of the array.
-        average = sum / length;
+        average = sum / ( float ) length;
 
         for ( i = 0; i < length; ++i )
         {
@@ -77,7 +79,7 @@ float statVariance ( const float* const array, uint32_t length )
             retVal += ( difference * difference );
         }
 
-        retVal /= length;
+        retVal /= ( float ) length;
     }
     else
     {
@@ -191,15 +193,15 @@ float statCovariance ( const float* const array1, const float* const array2, uin
         }
 
         // Average values of the arrays.
-        average1 = sum1 / length;
-        average2 = sum2 / length;
+        average1 = sum1 / ( float ) length;
+        average2 = sum2 / ( float ) length;
 
         for ( i = 0; i < length; ++i )
         {
             retVal += ( ( array1[ i ] - average1 ) * ( array2[ i ] - average2 ) );
         }
 
-        retVal /= length;
+        retVal /= ( float ) length;
     }
     else
     {

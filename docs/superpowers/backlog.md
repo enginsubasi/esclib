@@ -229,9 +229,21 @@ Two things were written down rather than papered over. `comsec` **provides no co
 
 Four tests, 77 + 80 + 88 + 91 checks, and twenty-five mutations all caught. With these in, **the Known gaps section of CLAUDE.md is empty for the first time** and the rule in `rules.md` — a header with no source is a defect — is unconditional.
 
+## 18. What the fixed point variants actually cost — DONE 15/09/2026
+
+Three measurements, and two of them corrected something the documentation was overstating.
+
+**The strict warning profile is cheap.** The tree carried nine warnings under `-Wconversion -Wsign-conversion -Wshadow -Wdouble-promotion -Wcast-qual`, across forty-two modules. Eight were one pattern — an array length converted to `float` for a divide, in `maf`, `basicmath` and `statistic` — correct in every case, because a `uint32_t` past 2^24 is not a reachable array length, and implicit in every case. The ninth was a narrowing after an xor in `crc16`. All nine are written out now and `STRICT=1 sh scripts/check.sh` is a gate that CI runs, which is only defensible because the cost of adopting it was nine casts rather than a project.
+
+**The fixed point variants are not free, and nothing said so.** Every `i32` and Q16 variant in this tree exists to avoid the software float routines, and every one of them pulls in 64-bit integer helpers in their place. Measured on a Cortex-M0: `q16`, `interp` and `biquad` each link `__aeabi_ldivmod` and `__aeabi_lmul`; `pid`, `ramp`, `alphabeta` and `fir` link `__aeabi_lmul`. That part has no 64-bit multiply and no divide instruction at all, so a Q16 divide is a runtime call of the same order as the float divide it replaced. The multiplies, the roots and the conversions still win comfortably; the divides win mostly on code size. This is not a defect — an `int64_t` intermediate is what keeps those variants correct and the reasoning for it is recorded all over the tree — but "for parts with no FPU" is half a claim without the other half, and a library that argues about cost as often as this one does should not have left it unmeasured.
+
+The same run found the matching omission in `checksum`, whose own notes compare its five functions without mentioning that `Fletcher16` and `Adler32` reduce modulo 255 and 65521 — a `__aeabi_uidivmod` per byte on a part with no divider, where `xor` and the two sums need nothing. It still does not change which to reach for.
+
+**And nothing pulls in double precision.** Several banners claim the library is single precision throughout and nothing had ever checked it. `scripts/runtime.sh` reports the helpers per module and fails on a `__aeabi_d*`, which is the one rule in that report rather than an observation.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs. Nothing is outstanding, and for the first time nothing is reserved either.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, with a measurement pass over what the fixed point variants cost. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

@@ -9,7 +9,8 @@
 #
 #   1. Warnings.   Every .c under src/ and drv/ compiles clean under
 #                  -Wall -Wextra. A new warning is a regression here, not
-#                  background noise.
+#                  background noise. STRICT=1 adds -Wconversion and its
+#                  neighbours, which the tree is also clean under.
 #   2. Headers.    Every header is independently includable and all of them
 #                  coexist in one translation unit. This is what catches a
 #                  duplicate include guard or a clashing typedef.
@@ -24,8 +25,14 @@
 # requires no edit here.
 #
 # Environment:
-#     CC   compiler to use, default arm-none-eabi-gcc, falling back to gcc.
-#          Any compiler works; the sources are never executed by this script.
+#     CC     compiler to use, default arm-none-eabi-gcc, falling back to gcc.
+#            Any compiler works; the sources are never executed by this script.
+#     STRICT set to 1 to add -Wconversion -Wsign-conversion -Wshadow
+#            -Wdouble-promotion -Wcast-qual. Every one of those was clean
+#            across the tree on 15/09/2026, which is why it is a gate rather
+#            than an aspiration. The eight warnings it found were all one
+#            pattern — an array length converted to float for a divide — and
+#            they are written out now rather than left implicit.
 #     NM   symbol lister, default derived from CC.
 #     SIZE section sizer, default derived from CC.
 #
@@ -55,12 +62,21 @@ if [ -z "$SIZE" ]; then
     command -v "$SIZE" >/dev/null 2>&1 || SIZE=size
 fi
 
+STRICT=${STRICT:-0}
+
+if [ "$STRICT" = "1" ]; then
+    WARNFLAGS="-Wall -Wextra -Wconversion -Wsign-conversion -Wshadow -Wdouble-promotion -Wcast-qual"
+else
+    WARNFLAGS="-Wall -Wextra"
+fi
+
 outdir=$(mktemp -d 2>/dev/null || echo /tmp/esclib_check.$$)
 mkdir -p "$outdir/objs"
 
 failed=0
 
 echo "using CC=$CC NM=$NM SIZE=$SIZE"
+echo "warning flags: $WARNFLAGS"
 echo
 
 # ---------------------------------------------------------------------------
@@ -80,7 +96,7 @@ for f in src/*/*.c drv/*.c; do
 
     obj="$outdir/objs/$(basename "$f" .c).o"
 
-    if $CC -c -Wall -Wextra -I"$inc" -Idrv "$f" -o "$obj" 2>"$outdir/cc.err"; then
+    if $CC -c $WARNFLAGS -I"$inc" -Idrv "$f" -o "$obj" 2>"$outdir/cc.err"; then
         compiled=$((compiled + 1))
     else
         echo "COMPILE FAIL  $f"
@@ -124,7 +140,7 @@ for h in inc/*/*.h drv/*.h; do
 done
 echo "int main ( void ) { return ( 0 ); }" >> "$outdir/allhdr.c"
 
-if $CC -c -Wall -Wextra $idirs "$outdir/allhdr.c" -o "$outdir/allhdr.o" 2>"$outdir/hdr.err" \
+if $CC -c $WARNFLAGS $idirs "$outdir/allhdr.c" -o "$outdir/allhdr.o" 2>"$outdir/hdr.err" \
    && [ ! -s "$outdir/hdr.err" ]; then
     echo "OK  $hcount headers coexist in one translation unit"
 else

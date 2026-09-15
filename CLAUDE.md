@@ -40,6 +40,8 @@ Four modules needed more than a width, because their arithmetic is not integer a
 
 Q16 also has a floor, and `biquad` is where it bites. The feed forward coefficients of a low pass fall as the square of the corner ratio, so a cutoff at a thousandth of the sample rate puts `b0` at a single LSB and the dc gain fifty percent high. Measured, the quantized dc gain holds to better than a tenth of a percent down to a corner ratio of about one in five hundred and is unusable by one in a thousand; below that the float variant is the right tool. A notch is unaffected — its feed forward coefficients stay near unity at any q.
 
+**And they are not free, which the "for parts with no FPU" claim on its own does not say.** A fixed point variant avoids the software float routines and pulls in 64-bit integer helpers in their place: on a Cortex-M0, `q16`, `interp` and `biquad` each link `__aeabi_ldivmod` and `__aeabi_lmul`, and `pid`, `ramp`, `alphabeta` and `fir` link `__aeabi_lmul`. That part has no 64-bit multiply and no divide instruction at all, so a Q16 divide is a runtime call of the same order as the float one it replaced; the multiply is much cheaper and everything else is shifts. So the honest summary is that the multiplies, the roots and the conversions win comfortably while the *divides* win mostly on code size. The same measurement turned up something the `checksum` comparison had also left out: `Fletcher16` and `Adler32` reduce modulo 255 and 65521, which on a part with no divider is a `__aeabi_uidivmod` per byte, where `xor` and the two sums need nothing. None of this changes which one to reach for — an `int64_t` intermediate is what keeps these variants correct, and a sum blind to reordering is the wrong answer however cheap — but it belongs next to the claim. `sh scripts/runtime.sh` prints it, and fails if anything ever pulls in a **double** precision helper, which is the one rule in that report rather than an observation.
+
 Two things follow from that scale and are worth knowing before reaching for these. **They carry no `ts`.** The float `pid` and `ramp` take a sample period at `Init` so their gains and limits read in units per second; the Q16 ones express the same limits per sample and let the caller fold the period into the constants once, rather than carrying a float multiply into every call — which is the arithmetic the variant exists to avoid. And **`ramp`'s braking envelope survives the change intact**: `sqrtf ( 2 * a * remaining )` becomes an integer square root over a Q32 product, and the square root of a Q32 value is a Q16 one, so the scale falls out of the root for free and the brake point is the one the float path computes. That product is also the variant's range limit, formed in `int64_t`, and `ramp.c` records where it overflows.
 
 `fir` and `maf` are the same filter and the difference between them is the whole point. `maf` is a rectangular window — every tap equal — kept as a running sum, so it costs one add and one subtract a sample whatever its length. `fir` lets the caller choose the taps and pays a multiply per tap. So `maf` is not a special case waiting to be replaced: it is the right filter whenever a rectangular window will do and stays O(1) where `fir` is O(N). What the taps buy is a stopband you can place — a rectangular window's first sidelobe is only 13 dB down and cannot be moved — and, for a symmetric tap set, **exactly linear phase**, which no IIR can give at all. That is the reason to take `fir` over `biquad` despite the far higher cost per sample: when the measurement is the *shape* of a waveform rather than its level, a filter that delays every frequency by a different time has already destroyed the answer. `firInit` fills the history with `inputInit` the way `mafInit` does, and the settled output it reports is `inputInit` times the sum of the taps — which is `inputInit` for a unity-gain design and correctly **zero** for a differentiator. There is no designer: a windowed sinc or a Parks-McClellan fit belongs on a host, which is also why the taps are `const` and expected to live in flash. The `i32` variant is Q16 on the taps only, plain samples in and out, `int64_t` accumulator, and its single shift rounds for `biquad`'s reason.
@@ -83,10 +85,12 @@ An `output.txt` difference is reported and never counted as a failure, because r
 Two more scripts sit under `scripts/`, added 15/09/2026, and follow the same no-maintenance rule — their file lists come from the tree, so a new module needs no edit to either:
 
 ```bash
-sh scripts/check.sh    # -Wall -Wextra, header coexistence, symbol coverage, static storage
-sh scripts/mutate.sh   # every known defect still fails the test that pins it
-sh scripts/size.sh     # code size per module, for reading rather than gating
-sh scripts/doc.sh      # the Doxygen reference into doc/, which is .gitignore'd
+sh scripts/check.sh            # warnings, header coexistence, symbol coverage, static storage
+STRICT=1 sh scripts/check.sh   # the same, under -Wconversion and its neighbours
+sh scripts/mutate.sh           # every known defect still fails the test that pins it
+sh scripts/size.sh             # code size per module
+sh scripts/runtime.sh          # which compiler runtime helpers each module needs
+sh scripts/doc.sh              # the Doxygen reference into doc/, which is .gitignore'd
 ```
 
 `run_tests.sh` also takes a single test name, which is what `mutate.sh` uses and
@@ -98,7 +102,7 @@ sh run_tests.sh FirGoertzel_Test
 
 `scripts/check.sh` is the whole Verification section below in one command, and its exit status is the number of checks that failed. It defaults to `arm-none-eabi-gcc` and falls back to `gcc`; it never runs what it builds, so either works.
 
-`.github/workflows/ci.yml` runs `scripts/check.sh`, `run_tests.sh`, `scripts/mutate.sh`, `scripts/size.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
+`.github/workflows/ci.yml` runs `scripts/check.sh` in both profiles, `run_tests.sh`, `scripts/mutate.sh`, `scripts/size.sh`, `scripts/runtime.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
 
 A single test still builds directly, and that is often what you want mid-change:
 
@@ -243,6 +247,7 @@ That runs the three checks this section used to spell out by hand, and exits wit
 - **Warnings.** Every `.c` under `src/` and `drv/` under `-Wall -Wextra`, each with its own `inc/<module>` on the include path.
 - **Headers.** Every header `#include`d into one translation unit, which is what catches a duplicate include guard or a clashing typedef. Each must also be independently includable on its own.
 - **Symbols.** Every `' T '` symbol from the objects is grepped for in `test/*/*.c`, and checked against the module prefixes derived from the source file names — so an untested export and an unprefixed one both fail here.
+- **Strict.** `STRICT=1` adds `-Wconversion -Wsign-conversion -Wshadow -Wdouble-promotion -Wcast-qual`. The tree was made clean under all of them on 15/09/2026, so this is a gate rather than an aspiration. The eight warnings it found were one pattern — an array length converted to `float` for a divide, in `maf`, `basicmath` and `statistic` — correct in every case, since a length past 2^24 is not reachable, and implicit in every case. They are written out now.
 - **Storage.** Every module object's `.data` and `.bss` must both be empty. The caller owns all storage and a module holds no static state of its own, which was stated in `rules.md` and checked nowhere until 15/09/2026; a writable static is the rule being broken and lands in one of those two sections. A read-only table is `.rodata` and counts as code, which is why `crc16` carries one and still passes.
 
 The script keeps its objects, so `arm-none-eabi-nm` over the directory it names still answers a one-off question about the symbol table.

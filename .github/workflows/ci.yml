@@ -30,6 +30,11 @@ jobs:
       - name: Static checks
         run: sh scripts/check.sh
 
+      # The same checks under -Wconversion and its neighbours. The tree has
+      # been clean under these since 15/09/2026, so a new one is a regression.
+      - name: Static checks, strict
+        run: STRICT=1 sh scripts/check.sh
+
       # Every test built and run with the host compiler. A warning from a test
       # file is reported as loudly as a failure.
       - name: Tests
@@ -45,6 +50,12 @@ jobs:
       - name: Size
         run: sh scripts/size.sh
 
+      # Which compiler runtime helpers each module needs. Mostly a report, but
+      # it fails if anything pulls in double precision, which nothing here
+      # should.
+      - name: Runtime helpers
+        run: sh scripts/runtime.sh
+
       # Every source set links for a bare metal target without being run.
       - name: Cross link
         run: CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
@@ -59,3 +70,4 @@ jobs:
           dash -n scripts/doc.sh
           dash -n scripts/mutate.sh
           dash -n scripts/size.sh
+          dash -n scripts/runtime.sh

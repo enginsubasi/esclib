@@ -3,7 +3,7 @@
   *
   * @file      basicmath.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.3.0
+  * @version   0.3.1
   * @date      03/06/2020
   *
   * @brief     Basic mathematics function library file.
@@ -38,6 +38,8 @@
   *            their typed variants. Everything here operated on @n
   *            arrays until now, so the three lines an embedded @n
   *            project rewrites most often had to be written by hand. @n
+  * 15/09/2026 The conversion of length to float in the mean is @n
+  *            written out, so -Wconversion can be a gate. @n
   * 15/09/2026 mathLerpi32 added, the fixed point half of the last @n
   *            scalar that had only a float width. Its t is Q16; @n
   *            from and to stay in plain units. @n
@@ -417,7 +419,7 @@ float mathCalculateMean ( const float* const array, uint32_t length )
             sum += array[ i ];
         }
 
-        average = sum / length;
+        average = sum / ( float ) length;
     }
     else
     {

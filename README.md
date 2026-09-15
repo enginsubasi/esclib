@@ -230,8 +230,10 @@ project. The two scripts in the tree build only the tests and ship nothing.
 sh run_tests.sh              # build and run every test with a host compiler
 sh run_tests.sh Ramp_Test    # or just one
 sh scripts/check.sh          # warnings, headers, symbol coverage, static storage
+STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails the test that pins it
 sh scripts/size.sh           # code size per module
+sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 ```
 
 The whole library is 17 kB of code on a Cortex-M0 at `-Os`, and **zero bytes of

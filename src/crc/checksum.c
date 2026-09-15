@@ -28,6 +28,17 @@
   ******************************************************************************
   */
 
+/*
+ * A note on what these cost, which the comparison above does not mention.
+ * Fletcher16 reduces modulo 255 and Adler32 modulo 65521, and a Cortex-M0 has
+ * no divide instruction, so each of those is a call to __aeabi_uidivmod per
+ * byte. checksumXor and the two sums need nothing. That does not change which
+ * one to reach for — a sum blind to reordering is the wrong answer however
+ * cheap it is — but on a part without a divider, Fletcher16 over a long
+ * payload is not the near-free upgrade it looks like. scripts/runtime.sh
+ * reports it.
+ */
+
 #include "checksum.h"
 
 // Largest prime below 65536, which is what makes Adler32's modulus work.

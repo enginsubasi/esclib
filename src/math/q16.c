@@ -46,6 +46,20 @@
   *
   *                ( int32_t ) ( gain * 65536.0f + ( gain >= 0 ? 0.5f : -0.5f ) )
   *
+  * @note      **What this costs instead.** The point of Q16 is to avoid the
+  *            software float routines, and it does — but not for free. On a
+  *            Cortex-M0 this module links __aeabi_lmul and __aeabi_ldivmod,
+  *            because the part has neither a 64-bit multiply nor any divide
+  *            instruction at all. A Q16 divide is therefore a runtime call of
+  *            the same order as the float one it replaced. The multiply is
+  *            much cheaper, and everything else here is shifts and compares.
+  *            So the honest summary is that q16Mul, q16Sqrt and the two
+  *            conversions win comfortably, while q16Div wins mostly on code
+  *            size rather than on time. scripts/runtime.sh prints the helpers
+  *            every module needs; the same is true of interp, biquad and the
+  *            other fixed point variants, which was measured rather than
+  *            assumed.
+  *
   * @note      There is no q16Clamp and no q16Abs. A Q16 value is an int32_t,
   *            so mathClampi32 and mathAbsolutei32 already do exactly the right
   *            thing to one, and a renamed copy of either would be symmetry for

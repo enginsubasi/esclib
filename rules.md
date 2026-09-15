@@ -153,6 +153,13 @@ modules of their own.
   it. Either way the file says which it does and why.
 - A fixed-point variant states its Q format in the file banner and in the
   `@brief` of every function that takes or returns a scaled value.
+- **And it states what it costs instead.** A variant written to avoid the
+  software float routines pulls in 64-bit integer helpers in their place —
+  `__aeabi_lmul` for a Q16 multiply, `__aeabi_ldivmod` for a Q16 divide, neither
+  of which a Cortex-M0 has an instruction for. That is the right trade, because
+  an `int64_t` intermediate is what keeps the variant correct, but the claim
+  "for parts with no FPU" is incomplete without the other half.
+  `sh scripts/runtime.sh` measures it.
 - A width exists because a caller needs it, not for symmetry. `mathMap` has no
   `u32` variant because a `u32` map cannot express the descending input range
   that would make it worth having.
@@ -212,13 +219,22 @@ warnings, no exceptions** — a new warning is a regression, not background nois
 sh run_tests.sh              # build and run every test
 sh run_tests.sh Ramp_Test    # or just one, mid-change
 sh scripts/check.sh          # warnings, headers, symbol coverage, static storage
+STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails its test
-sh scripts/size.sh           # code size per module, for reading rather than gating
+sh scripts/size.sh           # code size per module
+sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 ```
 
-The first four are gates and CI runs all of them on every push. `size.sh` is
-not a gate: it prints what each module costs, which is how a cost argument in a
-file banner gets checked and how a module that quietly doubled gets noticed.
+The first five are gates and CI runs all of them on every push. **The strict
+profile is a gate, not an aspiration**: the tree was clean under
+`-Wconversion -Wsign-conversion -Wshadow -Wdouble-promotion -Wcast-qual` on
+15/09/2026, the eight warnings it had found were all one pattern — an array
+length converted to float for a divide — and they are written out now.
+
+`size.sh` is a report. `runtime.sh` is mostly one too, with a single rule in
+it: nothing here may pull in a double precision helper, because this library is
+single precision throughout and a `__aeabi_d*` means a `double` slipped into an
+expression.
 
 Commit messages are terse and prefixed: `+` for an addition, `*` for a fix or an
 update. `+ bininpGetRisingValue function`, `* bugfix`.

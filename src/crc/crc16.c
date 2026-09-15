@@ -3,7 +3,7 @@
   *
   * @file      crc16.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.0.2
+  * @version   1.0.3
   * @date      25/02/2020
   *
   * @brief     CRC16 Calculation functions.
@@ -19,6 +19,8 @@
   * 01/08/2026 Parameters that are only read are declared const, so a @n
   *            caller can pass data it holds in flash without casting @n
   *            the qualifier away. @n
+  * 15/09/2026 The narrowing after the xor is written out. It was @n
+  *            correct and implicit; -Wconversion is a gate now. @n
   *
   ******************************************************************************
   */
@@ -75,7 +77,7 @@ uint16_t crc16 ( const uint8_t* const array, uint32_t size )
 
     for ( i = 0; i < size; ++i )
     {
-        tempVal = array[ i ] ^ crc;
+        tempVal = ( uint8_t ) ( array[ i ] ^ crc );
 
         crc >>= 8;
         crc ^= CRCTable[ tempVal ];
