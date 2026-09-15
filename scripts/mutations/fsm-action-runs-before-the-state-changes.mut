@@ -1,0 +1,96 @@
+# what: The action is called before the state is written, so an action that reads the machine sees where it came from and one that dispatches loops back into the transition it is already inside.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/fsm/fsm.c
+TEST Fsm_Test
+--- FIND
+uint8_t fsmDispatch ( fsm_t* driver, uint8_t event )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    void ( *action )( void ) = NULL;
+
+    for ( i = 0; i < driver->length; ++i )
+    {
+        if ( ( driver->table[ i ].from == driver->state ) &&
+                ( driver->table[ i ].event == event ) )
+        {
+            driver->state = driver->table[ i ].to;
+
+            action = driver->table[ i ].action;
+
+            retVal = TRUE;
+
+            break;
+        }
+    }
+
+    if ( retVal == TRUE )
+    {
+        if ( action != NULL )
+        {
+            action ( );
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        ++driver->rejectCount;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t fsmDispatch ( fsm_t* driver, uint8_t event )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    void ( *action )( void ) = NULL;
+
+    for ( i = 0; i < driver->length; ++i )
+    {
+        if ( ( driver->table[ i ].from == driver->state ) &&
+                ( driver->table[ i ].event == event ) )
+        {
+            if ( driver->table[ i ].action != NULL )
+            {
+                driver->table[ i ].action ( );
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            driver->state = driver->table[ i ].to;
+
+            action = NULL;
+
+            retVal = TRUE;
+
+            break;
+        }
+    }
+
+    if ( retVal == TRUE )
+    {
+        if ( action != NULL )
+        {
+            action ( );
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        ++driver->rejectCount;
+    }
+
+    return ( retVal );
+}
+--- END

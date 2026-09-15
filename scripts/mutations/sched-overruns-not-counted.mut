@@ -1,0 +1,70 @@
+# what: A task that comes due while it is still due from before is coalesced silently instead of counted, so a main loop that cannot keep up looks healthy.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/timer/sched.c
+TEST Sched_Test
+--- FIND
+void schedTick ( sched_t* driver )
+{
+    uint32_t i = 0;
+
+    for ( i = 0; i < driver->count; ++i )
+    {
+        if ( driver->tasks[ i ].enabled == TRUE )
+        {
+            ++driver->tasks[ i ].counter;
+
+            if ( driver->tasks[ i ].counter >= driver->tasks[ i ].period )
+            {
+                driver->tasks[ i ].counter -= driver->tasks[ i ].period;
+
+                if ( driver->tasks[ i ].due == TRUE )
+                {
+                    ++driver->overrunCount;
+                }
+                else
+                {
+                    driver->tasks[ i ].due = TRUE;
+                }
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+}
+--- REPLACE
+void schedTick ( sched_t* driver )
+{
+    uint32_t i = 0;
+
+    for ( i = 0; i < driver->count; ++i )
+    {
+        if ( driver->tasks[ i ].enabled == TRUE )
+        {
+            ++driver->tasks[ i ].counter;
+
+            if ( driver->tasks[ i ].counter >= driver->tasks[ i ].period )
+            {
+                driver->tasks[ i ].counter -= driver->tasks[ i ].period;
+
+                driver->tasks[ i ].due = TRUE;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+}
+--- END

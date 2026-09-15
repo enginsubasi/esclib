@@ -1,0 +1,17 @@
+# what: fsmReset returns to state zero rather than to the state Init was given.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/fsm/fsm.c
+TEST Fsm_Test
+--- FIND
+void fsmReset ( fsm_t* driver )
+{
+    driver->state = driver->initialState;
+}
+--- REPLACE
+void fsmReset ( fsm_t* driver )
+{
+    driver->state = 0;
+}
+--- END

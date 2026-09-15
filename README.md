@@ -71,6 +71,12 @@ IIR can give.
 measures one. One bin for two multiplies and two adds a sample, no buffer, which
 beats an FFT whenever the frequency of interest is known in advance.
 
+`sched` is `softtimer` for N jobs instead of one. The split matters: `schedTick`
+only counts and marks from the ISR, `schedRun` calls the tasks from the main
+loop — a scheduler that dispatched from inside the tick would run a display
+update in an interrupt. `fsm` is the general form of the machines `comat` and
+`comstxetx` write by hand, with the transitions as a `const` table in flash.
+
 `biquad`'s four designers — low pass, high pass, band pass, notch — take a
 corner in hertz and are float only. The `i32` variant takes the five
 coefficients they produce, converted to Q16 once on a host, because computing a
@@ -160,6 +166,8 @@ Both are byte-driven state machines: `xxxReceive` per byte from the ISR,
 |---|---|---|
 | `circBuf` | `inc/buffer` | Circular buffer in `u8` and `u32`, overwrite or stop on full. |
 | `softtimer` | `inc/timer` | One-shot and periodic timers counting calls to `softtimerTick`. The library's only time abstraction. |
+| `sched` | `inc/timer` | Table of periodic tasks. The tick marks them due, the main loop runs them, and a task that could not keep up is counted. |
+| `fsm` | `inc/fsm` | Table-driven state machine. An event no row accepts is counted, never guessed at. |
 | `bininp` | `inc/bininp` | Debounced binary input with a rising-edge flag. |
 | `encoder` | `inc/encoder` | Quadrature decoding at four counts per cycle. A missed step is counted, never guessed. |
 | `logic` | `inc/logic` | D and RS flip-flops. |

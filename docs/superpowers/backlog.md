@@ -195,9 +195,27 @@ The integer square root is `rampSquareRoot` duplicated, which is what rule 2 req
 
 `Q16_Test` asserts 57 checks, every expected value computed from the definition of the scale rather than from a run, including a round trip over all 65536 representable integers. Five mutations were added and all five are caught. The module is 460 bytes on a Cortex-M0.
 
+## 16. `sched` and `fsm`, and three more holes — DONE 15/09/2026
+
+Two modules that every project using this library writes by hand, and the last of the second-tier list.
+
+**`sched`.** `softtimer` is one timer; this is the table of them. Its one real decision is the split between `schedTick`, which only counts and marks from the interrupt, and `schedRun`, which calls the due tasks from the main loop — a scheduler that dispatched inside the tick would run a display update in an interrupt, and `comat` already draws that line between `Receive` and `Evaluate`. A task still due when its period comes round again is an **overrun**, counted rather than swallowed and never caught up on: running it twice to make up the time is a guess. The reload subtracts the period, so a busy loop costs the run and never the phase. It does not include `softtimer.h`.
+
+**`fsm`.** The general form of the machines `comat` and `comstxetx` write by hand, with the transitions as a `const` table in flash. The state changes **before** the action runs, so a self-dispatching action transitions out of the new state instead of looping back into the transition it is inside; the first matching row wins and the scan stops; an event no row accepts is counted rather than ignored. A `NULL` action is a legitimate row — a transition that only changes state — and is the one pointer the module checks per call.
+
+**Three of the ten new mutations survived the first run, and all three were the same shape.** A second check inside the module was masking the defect the test aimed at.
+
+- `schedTick` counting a disabled task survived, because `schedRun` tests the enabled flag too, so the task still never ran. The damage is real but shows elsewhere: overruns pile up for a task nobody is waiting on. The test now asserts that.
+- Disabling a task while its due flag stands survived for exactly the same reason, and only shows on the way back — the stale flag fires the moment the task is switched on again. The test now completes that round trip.
+- Removing `fsmDispatch`'s `break` survived the obvious duplicate-row table, and the reason is worth keeping: the state is written inside the loop, so by the time the scan reaches the second row its `from` no longer matches. The table that catches it is a **chain** whose second row matches the state the first row moves to, where a scan that ran on would fire both transitions for one event.
+
+The lesson generalizes and is the same one that came out of the previous pass in a different dress: **a test has to reach the place the defect actually shows, which is not always the place it was introduced.**
+
+`Sched_Test` asserts 61 checks and `Fsm_Test` 53, and all ten mutations are caught. `sched` is 256 bytes on a Cortex-M0 and `fsm` is 106.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, and the mutation harness that keeps the tests honest, with a mutation for every row of the pin table, and `q16`. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, and the mutation harness that keeps the tests honest, with a mutation for every row of the pin table, and `q16`, `sched` and `fsm`. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

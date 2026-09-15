@@ -1,0 +1,75 @@
+# what: schedAddTask accepts a zero period, which makes the counter comparison true on every tick forever.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/timer/sched.c
+TEST Sched_Test
+--- FIND
+uint8_t schedAddTask ( sched_t* driver, void ( *task )( void ), uint32_t period, uint32_t* const index )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( task != NULL ) && ( period != 0 ) &&
+            ( driver->count < driver->length ) )
+    {
+        driver->tasks[ driver->count ].task = task;
+        driver->tasks[ driver->count ].period = period;
+        driver->tasks[ driver->count ].counter = 0;
+        driver->tasks[ driver->count ].due = FALSE;
+        driver->tasks[ driver->count ].enabled = TRUE;
+
+        if ( index != NULL )
+        {
+            ( *index ) = driver->count;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        ++driver->count;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t schedAddTask ( sched_t* driver, void ( *task )( void ), uint32_t period, uint32_t* const index )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( task != NULL ) &&
+            ( driver->count < driver->length ) )
+    {
+        driver->tasks[ driver->count ].task = task;
+        driver->tasks[ driver->count ].period = period;
+        driver->tasks[ driver->count ].counter = 0;
+        driver->tasks[ driver->count ].due = FALSE;
+        driver->tasks[ driver->count ].enabled = TRUE;
+
+        if ( index != NULL )
+        {
+            ( *index ) = driver->count;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        ++driver->count;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

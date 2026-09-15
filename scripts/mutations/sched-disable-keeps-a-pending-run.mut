@@ -1,0 +1,62 @@
+# what: Disabling a task leaves its due flag standing, so it fires once more on the way out.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/timer/sched.c
+TEST Sched_Test
+--- FIND
+uint8_t schedEnable ( sched_t* driver, uint32_t index, uint8_t enabled )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( index < driver->count ) )
+    {
+        driver->tasks[ index ].counter = 0;
+        driver->tasks[ index ].due = FALSE;
+
+        if ( enabled == TRUE )
+        {
+            driver->tasks[ index ].enabled = TRUE;
+        }
+        else
+        {
+            driver->tasks[ index ].enabled = FALSE;
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t schedEnable ( sched_t* driver, uint32_t index, uint8_t enabled )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( index < driver->count ) )
+    {
+        driver->tasks[ index ].counter = 0;
+
+        if ( enabled == TRUE )
+        {
+            driver->tasks[ index ].enabled = TRUE;
+        }
+        else
+        {
+            driver->tasks[ index ].enabled = FALSE;
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END
