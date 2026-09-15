@@ -1,0 +1,117 @@
+# what: The variance is divided by one less than the block length, which is the sample standard deviation — an estimate of a population, where this module describes the block it was given.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/rms.c
+TEST Rms_Test
+--- FIND
+void rmsIteration ( rms_t* driver, float sample )
+{
+    float deviation = 0.0f;
+    float n = 0.0f;
+    float variance = 0.0f;
+
+    if ( driver->count == 0u )
+    {
+        driver->offset = sample;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    deviation = sample - driver->offset;
+
+    driver->sum = driver->sum + deviation;
+    driver->sumSquares = driver->sumSquares + ( deviation * deviation );
+
+    ++driver->count;
+
+    if ( driver->count >= driver->blockLength )
+    {
+        n = ( float ) driver->blockLength;
+
+        driver->mean = driver->offset + ( driver->sum / n );
+
+        variance = ( driver->sumSquares -
+                     ( ( driver->sum * driver->sum ) / n ) ) / n;
+
+        if ( variance < 0.0f )
+        {
+            variance = 0.0f;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        driver->acRms = sqrtf ( variance );
+        driver->rms = sqrtf ( variance + ( driver->mean * driver->mean ) );
+
+        driver->ready = TRUE;
+
+        driver->count = 0u;
+        driver->sum = 0.0f;
+        driver->sumSquares = 0.0f;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- REPLACE
+void rmsIteration ( rms_t* driver, float sample )
+{
+    float deviation = 0.0f;
+    float n = 0.0f;
+    float variance = 0.0f;
+
+    if ( driver->count == 0u )
+    {
+        driver->offset = sample;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    deviation = sample - driver->offset;
+
+    driver->sum = driver->sum + deviation;
+    driver->sumSquares = driver->sumSquares + ( deviation * deviation );
+
+    ++driver->count;
+
+    if ( driver->count >= driver->blockLength )
+    {
+        n = ( float ) driver->blockLength;
+
+        driver->mean = driver->offset + ( driver->sum / n );
+
+        variance = ( driver->sumSquares -
+                     ( ( driver->sum * driver->sum ) / n ) ) / ( n - 1.0f );
+
+        if ( variance < 0.0f )
+        {
+            variance = 0.0f;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        driver->acRms = sqrtf ( variance );
+        driver->rms = sqrtf ( variance + ( driver->mean * driver->mean ) );
+
+        driver->ready = TRUE;
+
+        driver->count = 0u;
+        driver->sum = 0.0f;
+        driver->sumSquares = 0.0f;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- END

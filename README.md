@@ -56,6 +56,7 @@ An `i32`/`u32` suffix on a function name selects the variant.
 | `alphabeta` | Estimates position *and* velocity from position alone. | `i32` (Q16) |
 | `fir` | Shapes a response from caller-supplied taps, with linear phase no IIR can give. | `i32` (Q16) |
 | `goertzel` | Does not filter — measures how much of one frequency is present. | — |
+| `rms` | Does not filter either — measures how much signal there is over a block: the mean, the RMS, and the RMS with the dc taken out. | `i16` (Q16 results) |
 
 Pick by what is wrong with the signal: noise that averages out wants `maf` or
 `emaf`, noise that does not wants `median`, a specific frequency wants `biquad`,
@@ -70,6 +71,16 @@ IIR can give.
 `goertzel` is the other half of `biquad`'s notch: the notch removes a tone, this
 measures one. One bin for two multiplies and two adds a sample, no buffer, which
 beats an FFT whenever the frequency of interest is known in advance.
+
+`rms` is the third measurement of that kind, and its reason is `statistic`'s
+shape rather than its arithmetic: `statVariance` wants the block in memory, and
+this takes one sample at a time from the interrupt and keeps a handful of words.
+It reports the mean, the RMS, and the AC RMS — the one a mains meter wants,
+since a converter biased to mid scale reads its bias as dc. The float variant
+subtracts each block's first sample before accumulating, because the textbook
+form cancels a small signal on a large offset to nothing in single precision:
+measured, one count on 20000 comes out wrong by a factor of 770. The integer
+variant takes `int16_t`, and inside that range every sum is exact in 64 bits.
 
 `sched` is `softtimer` for N jobs instead of one. The split matters: `schedTick`
 only counts and marks from the ISR, `schedRun` calls the tasks from the main

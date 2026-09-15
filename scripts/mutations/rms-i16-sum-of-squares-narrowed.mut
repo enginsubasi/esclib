@@ -1,0 +1,63 @@
+# what: The sum of squares is kept in 32 bits, which wraps after a few samples of a large signal and turns the RMS into noise.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/rms.c
+TEST Rms_Test
+--- FIND
+void rmsIterationi16 ( rmsi16_t* driver, int16_t sample )
+{
+    int32_t square = 0;
+
+    /* int32_t explicitly. See the banner. */
+    square = ( ( int32_t ) sample ) * ( ( int32_t ) sample );
+
+    driver->sum = driver->sum + ( int64_t ) sample;
+    driver->sumSquares = driver->sumSquares + ( uint64_t ) ( uint32_t ) square;
+
+    ++driver->count;
+
+    if ( driver->count >= driver->blockLength )
+    {
+        rmsFinishi16 ( driver );
+
+        driver->ready = TRUE;
+
+        driver->count = 0u;
+        driver->sum = 0;
+        driver->sumSquares = 0u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- REPLACE
+void rmsIterationi16 ( rmsi16_t* driver, int16_t sample )
+{
+    int32_t square = 0;
+
+    /* int32_t explicitly. See the banner. */
+    square = ( ( int32_t ) sample ) * ( ( int32_t ) sample );
+
+    driver->sum = driver->sum + ( int64_t ) sample;
+    driver->sumSquares = ( uint32_t ) ( driver->sumSquares + ( uint64_t ) ( uint32_t ) square );
+
+    ++driver->count;
+
+    if ( driver->count >= driver->blockLength )
+    {
+        rmsFinishi16 ( driver );
+
+        driver->ready = TRUE;
+
+        driver->count = 0u;
+        driver->sum = 0;
+        driver->sumSquares = 0u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- END

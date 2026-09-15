@@ -1,0 +1,65 @@
+# what: The root is taken without normalizing first, so a root with no whole part comes out as zero or one and every fraction below a count is lost — which is the resolution Q16 results exist for.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/rms.c
+TEST Rms_Test
+--- FIND
+static uint32_t rmsRootOver ( uint64_t numerator, uint32_t count )
+{
+    uint32_t retVal = 0u;
+    uint64_t value = numerator;
+    uint64_t root = 0u;
+    uint64_t divisor = ( uint64_t ) count;
+    uint32_t shift = 0u;
+
+    if ( numerator != 0u )
+    {
+        while ( value < RMS_NORMAL_LIMIT )
+        {
+            value = value << 2;
+            ++shift;
+        }
+
+        root = rmsSquareRoot ( value );
+        divisor = divisor << shift;
+
+        retVal = ( uint32_t ) ( ( ( root << 16 ) + ( divisor / 2u ) ) / divisor );
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+static uint32_t rmsRootOver ( uint64_t numerator, uint32_t count )
+{
+    uint32_t retVal = 0u;
+    uint64_t value = numerator;
+    uint64_t root = 0u;
+    uint64_t divisor = ( uint64_t ) count;
+    uint32_t shift = 0u;
+
+    if ( numerator != 0u )
+    {
+        while ( FALSE == TRUE )
+        {
+            value = value << 2;
+            ++shift;
+        }
+
+        root = rmsSquareRoot ( value );
+        divisor = divisor << shift;
+
+        retVal = ( uint32_t ) ( ( ( root << 16 ) + ( divisor / 2u ) ) / divisor );
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END

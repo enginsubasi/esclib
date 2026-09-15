@@ -1,0 +1,91 @@
+# what: The mean is truncated toward zero instead of rounded, so it reads up to one LSB low in magnitude on either side of zero.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/rms.c
+TEST Rms_Test
+--- FIND
+static void rmsFinishi16 ( rmsi16_t* driver )
+{
+    uint64_t n = ( uint64_t ) driver->blockLength;
+    uint64_t magnitude = 0u;
+    uint64_t total = 0u;
+    int64_t numerator = 0;
+    int64_t half = ( int64_t ) ( driver->blockLength / 2u );
+
+    if ( driver->sum < 0 )
+    {
+        magnitude = ( uint64_t ) ( -driver->sum );
+    }
+    else
+    {
+        magnitude = ( uint64_t ) driver->sum;
+    }
+
+    /* N times the sum of squares, which is N^2 times the mean square. */
+    total = n * driver->sumSquares;
+
+    driver->rms = rmsRootOver ( total, driver->blockLength );
+
+    /* Less the square of the sum, which leaves N^2 times the variance. In
+       exact integers it cannot go below zero. */
+    driver->acRms = rmsRootOver ( total - ( magnitude * magnitude ),
+                                  driver->blockLength );
+
+    /* A multiply rather than a shift: the sum may be negative. */
+    numerator = driver->sum * RMS_Q16_ONE;
+
+    if ( numerator >= 0 )
+    {
+        numerator = numerator + half;
+    }
+    else
+    {
+        numerator = numerator - half;
+    }
+
+    driver->mean = ( int32_t ) ( numerator / ( int64_t ) driver->blockLength );
+}
+--- REPLACE
+static void rmsFinishi16 ( rmsi16_t* driver )
+{
+    uint64_t n = ( uint64_t ) driver->blockLength;
+    uint64_t magnitude = 0u;
+    uint64_t total = 0u;
+    int64_t numerator = 0;
+    int64_t half = ( int64_t ) ( driver->blockLength / 2u );
+
+    if ( driver->sum < 0 )
+    {
+        magnitude = ( uint64_t ) ( -driver->sum );
+    }
+    else
+    {
+        magnitude = ( uint64_t ) driver->sum;
+    }
+
+    /* N times the sum of squares, which is N^2 times the mean square. */
+    total = n * driver->sumSquares;
+
+    driver->rms = rmsRootOver ( total, driver->blockLength );
+
+    /* Less the square of the sum, which leaves N^2 times the variance. In
+       exact integers it cannot go below zero. */
+    driver->acRms = rmsRootOver ( total - ( magnitude * magnitude ),
+                                  driver->blockLength );
+
+    /* A multiply rather than a shift: the sum may be negative. */
+    numerator = driver->sum * RMS_Q16_ONE;
+
+    if ( numerator >= 0 )
+    {
+        numerator = numerator + 0;
+    }
+    else
+    {
+        numerator = numerator - 0;
+    }
+
+    driver->mean = ( int32_t ) ( numerator / ( int64_t ) driver->blockLength );
+}
+--- END
