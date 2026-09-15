@@ -6,6 +6,11 @@ RECURSIVE             = YES
 OPTIMIZE_OUTPUT_FOR_C = YES
 EXTRACT_STATIC        = YES
 EXTRACT_ALL           = NO
+# Headers stay pure declarations by convention, so struct members carry no
+# comment and every one of them would warn. Silencing that class is what
+# leaves a real defect — a bad tag, a parameter that does not exist —
+# visible in the output.
+WARN_IF_UNDOCUMENTED  = NO
 WARN_NO_PARAMDOC      = YES
 WARN_AS_ERROR         = NO
 GENERATE_LATEX        = NO
