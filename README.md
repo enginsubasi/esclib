@@ -54,10 +54,22 @@ An `i32`/`u32` suffix on a function name selects the variant.
 | `slew` | Bounds the rate of change. No target, chases the last sample. | `i32` `u32` |
 | `deadband` | Holds the output still until the input really moves. | `i32` `u32` |
 | `alphabeta` | Estimates position *and* velocity from position alone. | `i32` (Q16) |
+| `fir` | Shapes a response from caller-supplied taps, with linear phase no IIR can give. | `i32` (Q16) |
+| `goertzel` | Does not filter — measures how much of one frequency is present. | — |
 
 Pick by what is wrong with the signal: noise that averages out wants `maf` or
 `emaf`, noise that does not wants `median`, a specific frequency wants `biquad`,
 a jumpy actuator wants `slew`, a twitching display wants `deadband`.
+
+`maf` and `fir` are the same filter: `maf` is a rectangular window kept as a
+running sum, O(1) per sample whatever its length, and `fir` lets you choose the
+taps at O(N). Choose `fir` over `biquad` when the *shape* of a waveform matters
+rather than its level — a symmetric tap set has exactly linear phase, which no
+IIR can give.
+
+`goertzel` is the other half of `biquad`'s notch: the notch removes a tone, this
+measures one. One bin for two multiplies and two adds a sample, no buffer, which
+beats an FFT whenever the frequency of interest is known in advance.
 
 `biquad`'s four designers — low pass, high pass, band pass, notch — take a
 corner in hertz and are float only. The `i32` variant takes the five

@@ -129,9 +129,27 @@ And **a reversal between two driven directions now zeroes the duty before any pi
 
 `DcMotor_Test` gained twenty-one checks, `CRC_Test` twenty, and `Pack_Test` is new with forty-four. Every expected value was written from the byte pattern or the polynomial, not from a run.
 
+## 12. The two filters the group was missing — DONE 15/09/2026
+
+**`fir`.** `maf` was already an FIR — a rectangular window with every tap equal — and there was no way to choose the taps. That left the group able to smooth, to reject impulses, to bound a rate and to shape a response in hertz, but not to place a stopband or to keep linear phase.
+
+The framing that settled its shape: `maf` is not a special case waiting to be replaced. It keeps a running sum and costs one add and one subtract a sample whatever its length, where this multiplies every tap every sample, so `maf` stays the right filter whenever a rectangular window will do. What the taps buy is a stopband that can be placed — a rectangular window's first sidelobe is only 13 dB down and cannot be moved — and, for a symmetric set, exactly linear phase, which is the reason to pay O(N) over `biquad`'s handful of operations: when the measurement is the *shape* of a waveform rather than its level, a filter that delays every frequency differently has already destroyed the answer.
+
+No designer, for `biquad`'s reason one step further out: a windowed sinc or a Parks-McClellan fit belongs on a host, which is also why the taps are a pointer to `const` and expected to live in flash. `firInit` fills the history with `inputInit` as `mafInit` does, and reports the settled output as `inputInit` times the sum of the taps — `inputInit` for a unity-gain design, and correctly zero for a differentiator, which the test asserts rather than assumes. The `i32` variant is Q16 on the taps only, `int64_t` accumulator, and its single shift rounds.
+
+**`goertzel`.** The other half of `biquad`'s notch. Nothing in the tree could say how much of one frequency was present — a filter reports what is left after it, not what went in.
+
+Not an FFT, and the reason is the library's usual one: an FFT gives every bin at the cost of a scratch buffer, a twiddle table and N log N operations, while this gives one bin for two multiplies and two adds a sample with no buffer at all. Block based, which is inherent rather than a simplification. The block completes and reloads *inside* the iteration, so a missed result costs that result and never the phase — `softtimer`'s rule. Normalized so a sine of amplitude one reads one whatever the block length, with `goertzelGetPower` beside `goertzelGetMagnitude` because a threshold comparison needs no square root.
+
+Two decisions are recorded rather than hidden. The coefficient is taken at the frequency **asked for** rather than snapped to the nearest exact bin, so a tone between bins reads low instead of being quietly rounded onto one; the file tells the caller to choose a block length making `frequency * blockLength / sampleRate` a whole number, and the test pins a tone half a bin off centre reading 0.65 to prove no snapping happens. And there is **no integer variant yet**: the two state words grow with the block length, so the usable range depends on a parameter chosen at `Init` rather than on a fixed bound, and sizing that honestly — plus an integer square root for the magnitude — is a design rather than a transliteration. `goertzelGetPower` needs no root, so a power-only fixed point variant is the natural shape if one is wanted.
+
+`goertzelIsReady` is the second accessor in the library that writes, after `bininpGetRisingValue`, for the same reason: an event flag that survives being read stays TRUE forever after the first event. `codingReference.md`'s direction table was updated rather than left to contradict the tree.
+
+`FirGoertzel_Test` is new, 89 checks, every expected value from an independent model run before the C was. Four mutations were confirmed: walking the history forward, truncating the fixed point shift, dropping the cross term from the squared magnitude, and not reloading the state at the block end.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8` and `pack`. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

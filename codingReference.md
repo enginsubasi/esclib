@@ -147,8 +147,9 @@ cast the qualifier away.
     uint16_t crc16 ( const uint8_t* const array, uint32_t size );
     float mathFindMax ( const float* const array, uint32_t length );
 
-Accessors that only read take a const driver. bininpGetRisingValue does not: it
-clears the flag it reports, so it is genuinely in,out.
+Accessors that only read take a const driver. bininpGetRisingValue and
+goertzelIsReady do not: each clears the flag it reports, so both are genuinely
+in,out.
 
 ## Doxygen Comments
 
@@ -178,8 +179,10 @@ clears the flag it reports, so it is genuinely in,out.
     xxxChange*                                                  [in,out]
     xxxGetValue, xxxGetOutput, xxxGetLength, xxxGetStatus       [in]
 
-    Exception: bininpGetRisingValue is [in,out], not [in], because
-    reading it clears the rising flag it reports.
+    Exception: bininpGetRisingValue and goertzelIsReady are [in,out],
+    not [in], because reading either one clears the flag it reports. An
+    event flag that survived being read would stay TRUE forever after
+    the first event.
 
 ### File banner
     /**
