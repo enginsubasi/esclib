@@ -113,6 +113,7 @@ is what `sortIsSorted` is for.
 
 | module | what it is for |
 |---|---|
+| `crc8` | SMBus packet error code (`crc8`) and Dallas 1-Wire (`crc8Dallas`). Two polynomials, not two spellings of one. |
 | `crc16` | MODBUS CRC-16, table driven (`crc16`) and bit by bit (`crc16Alt`). |
 | `crc32` | CRC-32. |
 | `checksum` | `checksumXor`, `checksumSum8`, `checksumSum16`, `checksumFletcher16`, `checksumAdler32`, each returning its own natural width. |
@@ -147,7 +148,7 @@ Both are byte-driven state machines: `xxxReceive` per byte from the ISR,
 |---|---|
 | `hc595` | Serial-in parallel-out shift register. |
 | `hc597` | Parallel-in serial-out shift register. |
-| `dcMotor` | H-bridge pin control: release, forward, backward, lock. |
+| `dcMotor` | H-bridge direction and duty cycle. A reversal zeroes the duty before the pins move. |
 
 Both shift-register drivers offer two mutually exclusive transfer modes on one
 struct: `xxxOneShot` blocks and paces itself with injected delay callbacks,
