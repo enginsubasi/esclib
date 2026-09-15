@@ -1,0 +1,32 @@
+# what: q16Sqrt shifts a negative input into an unsigned value and takes the root of an enormous number instead of answering zero.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/q16.c
+TEST Q16_Test
+--- FIND
+int32_t q16Sqrt ( int32_t value )
+{
+    int32_t retVal = 0;
+
+    if ( value <= 0 )
+    {
+        retVal = 0;
+    }
+    else
+    {
+        retVal = ( int32_t ) q16SquareRoot ( ( ( uint64_t ) value ) << Q16_SHIFT );
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+int32_t q16Sqrt ( int32_t value )
+{
+    int32_t retVal = 0;
+
+    retVal = ( int32_t ) q16SquareRoot ( ( ( uint64_t ) value ) << Q16_SHIFT );
+
+    return ( retVal );
+}
+--- END

@@ -1,0 +1,36 @@
+# what: q16Saturate narrows without clamping, so an out of range result changes sign instead of railing.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/q16.c
+TEST Q16_Test
+--- FIND
+static int32_t q16Saturate ( int64_t value )
+{
+    int32_t retVal = 0;
+
+    if ( value > ( int64_t ) Q16_INT_MAX )
+    {
+        retVal = Q16_INT_MAX;
+    }
+    else if ( value < ( int64_t ) Q16_INT_MIN )
+    {
+        retVal = Q16_INT_MIN;
+    }
+    else
+    {
+        retVal = ( int32_t ) value;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+static int32_t q16Saturate ( int64_t value )
+{
+    int32_t retVal = 0;
+
+    retVal = ( int32_t ) value;
+
+    return ( retVal );
+}
+--- END

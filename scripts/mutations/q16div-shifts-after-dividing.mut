@@ -1,0 +1,109 @@
+# what: q16Div divides before applying the scale instead of after, so every quotient below one comes out as zero.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/q16.c
+TEST Q16_Test
+--- FIND
+int32_t q16Div ( int32_t dividend, int32_t divisor )
+{
+    int32_t retVal = 0;
+    int64_t numerator = 0;
+    int64_t half = 0;
+
+    if ( divisor == 0 )
+    {
+        if ( dividend > 0 )
+        {
+            retVal = Q16_INT_MAX;
+        }
+        else if ( dividend < 0 )
+        {
+            retVal = Q16_INT_MIN;
+        }
+        else
+        {
+            retVal = 0;
+        }
+    }
+    else
+    {
+        numerator = ( ( int64_t ) dividend ) << Q16_SHIFT;
+
+        half = ( ( int64_t ) divisor ) / 2;
+
+        if ( half < 0 )
+        {
+            half = -half;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( numerator >= 0 )
+        {
+            numerator += half;
+        }
+        else
+        {
+            numerator -= half;
+        }
+
+        retVal = q16Saturate ( numerator / ( ( int64_t ) divisor ) );
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+int32_t q16Div ( int32_t dividend, int32_t divisor )
+{
+    int32_t retVal = 0;
+    int64_t numerator = 0;
+    int64_t half = 0;
+
+    if ( divisor == 0 )
+    {
+        if ( dividend > 0 )
+        {
+            retVal = Q16_INT_MAX;
+        }
+        else if ( dividend < 0 )
+        {
+            retVal = Q16_INT_MIN;
+        }
+        else
+        {
+            retVal = 0;
+        }
+    }
+    else
+    {
+        numerator = ( int64_t ) dividend;
+
+        half = ( ( int64_t ) divisor ) / 2;
+
+        if ( half < 0 )
+        {
+            half = -half;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( numerator >= 0 )
+        {
+            numerator += half;
+        }
+        else
+        {
+            numerator -= half;
+        }
+
+        retVal = q16Saturate ( numerator / ( ( int64_t ) divisor ) );
+    }
+
+    return ( retVal );
+}
+--- END

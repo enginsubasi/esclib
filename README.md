@@ -98,11 +98,21 @@ variant exists to serve.
 | `basicarray` | 1D array limiting. | `i32` `u32` |
 | `basicmatrix` | 1D and 2D thresholding and limiting. | `i32` `u32` `u8` |
 | `complex` | Complex arithmetic and the polar conversions. | — |
+| `q16` | Q16 fixed-point arithmetic for the caller: multiply, divide, square root, conversions. | — |
 
 `mathMap` and `mathLerp` deliberately do not clamp — a value outside the input
 range extrapolates, which is why `mathClamp` is separate rather than folded in.
 `mathClamp` carries all three widths; `mathMapi32` and `mathLerpi32` carry the
 integer half of the other two, and take their fraction in Q16.
+
+`q16` is for the caller, not for the library. Five modules here carry a Q16
+variant and by the independence rule none of them may include it — but a caller
+who now holds gains and limits in Q16 had nothing to do arithmetic on them with.
+Five functions, each because the hand-written version gets one specific thing
+wrong: a multiply needs a 64-bit intermediate, a divide needs the scale applied
+*before* the division, a conversion back has to round, and there is no square
+root at all without a float. Everything saturates rather than wrapping, because
+a wrapped Q16 value changes sign. No float appears in it anywhere.
 
 ### Sort and search — `inc/sort`, `inc/search`
 

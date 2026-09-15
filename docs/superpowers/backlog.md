@@ -177,9 +177,27 @@ The third was subtler and is the more useful finding. `Control_Test` already had
 
 Twenty-eight mutations, twenty-eight caught, and two rules in `rules.md` that were learned rather than assumed.
 
+## 15. `q16`, for the caller the Q16 variants left empty handed — DONE 15/09/2026
+
+Five modules carry a Q16 fixed point variant and by the module independence rule none of them may include a shared helper. That rule is right and stays. What it does not cover is the **caller**, who by now has been handed four APIs taking gains, rate limits and coefficients in Q16 and had nothing whatever to do arithmetic on them with.
+
+Five functions, and the set is small because each one earns its place by being a thing the hand-written version gets wrong:
+
+- `q16Mul` needs an `int64_t` intermediate. Two Q16 values make a Q32 product, so a gain of 2.0 against 40000 is already past thirty-two bits and the naive version comes back with the wrong sign.
+- `q16Div` needs the scale applied **before** the division. Doing it after answers zero for every quotient below one, which is most of them in a control loop.
+- `q16ToInt` rounds rather than shifts. A shift truncates toward minus infinity, which on a value walked across a range in steps is a steady drift rather than noise.
+- `q16Sqrt` exists because C has no integer square root, and this is the one operation with no workaround at all without a float.
+- `q16FromInt` is the trivial one, and it is here because it has to saturate like everything else.
+
+Three decisions worth recording. **Everything saturates rather than wrapping** — a wrapped Q16 value changes sign, and these numbers are headed for a control loop where that means full reverse torque from a small overshoot; `alphabetaGetVelocityi32` already saturates at its range ends for the same reason. **No float appears in the file**, so a program that links it cannot pull the software float library in by accident; converting a designed constant stays a compile-time expression at the call site, exactly as `biquad.c` and `fir.c` already instruct. And **there is no `q16Clamp` or `q16Abs`**: a Q16 value is an `int32_t`, so `mathClampi32` and `mathAbsolutei32` already do the right thing to one, and a renamed copy of either would be the symmetry-for-its-own-sake rule 7 forbids. No `q16Lerp` either — `mathLerpi32` already takes its fraction in Q16.
+
+The integer square root is `rampSquareRoot` duplicated, which is what rule 2 requires and what `interp.c` does with `searchUpperBound`'s bracketing loop. `Q16_Test` ties the two together directly: it rebuilds `rampIterationi32`'s braking envelope, `sqrt ( 2 * a * remaining )`, out of `q16FromInt`, `q16Mul` and `q16Sqrt`, and asserts it lands on 14.142136 for an acceleration of 2 and a distance of 50 — the identity that the square root of a Q32 product is a Q16 value, which is the whole reason that envelope survived the move to fixed point unchanged.
+
+`Q16_Test` asserts 57 checks, every expected value computed from the definition of the scale rather than from a run, including a round trip over all 65536 representable integers. Five mutations were added and all five are caught. The module is 460 bytes on a Cortex-M0.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, and the mutation harness that keeps the tests honest, with a mutation for every row of the pin table. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, and the mutation harness that keeps the tests honest, with a mutation for every row of the pin table, and `q16`. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

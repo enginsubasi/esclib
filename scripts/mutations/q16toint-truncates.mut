@@ -1,0 +1,25 @@
+# what: q16ToInt shifts instead of rounding, losing half a count on average and drifting on a value walked in steps.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/q16.c
+TEST Q16_Test
+--- FIND
+int32_t q16ToInt ( int32_t value )
+{
+    int32_t retVal = 0;
+
+    retVal = ( int32_t ) q16ShiftRound ( ( int64_t ) value );
+
+    return ( retVal );
+}
+--- REPLACE
+int32_t q16ToInt ( int32_t value )
+{
+    int32_t retVal = 0;
+
+    retVal = value >> Q16_SHIFT;
+
+    return ( retVal );
+}
+--- END

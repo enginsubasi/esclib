@@ -1,0 +1,31 @@
+# what: q16Mul forms its product in 32 bits, so a gain against a large value wraps and comes back with the wrong sign.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/q16.c
+TEST Q16_Test
+--- FIND
+int32_t q16Mul ( int32_t multiplicand, int32_t multiplier )
+{
+    int32_t retVal = 0;
+    int64_t product = 0;
+
+    product = ( ( int64_t ) multiplicand ) * ( ( int64_t ) multiplier );
+
+    retVal = q16Saturate ( q16ShiftRound ( product ) );
+
+    return ( retVal );
+}
+--- REPLACE
+int32_t q16Mul ( int32_t multiplicand, int32_t multiplier )
+{
+    int32_t retVal = 0;
+    int64_t product = 0;
+
+    product = ( int64_t ) ( multiplicand * multiplier );
+
+    retVal = q16Saturate ( q16ShiftRound ( product ) );
+
+    return ( retVal );
+}
+--- END
