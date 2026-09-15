@@ -40,6 +40,7 @@ float mathMap ( float value, float inLow, float inHigh, float outLow, float outH
 int32_t mathMapi32 ( int32_t value, int32_t inLow, int32_t inHigh, int32_t outLow, int32_t outHigh );
 
 float mathLerp ( float from, float to, float t );
+int32_t mathLerpi32 ( int32_t from, int32_t to, int32_t t );
 
 float mathFindMax ( const float* const array, uint32_t length );
 uint32_t mathFindMaxu32 ( const uint32_t* const array, uint32_t length );

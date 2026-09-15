@@ -137,8 +137,15 @@ modules of their own.
 - An integer variant carries every intermediate wide enough that the documented
   input range cannot overflow it. `interpCalculatei32` and `mathMapi32` use
   `int64_t` for exactly this reason.
-- An integer division rounds to nearest rather than truncating, and accounts for
-  the sign of the divisor where the divisor may be negative.
+- An integer **division** rounds to nearest rather than truncating, and accounts
+  for the sign of the divisor where the divisor may be negative. `mathMapi32`,
+  `mathLerpi32` and `interpCalculatei32` all add half the magnitude of the
+  divisor before dividing, which is the form to copy.
+- A Q16 **shift** may truncate where the half LSB it loses does not accumulate,
+  and `emafIterationi32` and `alphabetaIterationi32` do. It rounds where the
+  loss does accumulate: `biquadIterationi32` shifts inside a feedback path and
+  puts a measured half count of standing offset on a symmetric signal without
+  it. Either way the file says which it does and why.
 - A fixed-point variant states its Q format in the file banner and in the
   `@brief` of every function that takes or returns a scaled value.
 - A width exists because a caller needs it, not for symmetry. `mathMap` has no

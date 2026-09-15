@@ -103,9 +103,19 @@ The same measurement found Q16's floor, which is documented rather than guarded:
 
 `FilterSet_Test` grew forty checks, including one that designs the filter with the float `biquadInitLowPass` and asserts the Q16 literals the rest of the case uses are what it converts to — so the two widths cannot drift apart silently.
 
+## 10. `mathLerp` was the last scalar with only a float width — DONE 15/09/2026
+
+`mathClamp` had all three widths and `mathMap` had `i32`; `mathLerp` had neither, which left the smallest of the three scalars as the one an integer project still had to write by hand.
+
+`mathLerpi32` takes `t` in Q16 and leaves `from` and `to` in plain units, the same split the fixed point filters use. Its product is `int64_t` — a full scale `t` against the span of `int32_t` needs more than thirty two bits — and its division rounds to nearest by `mathMapi32`'s own form, because a truncating lerp walked across a range in steps drifts steadily behind: the error carries the same sign at every step.
+
+No `u32` variant, and that is the answer rather than an omission. `to - from` is signed whichever way the two are ordered, so an unsigned one would form its difference in a wider signed type anyway and would differ from this only in the type of its arguments.
+
+`Math_Test` asserts eleven checks on it, every expected value worked out by hand before the function was run, including the two that tell rounding from truncation and the two that overflow a thirty two bit intermediate.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s included. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

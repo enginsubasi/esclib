@@ -3,7 +3,7 @@
   *
   * @file      basicmath.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.2.0
+  * @version   0.3.0
   * @date      03/06/2020
   *
   * @brief     Basic mathematics function library file.
@@ -38,6 +38,9 @@
   *            their typed variants. Everything here operated on @n
   *            arrays until now, so the three lines an embedded @n
   *            project rewrites most often had to be written by hand. @n
+  * 15/09/2026 mathLerpi32 added, the fixed point half of the last @n
+  *            scalar that had only a float width. Its t is Q16; @n
+  *            from and to stay in plain units. @n
   *
   * @note      Every array function returns zero for a zero length array.
   *            The scalar primitives at the end of this file take values
@@ -920,6 +923,59 @@ float mathLerp ( float from, float to, float t )
     float retVal = 0;
 
     retVal = from + ( t * ( to - from ) );
+
+    return ( retVal );
+}
+
+/*
+ * Q16 fixed point, the scale pid, ramp, alphabeta and biquad use. A t of 1.0
+ * is 65536.
+ */
+#define MATH_LERP_ONE   65536
+
+/**
+ * @brief   Interpolates linearly between two values, in fixed point.
+ * @param[in] from  Value returned at t of zero.
+ * @param[in] to    Value returned at t of one.
+ * @param[in] t     Position between the two in Q16, so 65536 is one. Normally
+ *                  between zero and 65536.
+ * @return  The interpolated value, in the same plain units as from and to.
+ * @note    Only t is scaled. from and to are plain, so a caller interpolating
+ *          between two converter readings scales nothing, exactly as the
+ *          fixed point filters in this library take a plain sample.
+ * @note    This does not clamp t either. A t outside zero to 65536
+ *          extrapolates, for the reason mathLerp gives, and mathClampi32 is
+ *          there when that is unwanted.
+ * @note    The product is formed in int64_t. A t of one against the full span
+ *          of int32_t already needs more than thirty two bits, and this
+ *          function is at its most useful when from and to are far apart.
+ * @note    The division rounds to nearest rather than truncating, by the same
+ *          add half the divisor first that mathMapi32 and interpCalculatei32
+ *          use. A truncating lerp walked across a range in steps drifts
+ *          steadily behind, because the error carries the same sign at every
+ *          step.
+ * @note    There is no u32 variant. to minus from is a signed quantity
+ *          whichever way the two are ordered, so an unsigned one would have to
+ *          form the difference in a wider signed type anyway and would differ
+ *          from this only in the type of its arguments.
+ */
+int32_t mathLerpi32 ( int32_t from, int32_t to, int32_t t )
+{
+    int32_t retVal = 0;
+    int64_t num = 0;
+
+    num = ( ( int64_t ) t ) * ( ( ( int64_t ) to ) - ( ( int64_t ) from ) );
+
+    if ( num >= 0 )
+    {
+        num += ( MATH_LERP_ONE / 2 );
+    }
+    else
+    {
+        num -= ( MATH_LERP_ONE / 2 );
+    }
+
+    retVal = from + ( int32_t ) ( num / MATH_LERP_ONE );
 
     return ( retVal );
 }

@@ -89,6 +89,8 @@ variant exists to serve.
 
 `mathMap` and `mathLerp` deliberately do not clamp — a value outside the input
 range extrapolates, which is why `mathClamp` is separate rather than folded in.
+`mathClamp` carries all three widths; `mathMapi32` and `mathLerpi32` carry the
+integer half of the other two, and take their fraction in Q16.
 
 ### Sort and search — `inc/sort`, `inc/search`
 

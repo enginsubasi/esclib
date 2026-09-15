@@ -467,6 +467,48 @@ static void lerpCase ( void )
             nearly ( mathLerp ( 0.1f, 0.3f, 1.0f ), 0.3f ) );
 }
 
+static void lerpi32Case ( void )
+{
+    printf ( "basicmath lerp, i32 variant\n" );
+
+    /* t is Q16: 65536 is one, 32768 is a half. from and to are plain. */
+    check ( "t of zero gives the start",
+            ( uint8_t ) ( mathLerpi32 ( 10, 20, 0 ) == 10 ) );
+    check ( "t of one gives the end",
+            ( uint8_t ) ( mathLerpi32 ( 10, 20, 65536 ) == 20 ) );
+    check ( "t of a half gives the midpoint",
+            ( uint8_t ) ( mathLerpi32 ( 10, 20, 32768 ) == 15 ) );
+    check ( "t of a quarter",
+            ( uint8_t ) ( mathLerpi32 ( 0, 1000, 16384 ) == 250 ) );
+    check ( "it runs backwards, and a half rounds away from zero there too",
+            ( uint8_t ) ( mathLerpi32 ( 20, 10, 16384 ) == 17 ) );
+    check ( "t outside zero to one extrapolates rather than clamping",
+            ( uint8_t ) ( mathLerpi32 ( 10, 20, 131072 ) == 30 ) );
+    check ( "and below zero too",
+            ( uint8_t ) ( mathLerpi32 ( 10, 20, -65536 ) == 0 ) );
+
+    /*
+     * The division rounds to nearest rather than truncating. Half of one is
+     * the case that tells the two apart: a truncating lerp answers zero here,
+     * and walked across a range in steps it drifts steadily behind, because
+     * the error carries the same sign at every step.
+     */
+    check ( "half of a single count rounds up rather than truncating",
+            ( uint8_t ) ( mathLerpi32 ( 0, 1, 32768 ) == 1 ) );
+    check ( "and rounds away from zero on the negative side too",
+            ( uint8_t ) ( mathLerpi32 ( 0, -1, 32768 ) == -1 ) );
+
+    /*
+     * The product is formed in int64_t. Both of these overflow a 32 bit
+     * intermediate: the first multiplies a full scale t by two million, the
+     * second by the whole span of int32_t.
+     */
+    check ( "a wide signed range interpolates without overflowing",
+            ( uint8_t ) ( mathLerpi32 ( -1000000, 1000000, 32768 ) == 0 ) );
+    check ( "and the widest span this type can express still lands on its end",
+            ( uint8_t ) ( mathLerpi32 ( -1073741824, 1073741823, 65536 ) == 1073741823 ) );
+}
+
 int main ( void )
 {
     absoluteCase ( );
@@ -476,6 +518,8 @@ int main ( void )
     mapCase ( );
     printf ( "\n" );
     lerpCase ( );
+    printf ( "\n" );
+    lerpi32Case ( );
     printf ( "\n" );
     minMaxCase ( );
     printf ( "\n" );
