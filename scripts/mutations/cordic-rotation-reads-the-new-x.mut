@@ -1,0 +1,67 @@
+# what: The iteration updates the second component from the first one it has just overwritten instead of from the value it had, which is the same aliasing mistake matrixMul refuses and complexMuli32 avoids by computing both parts before writing either.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/cordic.c
+TEST Cordic_Test
+--- FIND
+static void cordicRotation ( int32_t* x, int32_t* y, int32_t angle )
+{
+    uint32_t i = 0u;
+    int32_t xi = *x;
+    int32_t yi = *y;
+    int32_t zi = angle;
+    int32_t xn = 0;
+
+    for ( i = 0u; i < CORDIC_ITERATIONS; ++i )
+    {
+        xn = xi;
+
+        if ( zi >= 0 )
+        {
+            xi = xi - ( yi >> i );
+            yi = yi + ( xn >> i );
+            zi = zi - cordicAtanTable[ i ];
+        }
+        else
+        {
+            xi = xi + ( yi >> i );
+            yi = yi - ( xn >> i );
+            zi = zi + cordicAtanTable[ i ];
+        }
+    }
+
+    *x = xi;
+    *y = yi;
+}
+--- REPLACE
+static void cordicRotation ( int32_t* x, int32_t* y, int32_t angle )
+{
+    uint32_t i = 0u;
+    int32_t xi = *x;
+    int32_t yi = *y;
+    int32_t zi = angle;
+    int32_t xn = 0;
+
+    for ( i = 0u; i < CORDIC_ITERATIONS; ++i )
+    {
+        xn = xi;
+
+        if ( zi >= 0 )
+        {
+            xi = xi - ( yi >> i );
+            yi = yi + ( xi >> i );
+            zi = zi - cordicAtanTable[ i ];
+        }
+        else
+        {
+            xi = xi + ( yi >> i );
+            yi = yi - ( xn >> i );
+            zi = zi + cordicAtanTable[ i ];
+        }
+    }
+
+    *x = xi;
+    *y = yi;
+}
+--- END

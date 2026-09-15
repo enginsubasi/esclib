@@ -1,0 +1,79 @@
+# what: The rotation starts from one rather than from 1/gain, so every sine and cosine comes out 1.647 times too large. CORDIC rotates and stretches, and forgetting the stretch is the classic way to get it wrong.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/cordic.c
+TEST Cordic_Test
+--- FIND
+void cordicSinCos ( uint32_t angle, int32_t* sine, int32_t* cosine )
+{
+    uint32_t quadrant = angle >> 30;
+    int32_t residual = ( int32_t ) ( angle & CORDIC_QUADRANT_MASK );
+    int32_t xi = CORDIC_INVGAIN_Q24;
+    int32_t yi = 0;
+    int32_t c = 0;
+    int32_t s = 0;
+
+    cordicRotation ( &xi, &yi, residual );
+
+    c = ( xi + CORDIC_INTERNAL_HALF ) >> CORDIC_INTERNAL_SHIFT;
+    s = ( yi + CORDIC_INTERNAL_HALF ) >> CORDIC_INTERNAL_SHIFT;
+
+    if ( quadrant == 0u )
+    {
+        *sine = s;
+        *cosine = c;
+    }
+    else if ( quadrant == 1u )
+    {
+        *sine = c;
+        *cosine = -s;
+    }
+    else if ( quadrant == 2u )
+    {
+        *sine = -s;
+        *cosine = -c;
+    }
+    else
+    {
+        *sine = -c;
+        *cosine = s;
+    }
+}
+--- REPLACE
+void cordicSinCos ( uint32_t angle, int32_t* sine, int32_t* cosine )
+{
+    uint32_t quadrant = angle >> 30;
+    int32_t residual = ( int32_t ) ( angle & CORDIC_QUADRANT_MASK );
+    int32_t xi = 16777216;
+    int32_t yi = 0;
+    int32_t c = 0;
+    int32_t s = 0;
+
+    cordicRotation ( &xi, &yi, residual );
+
+    c = ( xi + CORDIC_INTERNAL_HALF ) >> CORDIC_INTERNAL_SHIFT;
+    s = ( yi + CORDIC_INTERNAL_HALF ) >> CORDIC_INTERNAL_SHIFT;
+
+    if ( quadrant == 0u )
+    {
+        *sine = s;
+        *cosine = c;
+    }
+    else if ( quadrant == 1u )
+    {
+        *sine = c;
+        *cosine = -s;
+    }
+    else if ( quadrant == 2u )
+    {
+        *sine = -s;
+        *cosine = -c;
+    }
+    else
+    {
+        *sine = -c;
+        *cosine = s;
+    }
+}
+--- END

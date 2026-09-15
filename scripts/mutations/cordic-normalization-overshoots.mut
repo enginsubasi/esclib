@@ -1,0 +1,69 @@
+# what: The normalization doubles once more than it should, putting the larger component past the range the iteration was sized for, so the intermediates overflow. This is the defect the module was written with: it answers correctly on small vectors and gives nonsense on large ones, which is why the saturation case is checked at the very end of the type.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/cordic.c
+TEST Cordic_Test
+--- FIND
+static void cordicNormalize ( int32_t* x, int32_t* y, uint32_t* left,
+                              uint32_t* right )
+{
+    int32_t xi = *x;
+    int32_t yi = *y;
+    uint32_t up = 0u;
+    uint32_t down = 0u;
+
+    while ( ( xi > CORDIC_NORMAL_TARGET ) || ( xi < -CORDIC_NORMAL_TARGET ) ||
+            ( yi > CORDIC_NORMAL_TARGET ) || ( yi < -CORDIC_NORMAL_TARGET ) )
+    {
+        xi = xi >> 1;
+        yi = yi >> 1;
+        ++down;
+    }
+
+    while ( ( xi <= CORDIC_NORMAL_HALF ) && ( xi >= -CORDIC_NORMAL_HALF ) &&
+            ( yi <= CORDIC_NORMAL_HALF ) && ( yi >= -CORDIC_NORMAL_HALF ) &&
+            ( ( xi != 0 ) || ( yi != 0 ) ) )
+    {
+        xi = xi * 2;
+        yi = yi * 2;
+        ++up;
+    }
+
+    *x = xi;
+    *y = yi;
+    *left = up;
+    *right = down;
+}
+--- REPLACE
+static void cordicNormalize ( int32_t* x, int32_t* y, uint32_t* left,
+                              uint32_t* right )
+{
+    int32_t xi = *x;
+    int32_t yi = *y;
+    uint32_t up = 0u;
+    uint32_t down = 0u;
+
+    while ( ( xi > CORDIC_NORMAL_TARGET ) || ( xi < -CORDIC_NORMAL_TARGET ) ||
+            ( yi > CORDIC_NORMAL_TARGET ) || ( yi < -CORDIC_NORMAL_TARGET ) )
+    {
+        xi = xi >> 1;
+        yi = yi >> 1;
+        ++down;
+    }
+
+    while ( ( xi < CORDIC_NORMAL_TARGET ) && ( xi > -CORDIC_NORMAL_TARGET ) &&
+            ( yi < CORDIC_NORMAL_TARGET ) && ( yi > -CORDIC_NORMAL_TARGET ) &&
+            ( ( xi != 0 ) || ( yi != 0 ) ) )
+    {
+        xi = xi * 2;
+        yi = yi * 2;
+        ++up;
+    }
+
+    *x = xi;
+    *y = yi;
+    *left = up;
+    *right = down;
+}
+--- END

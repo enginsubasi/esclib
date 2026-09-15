@@ -106,6 +106,7 @@ variant exists to serve.
 | `matrixlib` | Linear algebra on a matrix that carries its shape: add, multiply, transpose, invert. | — |
 | `complex` | Complex arithmetic and the polar conversions. | `i32` (Q16, arithmetic only) |
 | `q16` | Q16 fixed-point arithmetic for the caller: multiply, divide, square root, conversions. | — |
+| `cordic` | Sine, cosine, arc tangent, magnitude and vector rotation in fixed point, with no float anywhere. | — |
 
 `mathMap` and `mathLerp` deliberately do not clamp — a value outside the input
 range extrapolates, which is why `mathClamp` is separate rather than folded in.
@@ -120,6 +121,19 @@ wrong: a multiply needs a 64-bit intermediate, a divide needs the scale applied
 *before* the division, a conversion back has to round, and there is no square
 root at all without a float. Everything saturates rather than wrapping, because
 a wrapped Q16 value changes sign. No float appears in it anywhere.
+
+`cordic` is for the caller in the same way, and it exists because two absences
+in this library were written down rather than filled: `complexi32` has no polar
+pair and `biquad` has no `i32` designer, and both of those wanted a sine, a
+cosine and an arc tangent that do not link the software float library. The
+angle is a **binary angle** — the whole turn is 2^32 in a `uint32_t` — so it
+wraps by itself, there is no pi to represent, and a frequency as a fraction of
+the sample rate *is* that fraction of a turn: a corner at 50 Hz in a 1 kHz loop
+is `( 50u * 4294967296u ) / 1000u` with no pi in the expression. Twenty
+iterations, measured rather than assumed: the sine and cosine land within one
+count of 65536, the angle within a ten-thousandth of a degree. It needs no
+divide at all — `__aeabi_lmul` and a shift are the only helpers it pulls in,
+where `q16` and `interp` each need `__aeabi_ldivmod`.
 
 ### Sort and search — `inc/sort`, `inc/search`
 

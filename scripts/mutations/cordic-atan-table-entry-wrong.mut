@@ -1,0 +1,87 @@
+# what: One entry of the arc tangent table is wrong. Each entry is the angle a single iteration can turn through, so a wrong one bends the sine and the arc tangent by the same amount in the same direction — each still looks plausible on its own and only the round trip through both disagrees.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/cordic.c
+TEST Cordic_Test
+--- FIND
+static const int32_t cordicAtanTable [ CORDIC_ITERATIONS ] =
+{
+    536870912, 316933406, 167458907,  85004756,
+     42667331,  21354465,  10679838,   5340245,
+      2670163,   1335087,    667544,    333772,
+       166886,     83443,     41722,     20861,
+        10430,      5215,      2608,      1304
+};
+
+/**
+ * @brief   Narrows a wide intermediate into an int32_t, saturating rather than
+ *          wrapping.
+ *
+ * @param[in]   value   the wide value.
+ *
+ * @return  The value, held at the ends of int32_t.
+ *
+ * @note    A wrapped length changes sign, and a magnitude that reports
+ *          negative is worse than one that reports too small.
+ */
+static int32_t cordicSaturate ( int64_t value )
+{
+    int32_t retVal = 0;
+
+    if ( value > ( ( int64_t ) 2147483647 ) )
+    {
+        retVal = 2147483647;
+    }
+    else if ( value < ( ( int64_t ) ( -2147483647 - 1 ) ) )
+    {
+        retVal = -2147483647 - 1;
+    }
+    else
+    {
+        retVal = ( int32_t ) value;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+static const int32_t cordicAtanTable [ CORDIC_ITERATIONS ] =
+{
+    536870912, 316933406, 167458907,  85004756,
+     42667331,  21354465,  10659838,   5340245,
+      2670163,   1335087,    667544,    333772,
+       166886,     83443,     41722,     20861,
+        10430,      5215,      2608,      1304
+};
+
+/**
+ * @brief   Narrows a wide intermediate into an int32_t, saturating rather than
+ *          wrapping.
+ *
+ * @param[in]   value   the wide value.
+ *
+ * @return  The value, held at the ends of int32_t.
+ *
+ * @note    A wrapped length changes sign, and a magnitude that reports
+ *          negative is worse than one that reports too small.
+ */
+static int32_t cordicSaturate ( int64_t value )
+{
+    int32_t retVal = 0;
+
+    if ( value > ( ( int64_t ) 2147483647 ) )
+    {
+        retVal = 2147483647;
+    }
+    else if ( value < ( ( int64_t ) ( -2147483647 - 1 ) ) )
+    {
+        retVal = -2147483647 - 1;
+    }
+    else
+    {
+        retVal = ( int32_t ) value;
+    }
+
+    return ( retVal );
+}
+--- END

@@ -1,0 +1,87 @@
+# what: The length keeps the CORDIC gain, so every magnitude is 1.647 times too long — the vectoring half of the same defect the rotation seed carries.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/cordic.c
+TEST Cordic_Test
+--- FIND
+void cordicPolar ( int32_t x, int32_t y, int32_t* magnitude, uint32_t* angle )
+{
+    int32_t xi = x;
+    int32_t yi = y;
+    int32_t residual = 0;
+    int64_t length = 0;
+    uint32_t left = 0u;
+    uint32_t right = 0u;
+    uint32_t offset = 0u;
+
+    if ( ( x == 0 ) && ( y == 0 ) )
+    {
+        *magnitude = 0;
+        *angle = 0u;
+    }
+    else
+    {
+        cordicNormalize ( &xi, &yi, &left, &right );
+
+        if ( xi < 0 )
+        {
+            xi = -xi;
+            yi = -yi;
+            offset = CORDIC_HALF;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        cordicVectoring ( &xi, yi, &residual );
+
+        length = ( ( ( int64_t ) xi ) * CORDIC_INVGAIN_Q24 ) +
+                 CORDIC_INVGAIN_HALF;
+        length = length >> CORDIC_INVGAIN_SHIFT;
+
+        *magnitude = cordicDenormalize ( length, left, right );
+        *angle = ( ( uint32_t ) residual ) + offset;
+    }
+}
+--- REPLACE
+void cordicPolar ( int32_t x, int32_t y, int32_t* magnitude, uint32_t* angle )
+{
+    int32_t xi = x;
+    int32_t yi = y;
+    int32_t residual = 0;
+    int64_t length = 0;
+    uint32_t left = 0u;
+    uint32_t right = 0u;
+    uint32_t offset = 0u;
+
+    if ( ( x == 0 ) && ( y == 0 ) )
+    {
+        *magnitude = 0;
+        *angle = 0u;
+    }
+    else
+    {
+        cordicNormalize ( &xi, &yi, &left, &right );
+
+        if ( xi < 0 )
+        {
+            xi = -xi;
+            yi = -yi;
+            offset = CORDIC_HALF;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        cordicVectoring ( &xi, yi, &residual );
+
+        length = ( int64_t ) xi;
+
+        *magnitude = cordicDenormalize ( length, left, right );
+        *angle = ( ( uint32_t ) residual ) + offset;
+    }
+}
+--- END
