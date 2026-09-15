@@ -151,6 +151,14 @@ modules of their own.
   loss does accumulate: `biquadIterationi32` shifts inside a feedback path and
   puts a measured half count of standing offset on a symmetric signal without
   it. Either way the file says which it does and why.
+- **Scaling into the fixed-point format is a multiply, never a left shift.**
+  Shifting a *negative* signed value left is undefined behaviour in C outright —
+  not the implementation-defined thing a right shift is, which this tree already
+  documents and accepts. Six sites did it, in `ramp`, `alphabeta`, `biquad` and
+  `q16`, and every one of them produced the right answer with every compiler
+  here, which is exactly why no test found them: `value * ONE` compiles to the
+  same instruction and is defined for both signs. UBSan found them on
+  15/09/2026, so a sanitized run is a gate now.
 - A fixed-point variant states its Q format in the file banner and in the
   `@brief` of every function that takes or returns a scaled value.
 - **And it states what it costs instead.** A variant written to avoid the
@@ -228,11 +236,20 @@ sh scripts/samples.sh        # build and run every example under sample/
 sh scripts/check.sh          # warnings, headers, symbol coverage, static storage
 STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails its test
+sh scripts/portable.sh       # C99 pedantically, and every header and module as C++
 sh scripts/size.sh           # code size per module
 sh scripts/runtime.sh        # which compiler runtime helpers each module needs
+
+# The tests again, asking whether the answers were arrived at legally rather
+# than whether they are right. Trap mode where there is no libubsan.
+CFLAGS="-fsanitize=undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
 ```
 
-The first five are gates and CI runs all of them on every push. **The strict
+The first six are gates, so is the sanitized run, and CI runs all of them on
+every push. **A passing test is not the same as a defined program**: the six
+signed left shifts UBSan found on 15/09/2026 passed every test in the tree,
+because the compiler did the obvious thing with each of them. Only the
+sanitizer asks the other question. **The strict
 profile is a gate, not an aspiration**: the tree was clean under
 `-Wconversion -Wsign-conversion -Wshadow -Wdouble-promotion -Wcast-qual` on
 15/09/2026, the eight warnings it had found were all one pattern — an array

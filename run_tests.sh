@@ -21,6 +21,14 @@
 # Environment:
 #     CC       compiler to use, default gcc
 #     CFLAGS   extra flags, default empty
+#              The sanitizers go in here, and they ask a different question
+#              from whether the tests pass — whether the answers were arrived
+#              at legally. This is what found six signed left shifts in the
+#              fixed point paths, all of them giving the right answer:
+#                  CFLAGS="-fsanitize=undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
+#              Where there is no libubsan, as on a MinGW host, trap mode needs
+#              no runtime library and reports the same thing as a SIGILL:
+#                  CFLAGS="-fsanitize=undefined -fsanitize-undefined-trap-on-error -O1" sh run_tests.sh
 #     LINKONLY set to 1 to compile and link without running. Use this with a
 #              cross compiler to check the source sets are complete:
 #                  CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh

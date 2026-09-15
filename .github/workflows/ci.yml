@@ -40,6 +40,26 @@ jobs:
       - name: Tests
         run: sh run_tests.sh
 
+      # The same tests again with the undefined behaviour sanitizer on, which
+      # is a different question from whether they pass: it asks whether the
+      # answers were arrived at legally. It found six signed left shifts in
+      # the fixed point paths on 15/09/2026, every one of them giving the
+      # right answer with this compiler. -fno-sanitize-recover makes the
+      # first report the exit status rather than a line in the log.
+      - name: Tests, sanitized
+        env:
+          CFLAGS: -fsanitize=undefined -fno-sanitize-recover=all -O1
+          UBSAN_OPTIONS: print_stacktrace=1
+        run: sh run_tests.sh
+
+      # C99 pedantically, and every header and module through a C++ compiler.
+      # The extern "C" block every header carries is a promise to a C++ caller
+      # and this is the only thing that checks it was kept. There is no
+      # arm-none-eabi-g++ in this runner's archive, so the script falls back
+      # to the host g++ for the C++ half, which asks the same question.
+      - name: Portability
+        run: sh scripts/portable.sh
+
       # Reintroduce each known defect and require the test that pins it to
       # fail. A mutation that survives is a check that has stopped biting.
       - name: Mutations
@@ -74,6 +94,7 @@ jobs:
           dash -n scripts/check.sh
           dash -n scripts/doc.sh
           dash -n scripts/mutate.sh
+          dash -n scripts/portable.sh
           dash -n scripts/size.sh
           dash -n scripts/runtime.sh
           dash -n scripts/samples.sh

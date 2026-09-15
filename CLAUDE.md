@@ -84,12 +84,13 @@ It is written to POSIX `sh` and is checked under `dash`, not only under the Git 
 
 An `output.txt` difference is reported and never counted as a failure, because regenerating one is a judgement call about whether the module moved or the expectation did.
 
-Two more scripts sit under `scripts/`, added 15/09/2026, and follow the same no-maintenance rule — their file lists come from the tree, so a new module needs no edit to either:
+Six more scripts sit under `scripts/`, added 15/09/2026, and follow the same no-maintenance rule — their file lists come from the tree, so a new module needs no edit to any of them:
 
 ```bash
 sh scripts/check.sh            # warnings, header coexistence, symbol coverage, static storage
 STRICT=1 sh scripts/check.sh   # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh           # every known defect still fails the test that pins it
+sh scripts/portable.sh         # C99 pedantically, and every header and module as C++
 sh scripts/size.sh             # code size per module
 sh scripts/runtime.sh          # which compiler runtime helpers each module needs
 sh scripts/samples.sh          # build and run every example under sample/
@@ -103,9 +104,17 @@ what you want mid-change:
 sh run_tests.sh FirGoertzel_Test
 ```
 
-`scripts/check.sh` is the whole Verification section below in one command, and its exit status is the number of checks that failed. It defaults to `arm-none-eabi-gcc` and falls back to `gcc`; it never runs what it builds, so either works.
+`scripts/check.sh` is the whole Verification section below in one command, and its exit status is the number of checks that failed. It defaults to `arm-none-eabi-gcc` and falls back to `gcc`; it never runs what it builds, so either works. `scripts/portable.sh` is the same shape for the two claims a warning flag cannot make: C99 with `-pedantic-errors`, and every header and every module through a **C++** compiler, which is the only thing that checks the `extern "C"` block each header carries was actually kept.
 
-`.github/workflows/ci.yml` runs `scripts/check.sh` in both profiles, `run_tests.sh`, `scripts/mutate.sh`, `scripts/samples.sh`, `scripts/size.sh`, `scripts/runtime.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
+**And the tests are run a second time under the sanitizer**, which asks a different question from whether they pass:
+
+```bash
+CFLAGS="-fsanitize=undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
+# where there is no libubsan, as on the MinGW host here, trap mode needs none
+CFLAGS="-fsanitize=undefined -fsanitize-undefined-trap-on-error -O1" sh run_tests.sh
+```
+
+`.github/workflows/ci.yml` runs `scripts/check.sh` in both profiles, `run_tests.sh` plain and again under the sanitizer, `scripts/portable.sh`, `scripts/mutate.sh`, `scripts/samples.sh`, `scripts/size.sh`, `scripts/runtime.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
 
 A single test still builds directly, and that is often what you want mid-change:
 
@@ -254,6 +263,12 @@ That runs the three checks this section used to spell out by hand, and exits wit
 - **Storage.** Every module object's `.data` and `.bss` must both be empty. The caller owns all storage and a module holds no static state of its own, which was stated in `rules.md` and checked nowhere until 15/09/2026; a writable static is the rule being broken and lands in one of those two sections. A read-only table is `.rodata` and counts as code, which is why `crc16` carries one and still passes.
 
 The script keeps its objects, so `arm-none-eabi-nm` over the directory it names still answers a one-off question about the symbol table.
+
+Three more checks sit beside it, because **a test that passes is not the same as a program that is defined**, and neither one is what a warning flag reports:
+
+- **Undefined behaviour.** `CFLAGS="-fsanitize=undefined -fno-sanitize-recover=all -O1" sh run_tests.sh`. On 15/09/2026 this found six sites — in `ramp`, `alphabeta`, `biquad` and `q16` — scaling a value into Q16 with a **left shift of a signed value, which C leaves undefined outright** the moment that value is negative. Right-shifting one is only implementation-defined, which this tree already documents and accepts; left-shifting one is a different category. Every one of the six produced the correct answer with every compiler here, which is exactly why thirty-five test programs and seventy-four mutations had never noticed: `value * ONE` compiles to the same instruction and is defined for both signs, so the fix costs nothing. Two of the six were on paths no test drove negative at all, so `FilterSet_Test` gained negative cases for `alphabetai32` and `biquadi32` — and those cases are honest about what they do. They do not catch the shift, because the answer was right either way; what they do is make the line **reachable**, and a sanitizer only reports what the tests execute. That is the same reason `ComSec_Test` does not pin its constant-time comparison: a property no assertion in C can observe gets written down rather than faked, and there is deliberately no mutation for this one either — putting the shift back passes every test in the tree.
+- **C99, pedantically.** `sh scripts/portable.sh`. The style here is C89 — declarations at the top of a block, `/* */` comments — but the types are not, since `<stdint.h>` and `int64_t` are C99, so C99 is the floor and claiming C89 would be claiming something the tree cannot hold. `-pedantic-errors` is what refuses the GNU extension that compiles quietly here and stops somebody else's compiler.
+- **C++.** The same script puts every header through a C++ compiler alone and all together, and then every module. The header half is load-bearing: the `extern "C"` block in each header is a promise to a C++ caller, and nothing checked it until now. The module half is stricter than the tree needs, since the modules are built as C in every real use, and is worth having because C++ refuses the implicit `void*` conversion and narrowing that C accepts — it reads each module the way a second compiler would.
 
 ## Known gaps — there are none left
 

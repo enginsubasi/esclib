@@ -271,9 +271,23 @@ Two details in `complexi32` are worth keeping. Its `complexMuli32` computes **bo
 
 Eleven new symbols, six new mutations, all caught. Everything stayed clean under the strict profile without a single cast being added, which is the first change since that gate went in and a fair test of whether it was set at a sensible level.
 
+## 21. Three claims the tree made and nothing checked — DONE 15/09/2026
+
+Everything above was a thing to build. This one was a thing to *measure*, and it started from a list of claims the library makes that no gate tested. Three were picked because each is answerable with a compiler flag rather than an argument.
+
+Two held. Every header and every module compiles as **C++**, which is what the `extern "C"` block in each header has always promised and nothing had ever checked. And the tree is clean under **`-std=c99 -pedantic-errors`**, with no GNU extension anywhere — C99 rather than C89 because `<stdint.h>` and `int64_t` are C99, so the style is C89 and the floor is not, and saying otherwise would be a claim that cannot be held. Both are now `scripts/portable.sh`, and both are gates.
+
+The third found a real defect. Running the suite under **UBSan** made `Q16_Test` and `Ramp_Test` fail, and the cause was six sites scaling a value into Q16 with `( ( int64_t ) value ) << Q`. **Left-shifting a negative signed value is undefined in C** — right-shifting one is only implementation-defined, which this tree already documents and accepts, and the two are not the same category. `ramp`, `alphabeta`, `biquad` and `q16` all did it.
+
+What makes this worth writing down is that **nothing was wrong with the output**. Every one of the six produced the correct answer on every compiler in reach, which is why thirty-five test programs and seventy-four mutations had never seen it and why no assertion could have. The fix is `value * ONE`, which is defined for both signs and compiles to the same instruction, so it costs nothing at all.
+
+Two of the six sat on paths no test ever drove negative, so `FilterSet_Test` gained negative cases for `alphabetai32` and `biquadi32` — an `alphabeta` initialized below zero and tracking a negative measurement, a `biquad` reset to a load cell reading below tare. Those cases are documented for what they actually do rather than for what would sound better: they do **not** catch the shift, and that was verified by putting the shift back and watching the plain build still pass while the sanitized one traps. What they do is make the line reachable, because a sanitizer only reports what the tests execute. For the same reason there is deliberately no mutation for this defect — a mutation restoring the shift would survive by construction, which is exactly what `ComSec_Test` already says about its constant-time comparison.
+
+The general rule is now in `rules.md` where the width-variant rules live, because it belongs next to "an integer division rounds to nearest" rather than in a changelog: scaling into a fixed-point format is a multiply, never a left shift.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, and the last three width gaps. Nothing is outstanding, and for the first time nothing is reserved either.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, and a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 
