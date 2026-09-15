@@ -172,6 +172,7 @@ notably weak on short ones.
 | `comstxetx` | Binary framing with DLE escaping, so any byte value crosses the link, and a two-byte check installed at `Init` — `crc16` or `checksumFletcher16` go in directly. A bad frame is dropped and counted. |
 | `comat` | AT command protocol, ASCII, no check by design. |
 | `commodbus` | Modbus RTU framing: silence-delimited frames, address filtering, the check installed at `Init` — `crc16` is already the right polynomial. Framing only, no function codes. |
+| `cobs` | Consistent overhead byte stuffing: takes the zero byte out of a payload so it can delimit frames. Overhead one byte per 254, whatever the payload holds. |
 | `comgenbuf` | Queue of variable-length packets in one flat buffer. Keeps the packet boundaries `circBuf` loses. |
 | `comsafe` | Black-channel safety framing over an untrusted transport: connection id, sequence number, independent check, watchdog. |
 | `comsec` | Authenticated framing with replay protection. The MAC is injected; the module holds no cryptography and provides no confidentiality. |
@@ -191,6 +192,18 @@ table of handlers is what `fsm` already is. Two counters, not one: a frame for
 another device is **ignored**, a frame that failed its check is **rejected**,
 and keeping them apart is what leaves the reject count meaning "the line is
 bad" on a bus where most traffic is addressed to somebody else.
+
+`cobs` answers the same question `comstxetx` answers and answers it with a
+number. Escaping doubles a payload in the worst case — a buffer full of `STX`,
+`ETX` and `DLE` travels at twice its length — while removing one byte value
+instead of escaping it costs one byte per 254, a little under half a percent,
+whatever the payload holds. The consequence is buffer sizing: over `comstxetx`
+a caller allocates twice the payload or accepts that a frame it could not
+predict is refused, and over `cobs` it sizes from `cobsEncodedSize` and is done.
+It carries **no check** — an encoded frame that arrives corrupted often decodes
+to a well-formed frame of the wrong length, so integrity goes inside the payload
+or beside it. `cobsEncode` does not write the delimiter either: one zero between
+frames or two around each is the caller's protocol.
 
 `comgenbuf` is the layer above them. `circBuf` is a queue of bytes and loses
 where one packet ends and the next begins; this stores a two-byte length with

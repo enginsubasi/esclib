@@ -1,0 +1,117 @@
+# what: The encoder closes a run at 253 payload bytes instead of 254, so the code byte it writes says one thing and the decoder reads another. Only a payload that reaches a full run shows it.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/cobs.c
+TEST Cobs_Test
+--- FIND
+uint8_t cobsEncode ( const uint8_t* const source, uint32_t length,
+                     uint8_t* destination, uint32_t capacity,
+                     uint32_t* encodedLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t read = 0u;
+    uint32_t write = 1u;
+    uint32_t codeIndex = 0u;
+    uint32_t code = 1u;
+
+    if ( cobsEncodedSize ( length ) <= capacity )
+    {
+        for ( read = 0u; read < length; ++read )
+        {
+            if ( source[ read ] == COBS_DELIMITER )
+            {
+                destination[ codeIndex ] = ( uint8_t ) code;
+                codeIndex = write;
+                ++write;
+                code = 1u;
+            }
+            else
+            {
+                destination[ write ] = source[ read ];
+                ++write;
+                ++code;
+
+                if ( code == ( COBS_RUN_MAX + 1u ) )
+                {
+                    destination[ codeIndex ] = ( uint8_t ) code;
+                    codeIndex = write;
+                    ++write;
+                    code = 1u;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+            }
+        }
+
+        destination[ codeIndex ] = ( uint8_t ) code;
+
+        *encodedLength = write;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t cobsEncode ( const uint8_t* const source, uint32_t length,
+                     uint8_t* destination, uint32_t capacity,
+                     uint32_t* encodedLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t read = 0u;
+    uint32_t write = 1u;
+    uint32_t codeIndex = 0u;
+    uint32_t code = 1u;
+
+    if ( cobsEncodedSize ( length ) <= capacity )
+    {
+        for ( read = 0u; read < length; ++read )
+        {
+            if ( source[ read ] == COBS_DELIMITER )
+            {
+                destination[ codeIndex ] = ( uint8_t ) code;
+                codeIndex = write;
+                ++write;
+                code = 1u;
+            }
+            else
+            {
+                destination[ write ] = source[ read ];
+                ++write;
+                ++code;
+
+                if ( code == COBS_RUN_MAX )
+                {
+                    destination[ codeIndex ] = ( uint8_t ) code;
+                    codeIndex = write;
+                    ++write;
+                    code = 1u;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+            }
+        }
+
+        destination[ codeIndex ] = ( uint8_t ) code;
+
+        *encodedLength = write;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END

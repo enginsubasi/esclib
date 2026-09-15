@@ -1,0 +1,17 @@
+# what: The sizing function counts the opening code byte and forgets the one every full run costs, so a caller sizing from it comes up short on any payload past 254 bytes.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/cobs.c
+TEST Cobs_Test
+--- FIND
+uint32_t cobsEncodedSize ( uint32_t length )
+{
+    return ( length + 1u + ( length / COBS_RUN_MAX ) );
+}
+--- REPLACE
+uint32_t cobsEncodedSize ( uint32_t length )
+{
+    return ( length + 1u );
+}
+--- END

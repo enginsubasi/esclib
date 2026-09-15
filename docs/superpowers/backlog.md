@@ -317,9 +317,27 @@ Nine mutations, and one of them survived its first run and was worth the trouble
 
 368 bytes of code, nothing in `.data` or `.bss`.
 
+## 24. cobs, the other answer to the question comstxetx answers — DONE 16/09/2026
+
+`comstxetx` has framed binary in this tree for years by escaping: a payload byte equal to STX, ETX or the caller's DLE travels behind a DLE. That works, and its cost is unbounded in the only way that matters to an embedded caller — a payload made of those three bytes **doubles** on the wire, so the transmit buffer has to be twice the payload or some frame nobody predicted gets refused.
+
+COBS removes a byte value from the payload instead of escaping it. The overhead is one byte per 254 regardless of content: under half a percent, and known before the payload is. That is the whole argument, and it is arithmetic rather than taste — both modules stay, because escaping is right when the delimiter has to be a printable character a human can see in a terminal, and this is right when the buffer has to be sized in advance.
+
+Four decisions are worth keeping:
+
+**The name does not start with `com`.** Everything else in that directory does, and this is one named algorithm rather than a protocol of this library's design. The name is what a reader searches for; `crc16` and `checksum` sit beside their users under their own names for the same reason.
+
+**It carries no check, and the file says so.** COBS structure is thin — a flipped bit frequently produces a well formed frame of the wrong length rather than something a decoder can refuse. Integrity goes inside the payload, where `comsafe` and `comsec` put theirs, or beside it as a check the caller appends before encoding. Writing that down is the difference between a framing module and a framing module somebody trusts for the wrong thing.
+
+**`cobsEncode` does not write the delimiter.** One zero between frames or two around each is the caller's protocol, and a module that picked one would be choosing for them.
+
+**`cobsDecode` validates the whole frame before writing a byte.** It costs a second pass, and that pass reads only the code bytes and steps over the runs between them — a two hundred and fifty fifth of the buffer. What it buys is the all-or-nothing guarantee `comgenbufPop` makes and `matrixInverse` explicitly cannot, and both refusal checks in the test assert the destination was left untouched rather than merely that FALSE came back.
+
+276 bytes of code. Nine mutations, all caught on the first run — the test was written around where the algorithm changes behaviour (a payload of exactly 254 bytes, either side of it, zeros at both ends, nothing but zeros) rather than around variety, which is why.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers, cordic, which two other files had been asking for in writing, and commodbus, which is the framing an industrial bus actually uses. Nothing is outstanding, and for the first time nothing is reserved either.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers, cordic, which two other files had been asking for in writing, commodbus, which is the framing an industrial bus actually uses, and cobs, which is the other answer to the question comstxetx answers. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

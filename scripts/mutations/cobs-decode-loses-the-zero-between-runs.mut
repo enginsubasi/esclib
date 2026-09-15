@@ -1,0 +1,195 @@
+# what: The decoder never puts back the zero a run boundary stands for, so every zero in the payload disappears — which is exactly the byte the encoding was removing on the caller's behalf.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/cobs.c
+TEST Cobs_Test
+--- FIND
+uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
+                     uint8_t* destination, uint32_t capacity,
+                     uint32_t* decodedLength )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint32_t read = 0u;
+    uint32_t write = 0u;
+    uint32_t i = 0u;
+    uint32_t code = 0u;
+    uint32_t decoded = 0u;
+
+    if ( length == 0u )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    /*
+     * The validating pass. It reads a code byte, steps over the run it
+     * describes, and counts what the run would produce, so the frame is known
+     * to be sound and the payload's length is known before a byte is written.
+     */
+    while ( ( read < length ) && ( sound == TRUE ) )
+    {
+        code = ( uint32_t ) source[ read ];
+        ++read;
+
+        if ( code == 0u )
+        {
+            sound = FALSE;
+        }
+        else if ( ( read + ( code - 1u ) ) > length )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            read = read + ( code - 1u );
+            decoded = decoded + ( code - 1u );
+
+            if ( ( code != ( COBS_RUN_MAX + 1u ) ) && ( read < length ) )
+            {
+                ++decoded;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+    }
+
+    if ( ( sound == TRUE ) && ( decoded <= capacity ) )
+    {
+        read = 0u;
+
+        while ( read < length )
+        {
+            code = ( uint32_t ) source[ read ];
+            ++read;
+
+            for ( i = 1u; i < code; ++i )
+            {
+                destination[ write ] = source[ read ];
+                ++write;
+                ++read;
+            }
+
+            if ( ( code != ( COBS_RUN_MAX + 1u ) ) && ( read < length ) )
+            {
+                destination[ write ] = COBS_DELIMITER;
+                ++write;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+
+        *decodedLength = write;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
+                     uint8_t* destination, uint32_t capacity,
+                     uint32_t* decodedLength )
+{
+    uint8_t retVal = FALSE;
+    uint8_t sound = TRUE;
+    uint32_t read = 0u;
+    uint32_t write = 0u;
+    uint32_t i = 0u;
+    uint32_t code = 0u;
+    uint32_t decoded = 0u;
+
+    if ( length == 0u )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    /*
+     * The validating pass. It reads a code byte, steps over the run it
+     * describes, and counts what the run would produce, so the frame is known
+     * to be sound and the payload's length is known before a byte is written.
+     */
+    while ( ( read < length ) && ( sound == TRUE ) )
+    {
+        code = ( uint32_t ) source[ read ];
+        ++read;
+
+        if ( code == 0u )
+        {
+            sound = FALSE;
+        }
+        else if ( ( read + ( code - 1u ) ) > length )
+        {
+            sound = FALSE;
+        }
+        else
+        {
+            read = read + ( code - 1u );
+            decoded = decoded + ( code - 1u );
+
+            if ( ( code != ( COBS_RUN_MAX + 1u ) ) && ( read < length ) )
+            {
+                ++decoded;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+    }
+
+    if ( ( sound == TRUE ) && ( decoded <= capacity ) )
+    {
+        read = 0u;
+
+        while ( read < length )
+        {
+            code = ( uint32_t ) source[ read ];
+            ++read;
+
+            for ( i = 1u; i < code; ++i )
+            {
+                destination[ write ] = source[ read ];
+                ++write;
+                ++read;
+            }
+
+            if ( FALSE == TRUE )
+            {
+                destination[ write ] = COBS_DELIMITER;
+                ++write;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+
+        *decodedLength = write;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( retVal );
+}
+--- END
