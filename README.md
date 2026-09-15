@@ -141,6 +141,13 @@ Both are byte-driven state machines: `xxxReceive` per byte from the ISR,
 | `bininp` | `inc/bininp` | Debounced binary input with a rising-edge flag. |
 | `encoder` | `inc/encoder` | Quadrature decoding at four counts per cycle. A missed step is counted, never guessed. |
 | `logic` | `inc/logic` | D and RS flip-flops. |
+| `pack` | `inc/pack` | Multi-byte values to and from a byte buffer, either endianness, with the signed and 24-bit readers that C has no type for. |
+
+`pack` is the line the two protocol modules leave to their caller. `comstxetx`
+hands over a payload of bytes; turning four of them into a reading is where the
+hand-written version goes wrong, so it lives here instead. Nothing in it casts a
+buffer pointer to a wider type — that assumes the machine's endianness, assumes
+alignment a Cortex-M0 will fault on, and aliases.
 
 ### Drivers — `drv/`
 

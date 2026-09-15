@@ -113,9 +113,25 @@ No `u32` variant, and that is the answer rather than an omission. `to - from` is
 
 `Math_Test` asserts eleven checks on it, every expected value worked out by hand before the function was run, including the two that tell rounding from truncation and the two that overflow a thirty two bit intermediate.
 
+## 11. Three holes in what was already here — DONE 15/09/2026
+
+A review asked what the library should grow, and the first answer was that three things it already claimed were incomplete.
+
+**`dcMotor` could set a direction but not a speed.** `dcmotor_t` required a `pwm` callback at `Init`, called it once with zero and never touched it again — an injected callback the module never used, which has no other example in the tree. `dcMotorSetSpeed` and `dcMotorGetSpeed` close it.
+
+Two decisions came with it. The duty is **clamped rather than rejected**, because a status every speed update would have to check is a status nobody checks, and `dcMotorGetSpeed` reports what was actually installed. The clamp is written so that anything not above zero lands on zero, which puts a `nan` at a standstill instead of through to the hardware — the same defect `pidInit` guards by rejecting a zero `ts`, found here by asking what the obvious two-sided clamp would do.
+
+And **a reversal between two driven directions now zeroes the duty before any pin moves.** A motor turning at speed is a generator, and throwing the bridge across it puts the supply and the back emf in series through the winding. Once the driver owns the duty it owns that hazard. The duty is *not* restored afterwards: putting the previous torque back one PWM period later is the same hazard with a delay on it. Nothing else is a reversal — releasing, locking, and taking a direction up from a released bridge all leave the duty alone, which is what keeps the existing assertion that `BRIDGE_FORWARD` does not touch the PWM true. Both claims were confirmed by mutation.
+
+**`crc8` was missing.** `crc16` and `crc32` were there. Two functions rather than one, because `crc8` and `crc8Dallas` are two polynomials — SMBus PEC and Dallas 1-Wire — and neither substitutes for the other. Both bitwise, no table: 256 bytes of flash to speed up a three-byte transaction is the wrong trade. Checked against the published check values, 0xF4 and 0xA1 over "123456789", and against a real DS18B20 ROM whose eighth byte the first seven must produce and whose whole eight must check to zero.
+
+**Nothing turned a byte buffer into a number.** `comstxetx` delivers a payload and `comat` a string; the caller wrote the rest by hand, every project, and got it wrong. `pack` is sixteen stateless functions in a new group. No signed writers, because signed to unsigned of the same width is defined to wrap and a cast at the call site is already right; signed *readers*, because the reverse is implementation-defined before C23, so they sign-extend by subtraction. 24-bit readers with no writers, because twenty-four bits is a converter width — and `packGetI24be` is what the module is really for, pinned in the test with a real HX711 pattern for minus ten counts, the reading a forgetful implementation reports as 16777206.
+
+`DcMotor_Test` gained twenty-one checks, `CRC_Test` twenty, and `Pack_Test` is new with forty-four. Every expected value was written from the byte pattern or the polynomial, not from a run.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8` and `pack`. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 
