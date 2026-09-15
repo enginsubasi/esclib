@@ -1,5 +1,7 @@
 # esclib
 
+[![ci](https://github.com/enginsubasi/esclib/actions/workflows/ci.yml/badge.svg)](https://github.com/enginsubasi/esclib/actions/workflows/ci.yml)
+
 A freestanding general-purpose C library for embedded targets.
 
 github.com/enginsubasi/esclib/

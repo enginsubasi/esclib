@@ -1,0 +1,49 @@
+#
+# Continuous integration for esclib.
+#
+# Nothing here builds anything that ships. It runs the two scripts the tree
+# already carries, on every push, so a warning or a failing test is caught
+# where it happens rather than at the next manual run.
+#
+name: ci
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi
+
+      # Warnings, header coexistence and symbol coverage. The cross compiler
+      # is the one the tree is normally checked with.
+      - name: Static checks
+        run: sh scripts/check.sh
+
+      # Every test built and run with the host compiler. A warning from a test
+      # file is reported as loudly as a failure.
+      - name: Tests
+        run: sh run_tests.sh
+
+      # Every source set links for a bare metal target without being run.
+      - name: Cross link
+        run: CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
+
+      # The scripts are written to POSIX sh, not to the bash that happens to be
+      # on this runner. dash is what proves it.
+      - name: Scripts are POSIX sh
+        run: |
+          sudo apt-get install -y dash
+          dash -n run_tests.sh
+          dash -n scripts/check.sh
+          dash -n scripts/doc.sh
