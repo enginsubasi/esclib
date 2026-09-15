@@ -1,6 +1,6 @@
 # esclib backlog
 
-Created 2026-08-05, last updated 2026-08-06.
+Created 2026-08-05, last updated 2026-09-15.
 
 Every item on this list has been built, and the one decision it carried is settled. Each entry records what was actually done and, where the outcome differed from the proposal, why.
 
@@ -66,9 +66,33 @@ Implemented in `2e0fd20`. `Encoder_Test` asserts 44 checks, and all three of its
 
 Implemented in `681e070` and `ae49b80`, tested inside the existing `Math_Test`, which now asserts 111 checks.
 
+## 7. Widths, and the Q16 variants — DONE 06/08/2026
+
+Not proposed here — this entry records it because nothing else did, and eight commits of it went in unremarked after the list above was closed.
+
+The plain integer half was finished first: `mafIterationi32`, `slewIterationu32`, `deadbandIterationu32`, both integer widths of `hysteresis`, and `statCovarianceu32`, which was the last hole in `statistic`. `deadbandInitu32` was also fixed to accept a zero threshold, which the other two widths already did.
+
+Then three modules whose arithmetic is not integer arithmetic got a **Q16 fixed point variant**: `pid`, `ramp` and `alphabeta`. The scale is 65536 for 1.0 and it sits on the tuning parameters rather than on the signal, so a caller wires an ADC reading in unscaled. None of the three carries a `ts`: limits and gains are per sample, and the caller folds the period in once instead of paying a float multiply per call, which is the arithmetic the variant exists to avoid.
+
+`ramp` was the one with a real question in it, and the answer was better than expected. `sqrtf ( 2 * a * remaining )` is the whole module, and an integer square root over a Q32 product returns a Q16 value — the scale falls out of the root for free, so the fixed point brake point is the float one rather than an approximation of it. The product is the variant's range limit and `ramp.c` records where it overflows.
+
+Implemented in `23f4f8e`, `f00190d`, `b2b46f3`, `4cde7b0`, `c769d66`, `81ae139`, `ded0885` and `bdb2ced`. The exported symbol count went from 220 to 251, and every one of the new ones is covered by the existing tests.
+
+## 8. The tree said things about itself that were no longer true — DONE 15/09/2026
+
+Five weeks after the work above, none of it was written down. CLAUDE.md still claimed 220 exported symbols, the backlog still ended with "nothing is outstanding", and the word Q16 appeared nowhere outside the three file banners. A general review found that and four smaller things, and all of them are fixed:
+
+- **CLAUDE.md** now carries the widths and the Q16 scale as a section of the module narrative, and its counts match the tree.
+- **`rules.md`** was an empty placeholder and is now the architectural half of the rules — freestanding constraints, module independence, the driver-struct pattern, time, widths, preconditions, testing. `codingReference.md` keeps the code-level half and neither repeats the other.
+- **`README.md`** was nine lines with no module list, for a library whose whole consumption model is picking one module out of thirty-four. It is now a module map with a width column.
+- **`scripts/check.sh`** replaces the three command blocks CLAUDE.md asked a reader to paste, and adds a prefix check the tree had never had. **`scripts/doc.sh`** generates the Doxygen reference into the already ignored `doc/`; `WARN_IF_UNDOCUMENTED` went off in the Doxyfile because headers stay pure declarations by convention, which was 295 warnings of noise hiding a clean tree.
+- **`.github/workflows/ci.yml`** runs both scripts, the tests and the cross link on every push. The five week gap between the work and its record is exactly what CI is for.
+- **`src/communication/comsec.c`** was a zero byte file. CLAUDE.md described it as holding a banner, which is what it holds now.
+- **`.gitattributes`** now pins `*.sh` to LF. Without it a fresh clone on Windows checks the scripts out with CRLF, which `dash` will not run — the one thing that would have made the runner useless on the machine it was written on.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

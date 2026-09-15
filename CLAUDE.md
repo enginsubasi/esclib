@@ -24,7 +24,13 @@ The two protocol modules answer different problems and only one of them checks w
 
 `checksum` is what goes into that hook when a full CRC is more than the link needs. Five stateless functions — `checksumXor`, `checksumSum8`, `checksumSum16`, `checksumFletcher16`, `checksumAdler32` — each returning its **own natural width** rather than a common one, which is the whole reason only the `uint16_t` pair fits `comstxetxInit`'s callback. Widening `checksumSum8` to sixteen bits would make it fit too and would be a lie about how many bits of protection it carries. The choice among them is one question: `xor` and the two sums are blind to a reordering, because neither accumulator depends on where a byte sits; `Fletcher16` sees it for nearly the cost of a plain sum, by summing the running total rather than the bytes; `Adler32` is Fletcher with a wider modulus, stronger on long payloads and notably weak on short ones where its first accumulator has barely left its seed.
 
-There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself. `run_tests.sh` at the root is not an exception to that: it builds and runs the tests, and nothing that ships.
+Widths are a running theme rather than a module, and the rule is the one `emaf` set: an integer variant lives in the same file as the float one, because it is a width of that module and not a module of its own. The plain integer half was finished on 06/08/2026 — `maf` gained `i32`, `slew` and `deadband` gained `u32`, `hysteresis` gained both, and `statCovarianceu32` closed the last hole in `statistic`. What is still uncovered is deliberate rather than pending: `mathMap` has no `u32` because a `u32` map cannot express the descending input range that would earn it, and `mathAbsolute` has no `u32` because the answer would be the argument.
+
+Three modules needed more than a width, because their arithmetic is not integer arithmetic at all, and they got a **Q16 fixed point variant** on the same day: `pidIniti32`, `rampIniti32` and `alphabetaIniti32`. The scale is one constant, 65536 for 1.0, and it sits on the **tuning parameters** rather than on the signal — `pid`'s three gains, `ramp`'s two rate limits and `alphabeta`'s two coefficients are Q16, while the error, measurement, target and position a caller wires in stay in plain units, so an ADC reading goes in unscaled. `pid`'s term limits are plain too, in error units, which is where the float variant clamps as well. The one output that is not plain is velocity: `rampGetVelocityi32` and `alphabetaGetVelocityi32` report Q16 units per sample, because a slow move spends most of its life below one unit per sample and an integer would report zero for nearly all of it.
+
+Two things follow from that scale and are worth knowing before reaching for these. **They carry no `ts`.** The float `pid` and `ramp` take a sample period at `Init` so their gains and limits read in units per second; the Q16 ones express the same limits per sample and let the caller fold the period into the constants once, rather than carrying a float multiply into every call — which is the arithmetic the variant exists to avoid. And **`ramp`'s braking envelope survives the change intact**: `sqrtf ( 2 * a * remaining )` becomes an integer square root over a Q32 product, and the square root of a Q32 value is a Q16 one, so the scale falls out of the root for free and the brake point is the one the float path computes. That product is also the variant's range limit, formed in `int64_t`, and `ramp.c` records where it overflows.
+
+There is **no build system** — no Makefile, no CMake. The library is consumed by copying/including the module source pairs into a target project. Nothing here produces an artifact by itself. `run_tests.sh` at the root and the two scripts under `scripts/` are not exceptions to that: they build and run the tests, check the tree and generate the reference, and nothing that ships.
 
 ## Building and testing
 
@@ -47,6 +53,17 @@ CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
 It is written to POSIX `sh` and is checked under `dash`, not only under the Git Bash that happens to be on this machine — a process substitution would work here and fail elsewhere. It also deletes the stray `output.txt` that `WriteToAFile_Test` drops into the working directory, which otherwise gets committed by accident sooner or later.
 
 An `output.txt` difference is reported and never counted as a failure, because regenerating one is a judgement call about whether the module moved or the expectation did.
+
+Two more scripts sit under `scripts/`, added 15/09/2026, and follow the same no-maintenance rule — their file lists come from the tree, so a new module needs no edit to either:
+
+```bash
+sh scripts/check.sh    # -Wall -Wextra over src/ and drv/, header coexistence, symbol coverage
+sh scripts/doc.sh      # the Doxygen reference into doc/, which is .gitignore'd
+```
+
+`scripts/check.sh` is the whole Verification section below in one command, and its exit status is the number of checks that failed. It defaults to `arm-none-eabi-gcc` and falls back to `gcc`; it never runs what it builds, so either works.
+
+`.github/workflows/ci.yml` runs `scripts/check.sh`, `run_tests.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
 
 A single test still builds directly, and that is often what you want mid-change:
 
@@ -179,37 +196,29 @@ Commit messages are terse and prefixed: `+` for additions, `*` for fixes/updates
 
 ## Verification
 
-Every `.c` under `src/` and `drv/` compiles clean under `-Wall -Wextra` — **zero warnings, no exceptions** — and every `test/` program links. A new warning is a regression, not background noise. Check the whole tree with:
+Every `.c` under `src/` and `drv/` compiles clean under `-Wall -Wextra` — **zero warnings, no exceptions** — and every `test/` program links. A new warning is a regression, not background noise.
 
 ```bash
-for f in src/*/*.c drv/*.c; do m=$(basename $(dirname "$f")); inc="inc/$m"; [ -d "$inc" ] || inc="drv"; \
-  arm-none-eabi-gcc -c -Wall -Wextra -I"$inc" -Idrv "$f" -o /dev/null; done
+sh scripts/check.sh
 ```
 
-Because every header must be independently includable, also check that they all coexist in one translation unit — this is what catches duplicate include guards and clashing typedefs:
+That runs the three checks this section used to spell out by hand, and exits with the number that failed:
 
-```bash
-for h in inc/*/*.h drv/*.h; do echo "#include \"$(basename $h)\""; done > /tmp/allhdr.c
-echo "int main(void){return 0;}" >> /tmp/allhdr.c
-arm-none-eabi-gcc -c -Wall $(for d in inc/*/ drv/; do echo -n " -I$d"; done) /tmp/allhdr.c -o /dev/null
-```
+- **Warnings.** Every `.c` under `src/` and `drv/` under `-Wall -Wextra`, each with its own `inc/<module>` on the include path.
+- **Headers.** Every header `#include`d into one translation unit, which is what catches a duplicate include guard or a clashing typedef. Each must also be independently includable on its own.
+- **Symbols.** Every `' T '` symbol from the objects is grepped for in `test/*/*.c`, and checked against the module prefixes derived from the source file names — so an untested export and an unprefixed one both fail here.
+
+The script keeps its objects, so `arm-none-eabi-nm` over the directory it names still answers a one-off question about the symbol table.
 
 ## Known gaps — not bugs, just unwritten
 
 These are stubs awaiting design, not defects. Leave them alone unless implementing the feature is the task.
 
 - `src/communication/comsec.c` and `src/communication/comsafe.c` contain only a file banner. `inc/communication/comsec.h`, `comsafe.h`, `comgenbuf.h` and `inc/matrix/matrixlib.h` declare types but no function prototypes. Each of those four headers opens with a Doxygen `@warning` saying so — keep it there, it is the only thing standing between a consumer and a link error.
-- `rules.md` is an empty placeholder.
 
 ## Testing
 
-Twenty-five test programs cover every module that has functions, and **every one of the 220 exported symbols is referenced by at least one of them**. The only files with no test are `comsec`, `comsafe`, `comgenbuf` and `matrixlib`, which have nothing to test — see the known gaps above. Check that coverage claim still holds after adding an exported function:
-
-```bash
-cat test/*/*.c > /tmp/alltests.c
-arm-none-eabi-nm /tmp/objs/*.o | grep ' T ' | awk '{print $3}' | sort -u | \
-  while read s; do grep -q "\b$s\b" /tmp/alltests.c || echo "UNCALLED: $s"; done
-```
+Twenty-five test programs cover every module that has functions, and **every one of the 251 exported symbols is referenced by at least one of them**. The only files with no test are `comsec`, `comsafe`, `comgenbuf` and `matrixlib`, which have nothing to test — see the known gaps above. `sh scripts/check.sh` verifies that claim, so it is checked on every push rather than remembered.
 
 **The assert style is the house style now.** Eighteen tests assert instead of printing values for a human to compare, so they have no `output.txt` and return non-zero on failure: `ShiftRegister_Test`, `Filter_Test`, `FilterSet_Test`, `SortSearch_Test`, `Math_Test`, `ArrayMatrix_Test`, `CRC_Test`, `Logic_Test`, `Protocol_Test`, `DcMotor_Test`, `Buffer_Test`, `ComplexMath_Test`, `Control_Test`, `SoftTimer_Test`, `Interp_Test`, `Ramp_Test`, `Checksum_Test` and `Encoder_Test`. Write new tests that way.
 
@@ -231,7 +240,7 @@ Several tests aim a specific check at a specific fixed bug, so the regression fa
 | `Ramp_Test` | the setpoint overshooting its target on the last step and oscillating about it, which is what dropping `rampIteration`'s final step clamp causes. The check is made on every step of the run, not only at the end, because a single step past the target followed by a turn around leaves no trace in the converged value. Separately, the velocity on the arriving step — because the clamp *masks* a wrong brake point. Braking at a fixed remaining distance instead of at the square root envelope still lands the ramp exactly on the target, so no position check can tell the two apart; what gives it away is arriving at 92 out of a cap of 100 instead of the 17 the envelope produces |
 | `Encoder_Test` | a transition where both channels changed being guessed at instead of counted. A step was missed and its direction is unrecoverable, so a table answering ±2 there looks right on a clean signal and drifts silently on a noisy one. Also `encoderInit` ignoring the pin levels it was given, which makes the first `encoderUpdate` read as a transition that never happened, and either side treating a masked register read as low because it is not exactly one |
 
-**The suite was run for the first time on 05/08/2026** and all twenty-one programs build clean and pass, with no warnings from any test file. Until that day nothing here had ever been executed — the machine carried only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds, so every check was compile-time and link-time. The expected values in the assert-style tests had been derived from independent models rather than from the C itself — an IEEE binary32 transliteration for the float ones, the CRC polynomials for `CRC_Test`, a state-machine replay for `Protocol_Test`, hand simulation for `SoftTimer_Test` — and the run confirmed every one of them.
+**The suite was run for the first time on 05/08/2026** and all twenty-one programs that existed that day built clean and passed, with no warnings from any test file. Until that day nothing here had ever been executed — the machine carried only `arm-none-eabi-gcc`, which cross-compiles but cannot run what it builds, so every check was compile-time and link-time. The expected values in the assert-style tests had been derived from independent models rather than from the C itself — an IEEE binary32 transliteration for the float ones, the CRC polynomials for `CRC_Test`, a state-machine replay for `Protocol_Test`, hand simulation for `SoftTimer_Test` — and the run confirmed every one of them.
 
 Running them needs a host compiler, which the ARM toolchain is not. Each test is its own `main` plus the module sources its `#include "..."` lines name, so the dependency set is derivable and needs no list:
 
