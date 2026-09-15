@@ -156,9 +156,17 @@ notably weak on short ones.
 |---|---|
 | `comstxetx` | Binary framing with DLE escaping, so any byte value crosses the link, and a two-byte check installed at `Init` — `crc16` or `checksumFletcher16` go in directly. A bad frame is dropped and counted. |
 | `comat` | AT command protocol, ASCII, no check by design. |
+| `comgenbuf` | Queue of variable-length packets in one flat buffer. Keeps the packet boundaries `circBuf` loses. |
 
-Both are byte-driven state machines: `xxxReceive` per byte from the ISR,
-`xxxEvaluate` from the main loop, `xxxTimeoutCounter` from a periodic tick.
+The first two are byte-driven state machines: `xxxReceive` per byte from the
+ISR, `xxxEvaluate` from the main loop, `xxxTimeoutCounter` from a periodic tick.
+
+`comgenbuf` is the layer above them. `circBuf` is a queue of bytes and loses
+where one packet ends and the next begins; this stores a two-byte length with
+each payload, so a frame the ISR assembled comes back whole. A push is all or
+nothing, and a full queue refuses the newest packet rather than dropping the
+oldest — the opposite of `circBuf`'s overwrite mode, because dropping a packet
+already accepted loses a message the caller was told it would get.
 
 ### Buffers, timing and I/O
 

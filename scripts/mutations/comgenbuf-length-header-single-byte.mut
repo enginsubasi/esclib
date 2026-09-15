@@ -1,0 +1,40 @@
+# what: The length is read from one byte instead of two, so any packet past 255 bytes comes back the wrong length.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comgenbuf.c
+TEST ComGenBuf_Test
+--- FIND
+uint32_t comgenbufPeekLength ( const comgenbuf_t* const driver )
+{
+    uint32_t retVal = 0;
+
+    if ( driver->count != 0 )
+    {
+        retVal = ( ( uint32_t ) comgenbufPeekByte ( driver, 0 ) ) << 8;
+        retVal |= ( uint32_t ) comgenbufPeekByte ( driver, 1 );
+    }
+    else
+    {
+        retVal = 0;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint32_t comgenbufPeekLength ( const comgenbuf_t* const driver )
+{
+    uint32_t retVal = 0;
+
+    if ( driver->count != 0 )
+    {
+        retVal = ( uint32_t ) comgenbufPeekByte ( driver, 1 );
+    }
+    else
+    {
+        retVal = 0;
+    }
+
+    return ( retVal );
+}
+--- END

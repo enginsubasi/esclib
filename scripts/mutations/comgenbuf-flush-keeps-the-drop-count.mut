@@ -1,0 +1,25 @@
+# what: A flush leaves the drop count standing, so a number about one episode of a slow consumer carries into the next.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comgenbuf.c
+TEST ComGenBuf_Test
+--- FIND
+void comgenbufFlush ( comgenbuf_t* driver )
+{
+    driver->head = 0;
+    driver->tail = 0;
+    driver->used = 0;
+    driver->count = 0;
+    driver->dropCount = 0;
+}
+--- REPLACE
+void comgenbufFlush ( comgenbuf_t* driver )
+{
+    driver->head = 0;
+    driver->tail = 0;
+    driver->used = 0;
+    driver->count = 0;
+    /* Intentionally blank */
+}
+--- END

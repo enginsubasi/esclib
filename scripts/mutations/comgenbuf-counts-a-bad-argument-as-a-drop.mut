@@ -1,0 +1,91 @@
+# what: A NULL pointer or a zero length is counted in the drop count, which then no longer means the consumer is too slow.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comgenbuf.c
+TEST ComGenBuf_Test
+--- FIND
+uint8_t comgenbufPush ( comgenbuf_t* driver, const uint8_t* const data, uint32_t length )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t need = 0;
+
+    if ( ( driver != NULL ) && ( data != NULL ) && ( length != 0 ) &&
+            ( length <= COMGENBUF_MAX_PACKET ) )
+    {
+        need = length + COMGENBUF_HEADER;
+
+        if ( ( driver->size - driver->used ) >= need )
+        {
+            comgenbufPutByte ( driver, ( uint8_t ) ( ( length >> 8 ) & 0xFFu ) );
+            comgenbufPutByte ( driver, ( uint8_t ) ( length & 0xFFu ) );
+
+            for ( i = 0; i < length; ++i )
+            {
+                comgenbufPutByte ( driver, data[ i ] );
+            }
+
+            driver->used += need;
+            ++driver->count;
+
+            retVal = TRUE;
+        }
+        else
+        {
+            ++driver->dropCount;
+
+            retVal = FALSE;
+        }
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t comgenbufPush ( comgenbuf_t* driver, const uint8_t* const data, uint32_t length )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t need = 0;
+
+    if ( ( driver != NULL ) && ( data != NULL ) && ( length != 0 ) &&
+            ( length <= COMGENBUF_MAX_PACKET ) )
+    {
+        need = length + COMGENBUF_HEADER;
+
+        if ( ( driver->size - driver->used ) >= need )
+        {
+            comgenbufPutByte ( driver, ( uint8_t ) ( ( length >> 8 ) & 0xFFu ) );
+            comgenbufPutByte ( driver, ( uint8_t ) ( length & 0xFFu ) );
+
+            for ( i = 0; i < length; ++i )
+            {
+                comgenbufPutByte ( driver, data[ i ] );
+            }
+
+            driver->used += need;
+            ++driver->count;
+
+            retVal = TRUE;
+        }
+        else
+        {
+            ++driver->dropCount;
+
+            retVal = FALSE;
+        }
+    }
+    else
+    {
+        ++driver->dropCount;
+
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

@@ -1,0 +1,77 @@
+# what: A destination too small gets a truncated packet instead of a refusal, so a parser is handed half a frame.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comgenbuf.c
+TEST ComGenBuf_Test
+--- FIND
+uint32_t comgenbufPop ( comgenbuf_t* driver, uint8_t* data, uint32_t capacity )
+{
+    uint32_t retVal = 0;
+    uint32_t length = 0;
+    uint32_t i = 0;
+
+    if ( ( driver->count != 0 ) && ( data != NULL ) )
+    {
+        length = comgenbufPeekLength ( driver );
+
+        if ( capacity >= length )
+        {
+            for ( i = 0; i < length; ++i )
+            {
+                data[ i ] = comgenbufPeekByte ( driver, COMGENBUF_HEADER + i );
+            }
+
+            comgenbufDropBytes ( driver, length + COMGENBUF_HEADER );
+            --driver->count;
+
+            retVal = length;
+        }
+        else
+        {
+            retVal = 0;
+        }
+    }
+    else
+    {
+        retVal = 0;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint32_t comgenbufPop ( comgenbuf_t* driver, uint8_t* data, uint32_t capacity )
+{
+    uint32_t retVal = 0;
+    uint32_t length = 0;
+    uint32_t i = 0;
+
+    if ( ( driver->count != 0 ) && ( data != NULL ) )
+    {
+        length = comgenbufPeekLength ( driver );
+
+        if ( capacity >= 1u )
+        {
+            for ( i = 0; i < length; ++i )
+            {
+                data[ i ] = comgenbufPeekByte ( driver, COMGENBUF_HEADER + i );
+            }
+
+            comgenbufDropBytes ( driver, length + COMGENBUF_HEADER );
+            --driver->count;
+
+            retVal = length;
+        }
+        else
+        {
+            retVal = 0;
+        }
+    }
+    else
+    {
+        retVal = 0;
+    }
+
+    return ( retVal );
+}
+--- END

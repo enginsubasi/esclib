@@ -1,0 +1,36 @@
+# what: A read past the end of the ring is not wrapped back to the start, so a packet that straddles the wrap comes back as whatever was past the buffer.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comgenbuf.c
+TEST ComGenBuf_Test
+--- FIND
+static uint8_t comgenbufPeekByte ( const comgenbuf_t* const driver, uint32_t offset )
+{
+    uint32_t index = 0;
+
+    index = driver->tail + offset;
+
+    if ( index >= driver->size )
+    {
+        index -= driver->size;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( driver->buffer[ index ] );
+}
+--- REPLACE
+static uint8_t comgenbufPeekByte ( const comgenbuf_t* const driver, uint32_t offset )
+{
+    uint32_t index = 0;
+
+    index = driver->tail + offset;
+
+    /* Intentionally blank */
+
+    return ( driver->buffer[ index ] );
+}
+--- END
