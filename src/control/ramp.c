@@ -3,7 +3,7 @@
   *
   * @file      ramp.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.3.0
+  * @version   0.3.1
   * @date      05/08/2026
   *
   * @brief     Setpoint profile under a velocity and an acceleration limit.
@@ -24,6 +24,10 @@
   *            no FPU. sqrtf is replaced by an integer square root, @n
   *            and the limits are per sample so no period is @n
   *            carried. @n
+  * 15/09/2026 The Q16 scaling is a multiply rather than a left @n
+  *            shift. Shifting a negative signed value left is @n
+  *            undefined in C, and every one of these took one @n
+  *            while giving the right answer. UBSan found them. @n
   *
   ******************************************************************************
   */
@@ -316,7 +320,9 @@ uint8_t rampIniti32 ( rampi32_t* driver, int32_t maxVelocity, int32_t maxAcceler
         driver->maxVelocity = ( int64_t ) maxVelocity;
         driver->maxAcceleration = ( int64_t ) maxAcceleration;
 
-        driver->position = ( ( int64_t ) positionInit ) << RAMP_Q;
+        /* Multiplied rather than shifted: a negative positionInit
+           shifted left is undefined in C. */
+        driver->position = ( ( int64_t ) positionInit ) * RAMP_ONE;
         driver->velocity = 0;
         driver->arrived = TRUE;
 
@@ -358,7 +364,8 @@ void rampIterationi32 ( rampi32_t* driver, int32_t target )
     int64_t step = 0;
     int64_t stepMagnitude = 0;
 
-    targetQ = ( ( int64_t ) target ) << RAMP_Q;
+    /* Multiplied rather than shifted, for the reason rampIniti32 gives. */
+    targetQ = ( ( int64_t ) target ) * RAMP_ONE;
 
     remaining = targetQ - driver->position;
 

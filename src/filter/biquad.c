@@ -3,7 +3,7 @@
   *
   * @file      biquad.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.2.0
+  * @version   0.2.1
   * @date      02/08/2026
   *
   * @brief     Second order IIR filter, transposed direct form II.
@@ -18,6 +18,10 @@
   *            in hertz: computing one cosine at boot would pull @n
   *            the whole software float library in, which is the @n
   *            cost the variant exists to avoid. @n
+  * 15/09/2026 The Q16 scaling is a multiply rather than a left @n
+  *            shift. Shifting a negative signed value left is @n
+  *            undefined in C, and every one of these took one @n
+  *            while giving the right answer. UBSan found them. @n
   *
   * @note      The exponential moving average is a single pole low pass whose
   *            corner is buried in its alpha and which rolls off at 6 dB per
@@ -574,7 +578,9 @@ void biquadReseti32 ( biquadi32_t* driver, int32_t inputInit )
 
     if ( denominator != 0 )
     {
-        numerator = ( ( ( int64_t ) inputInit ) << BIQUAD_Q ) *
+        /* Multiplied rather than shifted: a negative inputInit shifted
+           left is undefined in C. */
+        numerator = ( ( ( int64_t ) inputInit ) * BIQUAD_ONE ) *
                         ( ( ( int64_t ) driver->b0 ) + driver->b1 + driver->b2 );
 
         half = denominator / 2;

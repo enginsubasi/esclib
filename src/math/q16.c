@@ -3,7 +3,7 @@
   *
   * @file      q16.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.1.1
   * @date      15/09/2026
   *
   * @brief     Q16 fixed point arithmetic for the caller.
@@ -13,6 +13,10 @@
   *
   * @par History
   * 15/09/2026 Created. @n
+  * 15/09/2026 The Q16 scaling is a multiply rather than a left @n
+  *            shift. Shifting a negative signed value left is @n
+  *            undefined in C, and every one of these took one @n
+  *            while giving the right answer. UBSan found them. @n
   *
   * @note      Five modules in this library carry a Q16 fixed point variant —
   *            pid, ramp, alphabeta, biquad and mathLerpi32 — and by the module
@@ -192,7 +196,7 @@ int32_t q16FromInt ( int32_t value )
 {
     int32_t retVal = 0;
 
-    retVal = q16Saturate ( ( ( int64_t ) value ) << Q16_SHIFT );
+    retVal = q16Saturate ( ( ( int64_t ) value ) * Q16_ONE );
 
     return ( retVal );
 }
@@ -284,7 +288,7 @@ int32_t q16Div ( int32_t dividend, int32_t divisor )
     }
     else
     {
-        numerator = ( ( int64_t ) dividend ) << Q16_SHIFT;
+        numerator = ( ( int64_t ) dividend ) * Q16_ONE;
 
         half = ( ( int64_t ) divisor ) / 2;
 

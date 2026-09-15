@@ -512,6 +512,45 @@ static void alphabetai32Case ( void )
             ( uint8_t ) ( alphabetaGetPositioni32 ( &driver ) == 1000000 ) );
 
     /* A ramp that walks well past the Q16 int32_t ceiling. */
+    /*
+     * Below zero, on both the starting position and the measurements. Until
+     * 15/09/2026 nothing here went negative, and the Q16 scaling on both
+     * paths was a left shift of a signed value — which is undefined in C the
+     * moment that value is negative, unlike the right shift the module
+     * documents and accepts.
+     *
+     * These checks do not catch that on their own: gcc shifts a negative left
+     * exactly as one would expect, so the answers were right. What they do is
+     * make the line reachable, and a sanitizer only reports what the tests
+     * execute. Verified by putting the shift back — the plain build still
+     * passes and the UBSan build traps.
+     */
+    check ( "Init below zero",
+            alphabetaIniti32 ( &driver, 32768, 13107, -1000 ) );
+    check ( "and the position reads back negative",
+            ( uint8_t ) ( alphabetaGetPositioni32 ( &driver ) == -1000 ) );
+
+    for ( i = 0; i < 200u; ++i )
+    {
+        alphabetaIterationi32 ( &driver, -2000 );
+    }
+
+    check ( "it tracks a negative measurement",
+            ( uint8_t ) ( ( alphabetaGetPositioni32 ( &driver ) < -1900 ) &&
+                          ( alphabetaGetPositioni32 ( &driver ) > -2100 ) ) );
+
+    check ( "Init for a fall through zero",
+            alphabetaIniti32 ( &driver, 32768, 13107, 500 ) );
+
+    for ( i = 0; i < 300u; ++i )
+    {
+        alphabetaIterationi32 ( &driver, -500 );
+    }
+
+    check ( "and it follows a signal across zero",
+            ( uint8_t ) ( ( alphabetaGetPositioni32 ( &driver ) < -450 ) &&
+                          ( alphabetaGetPositioni32 ( &driver ) > -550 ) ) );
+
     check ( "re-init high", alphabetaIniti32 ( &driver, 32768, 13107, 1000000 ) );
     tracked = TRUE;
 
@@ -887,6 +926,36 @@ static void biquadi32Case ( void )
     biquadReseti32 ( &driver, 5000 );
     check ( "a band pass settles on zero as well",
             ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 0 ) );
+
+    /*
+     * A negative steady input. biquadReseti32 scales it into Q16, and that
+     * scaling was a left shift of a signed value, which is undefined in C for
+     * a negative one. A load cell reading below tare is the ordinary case that
+     * reaches it — and reaching it is the point, since the answer was right
+     * either way and only a sanitizer can see the difference.
+     */
+    check ( "Init for a negative reset", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+    biquadReseti32 ( &driver, -2500 );
+    check ( "reset settles a low pass on a negative input",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == -2500 ) );
+
+    flat = TRUE;
+
+    for ( i = 0; i < 100u; ++i )
+    {
+        biquadIterationi32 ( &driver, -2500 );
+
+        if ( biquadGetOutputi32 ( &driver ) != -2500 )
+        {
+            flat = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    check ( "and it stays there", flat );
 
     check ( "Init a notch", biquadIniti32 ( &driver, BQ_NOTCH ) );
     biquadReseti32 ( &driver, 5000 );

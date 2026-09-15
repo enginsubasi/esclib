@@ -1,4 +1,4 @@
-# what: q16Div divides before applying the scale instead of after, so every quotient below one comes out as zero.
+# what: q16Div applies the scale after the division instead of before, so every quotient below one comes out as zero.
 #
 # Applied by scripts/mutate.sh, which requires the FIND block to match
 # exactly once and the named test to fail because of it.
@@ -28,7 +28,7 @@ int32_t q16Div ( int32_t dividend, int32_t divisor )
     }
     else
     {
-        numerator = ( ( int64_t ) dividend ) << Q16_SHIFT;
+        numerator = ( ( int64_t ) dividend ) * Q16_ONE;
 
         half = ( ( int64_t ) divisor ) / 2;
 

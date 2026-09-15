@@ -3,7 +3,7 @@
   *
   * @file      alphabeta.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.2.0
+  * @version   0.2.1
   * @date      02/08/2026
   *
   * @brief     Alpha beta tracking filter.
@@ -28,6 +28,10 @@
   *            no FPU. It carries the velocity in units per sample @n
   *            rather than per second, which takes dt out of the @n
   *            update entirely. @n
+  * 15/09/2026 The Q16 scaling is a multiply rather than a left @n
+  *            shift. Shifting a negative signed value left is @n
+  *            undefined in C, and every one of these took one @n
+  *            while giving the right answer. UBSan found them. @n
   *
   ******************************************************************************
   */
@@ -193,7 +197,9 @@ uint8_t alphabetaIniti32 ( alphabetai32_t* driver, int32_t alpha, int32_t beta, 
         driver->alpha = alpha;
         driver->beta = beta;
 
-        driver->position = ( ( int64_t ) positionInit ) << ALPHABETA_Q;
+        /* Multiplied rather than shifted: a negative positionInit
+           shifted left is undefined in C. */
+        driver->position = ( ( int64_t ) positionInit ) * ALPHABETA_ONE;
         driver->velocity = 0;
 
         retVal = TRUE;
@@ -235,7 +241,9 @@ void alphabetaIterationi32 ( alphabetai32_t* driver, int32_t measurement )
     predicted = driver->position + driver->velocity;
 
     // How wrong that was.
-    residual = ( ( ( int64_t ) measurement ) << ALPHABETA_Q ) - predicted;
+    /* Multiplied rather than shifted, for the reason alphabetaIniti32
+       gives. A measurement below zero is ordinary here. */
+    residual = ( ( ( int64_t ) measurement ) * ALPHABETA_ONE ) - predicted;
 
     driver->position = predicted + ( ( driver->alpha * residual ) >> ALPHABETA_Q );
     driver->velocity = driver->velocity + ( ( driver->beta * residual ) >> ALPHABETA_Q );
