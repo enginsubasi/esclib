@@ -47,8 +47,9 @@ test/<Name>_Test/                                   one standalone main() per mo
 sample/                                             standalone examples, not library code
 ```
 
-A header with no source, or a source with no header, is a defect unless it is
-listed as a known gap in `CLAUDE.md`.
+A header with no source, or a source with no header, is a defect. There are no
+exceptions: the four stubs this rule used to carve out — `comgenbuf`,
+`matrixlib`, `comsafe` and `comsec` — were implemented on 15/09/2026.
 
 There is no build system and there is not meant to be one. Nothing in this tree
 produces a shippable artifact. `run_tests.sh` builds and runs the tests and

@@ -1,0 +1,165 @@
+# what: The session id is not checked, so a correctly tagged frame meant for another session is accepted.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comsec.c
+TEST ComSec_Test
+--- FIND
+uint8_t comsecCheckFrame ( comsec_t* driver, const uint8_t* const frame, uint32_t frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t payloadLength = 0;
+    uint32_t overhead = 0;
+    uint32_t counter = 0;
+    uint16_t id = 0;
+    uint8_t expected[ COMSEC_MAX_TAG ];
+
+    overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+
+    if ( ( driver == NULL ) || ( frame == NULL ) )
+    {
+        retVal = FALSE;
+    }
+    else if ( ( frameLength <= overhead ) ||
+                ( ( frameLength - overhead ) > driver->rxSize ) )
+    {
+        comsecReject ( driver, ( uint8_t ) CSEC_LENGTH );
+
+        retVal = FALSE;
+    }
+    else
+    {
+        payloadLength = frameLength - overhead;
+
+        driver->mac ( frame, COMSEC_HEADER + payloadLength, expected );
+
+        if ( comsecTagEqual ( expected, &frame[ COMSEC_HEADER + payloadLength ],
+                                ( uint32_t ) driver->tagSize ) == FALSE )
+        {
+            comsecReject ( driver, ( uint8_t ) CSEC_TAG );
+
+            retVal = FALSE;
+        }
+        else
+        {
+            id = ( uint16_t ) ( ( ( uint16_t ) frame[ COMSEC_ID_HIGH ] ) << 8 );
+            id = ( uint16_t ) ( id | ( uint16_t ) frame[ COMSEC_ID_LOW ] );
+
+            counter = ( ( uint32_t ) frame[ COMSEC_COUNTER ] ) << 24;
+            counter |= ( ( uint32_t ) frame[ COMSEC_COUNTER + 1u ] ) << 16;
+            counter |= ( ( uint32_t ) frame[ COMSEC_COUNTER + 2u ] ) << 8;
+            counter |= ( uint32_t ) frame[ COMSEC_COUNTER + 3u ];
+
+            if ( id != driver->sessionId )
+            {
+                comsecReject ( driver, ( uint8_t ) CSEC_SESSION );
+
+                retVal = FALSE;
+            }
+            else if ( ( driver->rxArmed == TRUE ) &&
+                        ( counter <= driver->rxCounter ) )
+            {
+                comsecReject ( driver, ( uint8_t ) CSEC_REPLAY );
+
+                retVal = FALSE;
+            }
+            else
+            {
+                for ( i = 0; i < payloadLength; ++i )
+                {
+                    driver->rxBuffer[ i ] = frame[ COMSEC_PAYLOAD + i ];
+                }
+
+                driver->rxPayloadLength = payloadLength;
+                driver->rxCounter = counter;
+                driver->rxArmed = TRUE;
+                driver->lastError = ( uint8_t ) CSEC_NONE;
+
+                retVal = TRUE;
+            }
+        }
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t comsecCheckFrame ( comsec_t* driver, const uint8_t* const frame, uint32_t frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t payloadLength = 0;
+    uint32_t overhead = 0;
+    uint32_t counter = 0;
+    uint16_t id = 0;
+    uint8_t expected[ COMSEC_MAX_TAG ];
+
+    overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+
+    if ( ( driver == NULL ) || ( frame == NULL ) )
+    {
+        retVal = FALSE;
+    }
+    else if ( ( frameLength <= overhead ) ||
+                ( ( frameLength - overhead ) > driver->rxSize ) )
+    {
+        comsecReject ( driver, ( uint8_t ) CSEC_LENGTH );
+
+        retVal = FALSE;
+    }
+    else
+    {
+        payloadLength = frameLength - overhead;
+
+        driver->mac ( frame, COMSEC_HEADER + payloadLength, expected );
+
+        if ( comsecTagEqual ( expected, &frame[ COMSEC_HEADER + payloadLength ],
+                                ( uint32_t ) driver->tagSize ) == FALSE )
+        {
+            comsecReject ( driver, ( uint8_t ) CSEC_TAG );
+
+            retVal = FALSE;
+        }
+        else
+        {
+            id = ( uint16_t ) ( ( ( uint16_t ) frame[ COMSEC_ID_HIGH ] ) << 8 );
+            id = ( uint16_t ) ( id | ( uint16_t ) frame[ COMSEC_ID_LOW ] );
+
+            counter = ( ( uint32_t ) frame[ COMSEC_COUNTER ] ) << 24;
+            counter |= ( ( uint32_t ) frame[ COMSEC_COUNTER + 1u ] ) << 16;
+            counter |= ( ( uint32_t ) frame[ COMSEC_COUNTER + 2u ] ) << 8;
+            counter |= ( uint32_t ) frame[ COMSEC_COUNTER + 3u ];
+
+            if ( id != id )
+            {
+                comsecReject ( driver, ( uint8_t ) CSEC_SESSION );
+
+                retVal = FALSE;
+            }
+            else if ( ( driver->rxArmed == TRUE ) &&
+                        ( counter <= driver->rxCounter ) )
+            {
+                comsecReject ( driver, ( uint8_t ) CSEC_REPLAY );
+
+                retVal = FALSE;
+            }
+            else
+            {
+                for ( i = 0; i < payloadLength; ++i )
+                {
+                    driver->rxBuffer[ i ] = frame[ COMSEC_PAYLOAD + i ];
+                }
+
+                driver->rxPayloadLength = payloadLength;
+                driver->rxCounter = counter;
+                driver->rxArmed = TRUE;
+                driver->lastError = ( uint8_t ) CSEC_NONE;
+
+                retVal = TRUE;
+            }
+        }
+    }
+
+    return ( retVal );
+}
+--- END

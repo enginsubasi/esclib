@@ -159,6 +159,7 @@ notably weak on short ones.
 | `comat` | AT command protocol, ASCII, no check by design. |
 | `comgenbuf` | Queue of variable-length packets in one flat buffer. Keeps the packet boundaries `circBuf` loses. |
 | `comsafe` | Black-channel safety framing over an untrusted transport: connection id, sequence number, independent check, watchdog. |
+| `comsec` | Authenticated framing with replay protection. The MAC is injected; the module holds no cryptography and provides no confidentiality. |
 
 The first two are byte-driven state machines: `xxxReceive` per byte from the
 ISR, `xxxEvaluate` from the main loop, `xxxTimeoutCounter` from a periodic tick.
@@ -177,6 +178,15 @@ the transport's own), and a watchdog for the case where nothing arrives at all.
 **It is framing, not cryptography** — it catches accidental corruption, loss,
 repetition and reordering, and nothing about it resists an attacker, which
 would need a MAC and a key it does not have.
+
+`comsec` is where that MAC goes. It carries a session id, a 32-bit counter and
+a tag computed by a function installed at `Init`, so the module itself contains
+no cryptography at all — the same hook `comstxetx` uses for its check. It gives
+**authenticity, integrity and replay protection, and no confidentiality**: the
+payload travels in the clear, and a caller who needs secrecy encrypts before
+handing it over. Its replay rule is *strictly greater*, not *next*, because a
+link may lose frames legitimately; the counter does not wrap, because two frames
+under one key and counter break every guarantee at once.
 
 ### Buffers, timing and I/O
 
@@ -246,10 +256,15 @@ CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
 
 ## Status
 
-Every module with functions has a test, and every exported symbol is referenced
-by at least one of them. `comsec`, `comsafe`, `comgenbuf` and `matrixlib` are
-reserved names with no implementation — each of their headers opens with a
-Doxygen `@warning` saying so.
+Every module has a test, and every one of the 342 exported symbols is
+referenced by at least one of them. There are no reserved names and no stubs
+left: `comgenbuf`, `matrixlib`, `comsafe` and `comsec` were placeholders from
+2022 and 2023 and were implemented on 15/09/2026.
+
+Sixty-eight mutations reintroduce a known defect each and require the test that
+pins it to fail; `sh scripts/mutate.sh` runs them and CI gates on the result.
+The whole library is about 20 kB of code on a Cortex-M0 at `-Os` and **zero
+bytes of RAM**.
 
 ## License
 

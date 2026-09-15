@@ -213,9 +213,25 @@ The lesson generalizes and is the same one that came out of the previous pass in
 
 `Sched_Test` asserts 61 checks and `Fsm_Test` 53, and all ten mutations are caught. `sched` is 256 bytes on a Cortex-M0 and `fsm` is 106.
 
+## 17. The four stubs — DONE 15/09/2026
+
+Names reserved in 2022 and 2023 that had never been written. `comgenbuf` had no `.c` at all and a struct with an index, a size and a buffer; `matrixlib` had a banner and a `mtrx_t` holding a bare `float*` with no dimensions, which no operation could have used; `comsafe` and `comsec` had a banner each and a header declaring nothing.
+
+**`comgenbuf`** is a queue of variable-length packets where `circBuf` queues bytes. Each packet is a two-byte length and its payload in one caller-owned ring. A push is all or nothing — half a frame handed to a parser is worse than no frame — and a full queue refuses the *newest* packet rather than dropping the oldest, which is the opposite of `circBuf`'s overwrite mode and is the point: dropping a packet already accepted loses a message the caller was told it would get.
+
+**`matrixlib`** is the linear algebra `basicmatrix` does not do. `mtrx_t` carries its shape; every operation returns a status because whether two shapes agree cannot be known when either was initialized. Aliasing is allowed for the element-wise operations and refused for multiply and transpose, where a result sharing storage with an operand would compute against values it had already overwritten. `matrixInverse` takes a scratch matrix rather than allocating one, pivots partially, and invents no epsilon for "nearly singular" — how close is too close depends on what the numbers mean.
+
+**`comsafe`** is the black-channel pattern: connection id, sequence, an independent check installed at `Init`, and a watchdog for the case where nothing arrives at all. Any rejection drops the channel and it stays down until `comsafeReset`, because only the caller knows whether the process may resume. **The test found a real defect in the module rather than the other way round**: the banner said a failure stands until a reset, and the code put the channel back into service on the next good frame. The banner was right.
+
+**`comsec`** is the one that had been unwritable, and the hook `comstxetx` already had is what unblocked it. It contains no cryptography: a session id, a 32-bit counter and a tag from an injected MAC. Its replay rule is *strictly greater* rather than *next*, which is exactly where it differs from `comsafe` — a link may lose frames legitimately, and the one thing that must never happen is a frame being accepted twice. The counter does not wrap; once spent, `comsecBuildFrame` refuses, because two frames under one key and counter break everything at once. A rejection does not stop the channel, unlike `comsafe`, because a link an attacker can reach would otherwise be denied service by anyone able to send a packet.
+
+Two things were written down rather than papered over. `comsec` **provides no confidentiality** and says so twice; a caller who needs secrecy encrypts before handing the payload over. And its tag comparison is constant time, which **no mutation can pin**: the early-exiting version rejects exactly the same frames and differs only in timing, so the pin table records the gap instead of pretending to cover it.
+
+Four tests, 77 + 80 + 88 + 91 checks, and twenty-five mutations all caught. With these in, **the Known gaps section of CLAUDE.md is empty for the first time** and the rule in `rules.md` — a header with no source is a defect — is unconditional.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, and the mutation harness that keeps the tests honest, with a mutation for every row of the pin table, and `q16`, `sched` and `fsm`. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

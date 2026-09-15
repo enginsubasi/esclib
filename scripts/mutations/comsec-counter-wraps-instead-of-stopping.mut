@@ -1,0 +1,145 @@
+# what: The counter wraps past its end instead of refusing to send, which puts two frames under one key and one counter.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comsec.c
+TEST ComSec_Test
+--- FIND
+uint8_t comsecBuildFrame ( comsec_t* driver, const uint8_t* const payload,
+                           uint32_t length, uint32_t* frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t total = 0;
+
+    if ( ( driver == NULL ) || ( payload == NULL ) || ( length == 0 ) )
+    {
+        retVal = FALSE;
+    }
+    else if ( driver->txCounter == 0xFFFFFFFFu )
+    {
+        driver->lastError = ( uint8_t ) CSEC_EXHAUSTED;
+
+        retVal = FALSE;
+    }
+    else
+    {
+        total = length + COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+
+        if ( total <= driver->txSize )
+        {
+            ++driver->txCounter;
+
+            driver->txBuffer[ COMSEC_ID_HIGH ] =
+                    ( uint8_t ) ( ( driver->sessionId >> 8 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_ID_LOW ] =
+                    ( uint8_t ) ( driver->sessionId & 0xFFu );
+
+            driver->txBuffer[ COMSEC_COUNTER ] =
+                    ( uint8_t ) ( ( driver->txCounter >> 24 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_COUNTER + 1u ] =
+                    ( uint8_t ) ( ( driver->txCounter >> 16 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_COUNTER + 2u ] =
+                    ( uint8_t ) ( ( driver->txCounter >> 8 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_COUNTER + 3u ] =
+                    ( uint8_t ) ( driver->txCounter & 0xFFu );
+
+            for ( i = 0; i < length; ++i )
+            {
+                driver->txBuffer[ COMSEC_PAYLOAD + i ] = payload[ i ];
+            }
+
+            driver->mac ( driver->txBuffer, COMSEC_HEADER + length,
+                            &driver->txBuffer[ COMSEC_HEADER + length ] );
+
+            if ( frameLength != NULL )
+            {
+                ( *frameLength ) = total;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            retVal = TRUE;
+        }
+        else
+        {
+            driver->lastError = ( uint8_t ) CSEC_LENGTH;
+
+            retVal = FALSE;
+        }
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t comsecBuildFrame ( comsec_t* driver, const uint8_t* const payload,
+                           uint32_t length, uint32_t* frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t total = 0;
+
+    if ( ( driver == NULL ) || ( payload == NULL ) || ( length == 0 ) )
+    {
+        retVal = FALSE;
+    }
+    else if ( driver->txCounter == 0xFFFFFFFFu )
+    {
+        driver->txCounter = 0;
+
+        retVal = FALSE;
+    }
+    else
+    {
+        total = length + COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+
+        if ( total <= driver->txSize )
+        {
+            ++driver->txCounter;
+
+            driver->txBuffer[ COMSEC_ID_HIGH ] =
+                    ( uint8_t ) ( ( driver->sessionId >> 8 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_ID_LOW ] =
+                    ( uint8_t ) ( driver->sessionId & 0xFFu );
+
+            driver->txBuffer[ COMSEC_COUNTER ] =
+                    ( uint8_t ) ( ( driver->txCounter >> 24 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_COUNTER + 1u ] =
+                    ( uint8_t ) ( ( driver->txCounter >> 16 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_COUNTER + 2u ] =
+                    ( uint8_t ) ( ( driver->txCounter >> 8 ) & 0xFFu );
+            driver->txBuffer[ COMSEC_COUNTER + 3u ] =
+                    ( uint8_t ) ( driver->txCounter & 0xFFu );
+
+            for ( i = 0; i < length; ++i )
+            {
+                driver->txBuffer[ COMSEC_PAYLOAD + i ] = payload[ i ];
+            }
+
+            driver->mac ( driver->txBuffer, COMSEC_HEADER + length,
+                            &driver->txBuffer[ COMSEC_HEADER + length ] );
+
+            if ( frameLength != NULL )
+            {
+                ( *frameLength ) = total;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            retVal = TRUE;
+        }
+        else
+        {
+            driver->lastError = ( uint8_t ) CSEC_LENGTH;
+
+            retVal = FALSE;
+        }
+    }
+
+    return ( retVal );
+}
+--- END

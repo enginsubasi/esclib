@@ -1,0 +1,54 @@
+# what: A rekey wipes the reject count, hiding the run of forgeries that may well be why the caller rekeyed.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comsec.c
+TEST ComSec_Test
+--- FIND
+uint8_t comsecRekey ( comsec_t* driver, uint16_t sessionId, uint32_t txCounter )
+{
+    uint8_t retVal = FALSE;
+
+    if ( driver != NULL )
+    {
+        driver->sessionId = sessionId;
+        driver->txCounter = txCounter;
+        driver->rxCounter = 0;
+        driver->rxArmed = FALSE;
+        driver->rxPayloadLength = 0;
+        driver->lastError = ( uint8_t ) CSEC_NONE;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t comsecRekey ( comsec_t* driver, uint16_t sessionId, uint32_t txCounter )
+{
+    uint8_t retVal = FALSE;
+
+    if ( driver != NULL )
+    {
+        driver->sessionId = sessionId;
+        driver->txCounter = txCounter;
+        driver->rxCounter = 0;
+        driver->rxArmed = FALSE;
+        driver->rxPayloadLength = 0;
+        driver->lastError = ( uint8_t ) CSEC_NONE;
+        driver->rejectCount = 0;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END
