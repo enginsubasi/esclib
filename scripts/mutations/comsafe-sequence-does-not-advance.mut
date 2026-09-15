@@ -1,0 +1,107 @@
+# what: The transmit sequence stays where it is, so every frame goes out under the same number and the receiver cannot tell a resend from a duplicate.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comsafe.c
+TEST ComSafe_Test
+--- FIND
+uint8_t comsafeBuildFrame ( comsafe_t* driver, const uint8_t* const payload,
+                            uint32_t length, uint32_t* frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint16_t check = 0;
+
+    if ( ( driver != NULL ) && ( payload != NULL ) && ( length != 0 ) &&
+            ( ( length + COMSAFE_OVERHEAD ) <= driver->txSize ) )
+    {
+        driver->txBuffer[ COMSAFE_ID_HIGH ] =
+                ( uint8_t ) ( ( driver->connectionId >> 8 ) & 0xFFu );
+        driver->txBuffer[ COMSAFE_ID_LOW ] =
+                ( uint8_t ) ( driver->connectionId & 0xFFu );
+
+        driver->txBuffer[ COMSAFE_SEQUENCE ] = driver->txSequence;
+
+        for ( i = 0; i < length; ++i )
+        {
+            driver->txBuffer[ COMSAFE_PAYLOAD + i ] = payload[ i ];
+        }
+
+        check = driver->checksum ( driver->txBuffer, COMSAFE_HEADER + length );
+
+        driver->txBuffer[ COMSAFE_HEADER + length ] =
+                ( uint8_t ) ( ( check >> 8 ) & 0xFFu );
+        driver->txBuffer[ COMSAFE_HEADER + length + 1u ] =
+                ( uint8_t ) ( check & 0xFFu );
+
+        ++driver->txSequence;
+
+        if ( frameLength != NULL )
+        {
+            ( *frameLength ) = length + COMSAFE_OVERHEAD;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t comsafeBuildFrame ( comsafe_t* driver, const uint8_t* const payload,
+                            uint32_t length, uint32_t* frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint16_t check = 0;
+
+    if ( ( driver != NULL ) && ( payload != NULL ) && ( length != 0 ) &&
+            ( ( length + COMSAFE_OVERHEAD ) <= driver->txSize ) )
+    {
+        driver->txBuffer[ COMSAFE_ID_HIGH ] =
+                ( uint8_t ) ( ( driver->connectionId >> 8 ) & 0xFFu );
+        driver->txBuffer[ COMSAFE_ID_LOW ] =
+                ( uint8_t ) ( driver->connectionId & 0xFFu );
+
+        driver->txBuffer[ COMSAFE_SEQUENCE ] = driver->txSequence;
+
+        for ( i = 0; i < length; ++i )
+        {
+            driver->txBuffer[ COMSAFE_PAYLOAD + i ] = payload[ i ];
+        }
+
+        check = driver->checksum ( driver->txBuffer, COMSAFE_HEADER + length );
+
+        driver->txBuffer[ COMSAFE_HEADER + length ] =
+                ( uint8_t ) ( ( check >> 8 ) & 0xFFu );
+        driver->txBuffer[ COMSAFE_HEADER + length + 1u ] =
+                ( uint8_t ) ( check & 0xFFu );
+
+        /* Intentionally blank */
+
+        if ( frameLength != NULL )
+        {
+            ( *frameLength ) = length + COMSAFE_OVERHEAD;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

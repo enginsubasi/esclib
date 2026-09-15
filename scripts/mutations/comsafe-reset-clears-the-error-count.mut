@@ -1,0 +1,26 @@
+# what: A reset wipes the error count, hiding a channel that has had to be reset twenty times.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comsafe.c
+TEST ComSafe_Test
+--- FIND
+void comsafeReset ( comsafe_t* driver )
+{
+    driver->state = ( uint8_t ) CS_INIT;
+    driver->lastError = ( uint8_t ) CS_NONE;
+    driver->timeoutCounter = 0;
+    driver->rxArmed = FALSE;
+    driver->rxPayloadLength = 0;
+}
+--- REPLACE
+void comsafeReset ( comsafe_t* driver )
+{
+    driver->state = ( uint8_t ) CS_INIT;
+    driver->lastError = ( uint8_t ) CS_NONE;
+    driver->timeoutCounter = 0;
+    driver->rxArmed = FALSE;
+    driver->rxPayloadLength = 0;
+    driver->errorCount = 0;
+}
+--- END

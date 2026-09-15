@@ -1,0 +1,176 @@
+# what: The sequence number is not checked, so a repeated frame and a lost one both pass — the two failures a transport CRC cannot see.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comsafe.c
+TEST ComSafe_Test
+--- FIND
+uint8_t comsafeCheckFrame ( comsafe_t* driver, const uint8_t* const frame, uint32_t frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t payloadLength = 0;
+    uint16_t computed = 0;
+    uint16_t carried = 0;
+    uint16_t id = 0;
+    uint8_t expected = 0;
+
+    if ( ( driver == NULL ) || ( frame == NULL ) )
+    {
+        retVal = FALSE;
+    }
+    else if ( driver->state == ( uint8_t ) CS_FAILED )
+    {
+        /*
+         * A channel that has failed stays failed. Nothing is checked and
+         * nothing is counted: these frames are not new failures, they are
+         * frames offered to a connection that is out of service.
+         */
+        retVal = FALSE;
+    }
+    else if ( ( frameLength <= COMSAFE_OVERHEAD ) ||
+                ( ( frameLength - COMSAFE_OVERHEAD ) > driver->rxSize ) )
+    {
+        comsafeFail ( driver, ( uint8_t ) CS_LENGTH );
+
+        retVal = FALSE;
+    }
+    else
+    {
+        payloadLength = frameLength - COMSAFE_OVERHEAD;
+
+        computed = driver->checksum ( frame, COMSAFE_HEADER + payloadLength );
+
+        carried = ( uint16_t ) ( ( ( uint16_t ) frame[ COMSAFE_HEADER + payloadLength ] ) << 8 );
+        carried = ( uint16_t ) ( carried | ( uint16_t ) frame[ COMSAFE_HEADER + payloadLength + 1u ] );
+
+        id = ( uint16_t ) ( ( ( uint16_t ) frame[ COMSAFE_ID_HIGH ] ) << 8 );
+        id = ( uint16_t ) ( id | ( uint16_t ) frame[ COMSAFE_ID_LOW ] );
+
+        expected = ( uint8_t ) ( driver->rxSequence + 1u );
+
+        if ( computed != carried )
+        {
+            comsafeFail ( driver, ( uint8_t ) CS_CHECK );
+
+            retVal = FALSE;
+        }
+        else if ( id != driver->connectionId )
+        {
+            comsafeFail ( driver, ( uint8_t ) CS_ID );
+
+            retVal = FALSE;
+        }
+        else if ( ( driver->rxArmed == TRUE ) &&
+                    ( frame[ COMSAFE_SEQUENCE ] != expected ) )
+        {
+            comsafeFail ( driver, ( uint8_t ) CS_SEQUENCE );
+
+            retVal = FALSE;
+        }
+        else
+        {
+            for ( i = 0; i < payloadLength; ++i )
+            {
+                driver->rxBuffer[ i ] = frame[ COMSAFE_PAYLOAD + i ];
+            }
+
+            driver->rxPayloadLength = payloadLength;
+            driver->rxSequence = frame[ COMSAFE_SEQUENCE ];
+            driver->rxArmed = TRUE;
+
+            driver->timeoutCounter = 0;
+            driver->state = ( uint8_t ) CS_OK;
+            driver->lastError = ( uint8_t ) CS_NONE;
+
+            retVal = TRUE;
+        }
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t comsafeCheckFrame ( comsafe_t* driver, const uint8_t* const frame, uint32_t frameLength )
+{
+    uint8_t retVal = FALSE;
+    uint32_t i = 0;
+    uint32_t payloadLength = 0;
+    uint16_t computed = 0;
+    uint16_t carried = 0;
+    uint16_t id = 0;
+    uint8_t expected = 0;
+
+    if ( ( driver == NULL ) || ( frame == NULL ) )
+    {
+        retVal = FALSE;
+    }
+    else if ( driver->state == ( uint8_t ) CS_FAILED )
+    {
+        /*
+         * A channel that has failed stays failed. Nothing is checked and
+         * nothing is counted: these frames are not new failures, they are
+         * frames offered to a connection that is out of service.
+         */
+        retVal = FALSE;
+    }
+    else if ( ( frameLength <= COMSAFE_OVERHEAD ) ||
+                ( ( frameLength - COMSAFE_OVERHEAD ) > driver->rxSize ) )
+    {
+        comsafeFail ( driver, ( uint8_t ) CS_LENGTH );
+
+        retVal = FALSE;
+    }
+    else
+    {
+        payloadLength = frameLength - COMSAFE_OVERHEAD;
+
+        computed = driver->checksum ( frame, COMSAFE_HEADER + payloadLength );
+
+        carried = ( uint16_t ) ( ( ( uint16_t ) frame[ COMSAFE_HEADER + payloadLength ] ) << 8 );
+        carried = ( uint16_t ) ( carried | ( uint16_t ) frame[ COMSAFE_HEADER + payloadLength + 1u ] );
+
+        id = ( uint16_t ) ( ( ( uint16_t ) frame[ COMSAFE_ID_HIGH ] ) << 8 );
+        id = ( uint16_t ) ( id | ( uint16_t ) frame[ COMSAFE_ID_LOW ] );
+
+        expected = ( uint8_t ) ( driver->rxSequence + 1u );
+
+        if ( computed != carried )
+        {
+            comsafeFail ( driver, ( uint8_t ) CS_CHECK );
+
+            retVal = FALSE;
+        }
+        else if ( id != driver->connectionId )
+        {
+            comsafeFail ( driver, ( uint8_t ) CS_ID );
+
+            retVal = FALSE;
+        }
+        else if ( driver->rxArmed == ( uint8_t ) 0xFFu )
+        {
+            comsafeFail ( driver, ( uint8_t ) CS_SEQUENCE );
+
+            retVal = FALSE;
+        }
+        else
+        {
+            for ( i = 0; i < payloadLength; ++i )
+            {
+                driver->rxBuffer[ i ] = frame[ COMSAFE_PAYLOAD + i ];
+            }
+
+            driver->rxPayloadLength = payloadLength;
+            driver->rxSequence = frame[ COMSAFE_SEQUENCE ];
+            driver->rxArmed = TRUE;
+
+            driver->timeoutCounter = 0;
+            driver->state = ( uint8_t ) CS_OK;
+            driver->lastError = ( uint8_t ) CS_NONE;
+
+            retVal = TRUE;
+        }
+    }
+
+    return ( retVal );
+}
+--- END

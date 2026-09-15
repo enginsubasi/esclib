@@ -158,6 +158,7 @@ notably weak on short ones.
 | `comstxetx` | Binary framing with DLE escaping, so any byte value crosses the link, and a two-byte check installed at `Init` — `crc16` or `checksumFletcher16` go in directly. A bad frame is dropped and counted. |
 | `comat` | AT command protocol, ASCII, no check by design. |
 | `comgenbuf` | Queue of variable-length packets in one flat buffer. Keeps the packet boundaries `circBuf` loses. |
+| `comsafe` | Black-channel safety framing over an untrusted transport: connection id, sequence number, independent check, watchdog. |
 
 The first two are byte-driven state machines: `xxxReceive` per byte from the
 ISR, `xxxEvaluate` from the main loop, `xxxTimeoutCounter` from a periodic tick.
@@ -168,6 +169,14 @@ each payload, so a frame the ISR assembled comes back whole. A push is all or
 nothing, and a full queue refuses the newest packet rather than dropping the
 oldest — the opposite of `circBuf`'s overwrite mode, because dropping a packet
 already accepted loses a message the caller was told it would get.
+
+`comsafe` sits above all of them. It treats the transport as an opaque black
+channel and carries end to end what has to be relied on: a connection id, a
+sequence number, an integrity check installed at `Init` (so it can differ from
+the transport's own), and a watchdog for the case where nothing arrives at all.
+**It is framing, not cryptography** — it catches accidental corruption, loss,
+repetition and reordering, and nothing about it resists an attacker, which
+would need a MAC and a key it does not have.
 
 ### Buffers, timing and I/O
 

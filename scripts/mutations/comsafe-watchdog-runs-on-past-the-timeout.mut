@@ -1,0 +1,42 @@
+# what: The watchdog keeps counting after it has fired, so it counts a failure every tick and would eventually wrap and rearm itself.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comsafe.c
+TEST ComSafe_Test
+--- FIND
+void comsafeTimeoutCounter ( comsafe_t* driver )
+{
+    if ( driver->timeoutCounter < driver->timeout )
+    {
+        ++driver->timeoutCounter;
+
+        if ( driver->timeoutCounter >= driver->timeout )
+        {
+            comsafeFail ( driver, ( uint8_t ) CS_TIMEOUT );
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- REPLACE
+void comsafeTimeoutCounter ( comsafe_t* driver )
+{
+    ++driver->timeoutCounter;
+
+    if ( driver->timeoutCounter >= driver->timeout )
+    {
+        comsafeFail ( driver, ( uint8_t ) CS_TIMEOUT );
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- END
