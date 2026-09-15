@@ -1,0 +1,62 @@
+# what: matrixTranspose accepts a result that is the operand, running the copy version of the algorithm over itself.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/matrix/matrixlib.c
+TEST MatrixLib_Test
+--- FIND
+uint8_t matrixTranspose ( const mtrx_t* const a, mtrx_t* result )
+{
+    uint8_t retVal = FALSE;
+    uint32_t r = 0;
+    uint32_t c = 0;
+
+    if ( ( result->rows == a->cols ) && ( result->cols == a->rows ) &&
+            ( result->data != a->data ) )
+    {
+        for ( r = 0; r < a->rows; ++r )
+        {
+            for ( c = 0; c < a->cols; ++c )
+            {
+                result->data[ ( c * result->cols ) + r ] =
+                        a->data[ ( r * a->cols ) + c ];
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t matrixTranspose ( const mtrx_t* const a, mtrx_t* result )
+{
+    uint8_t retVal = FALSE;
+    uint32_t r = 0;
+    uint32_t c = 0;
+
+    if ( ( result->rows == a->cols ) && ( result->cols == a->rows ) )
+    {
+        for ( r = 0; r < a->rows; ++r )
+        {
+            for ( c = 0; c < a->cols; ++c )
+            {
+                result->data[ ( c * result->cols ) + r ] =
+                        a->data[ ( r * a->cols ) + c ];
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

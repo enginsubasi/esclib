@@ -1,0 +1,241 @@
+# what: The inverse always pivots on the diagonal instead of choosing the largest row, so a zero on the diagonal stops it dead.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/matrix/matrixlib.c
+TEST MatrixLib_Test
+--- FIND
+uint8_t matrixInverse ( const mtrx_t* const a, mtrx_t* result, mtrx_t* scratch )
+{
+    uint8_t retVal = FALSE;
+    uint32_t n = 0;
+    uint32_t i = 0;
+    uint32_t r = 0;
+    uint32_t c = 0;
+    uint32_t pivotRow = 0;
+    float pivot = 0.0f;
+    float magnitude = 0.0f;
+    float best = 0.0f;
+    float factor = 0.0f;
+    float swap = 0.0f;
+
+    if ( ( a->rows == a->cols ) && ( result->rows == a->rows ) &&
+            ( result->cols == a->cols ) && ( scratch->rows == a->rows ) &&
+            ( scratch->cols == a->cols ) && ( result->data != a->data ) &&
+            ( scratch->data != a->data ) && ( result->data != scratch->data ) )
+    {
+        n = a->rows;
+
+        for ( i = 0; i < ( n * n ); ++i )
+        {
+            scratch->data[ i ] = a->data[ i ];
+        }
+
+        ( void ) matrixIdentity ( result );
+
+        retVal = TRUE;
+
+        for ( c = 0; ( c < n ) && ( retVal == TRUE ); ++c )
+        {
+            /* Partial pivoting: the largest magnitude in this column, at or
+               below the diagonal, becomes the pivot row. */
+            pivotRow = c;
+            best = 0.0f;
+
+            for ( r = c; r < n; ++r )
+            {
+                magnitude = scratch->data[ ( r * n ) + c ];
+
+                if ( magnitude < 0.0f )
+                {
+                    magnitude = -magnitude;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+
+                if ( magnitude > best )
+                {
+                    best = magnitude;
+                    pivotRow = r;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+            }
+
+            if ( best == 0.0f )
+            {
+                retVal = FALSE;
+            }
+            else
+            {
+                if ( pivotRow != c )
+                {
+                    for ( i = 0; i < n; ++i )
+                    {
+                        swap = scratch->data[ ( c * n ) + i ];
+                        scratch->data[ ( c * n ) + i ] = scratch->data[ ( pivotRow * n ) + i ];
+                        scratch->data[ ( pivotRow * n ) + i ] = swap;
+
+                        swap = result->data[ ( c * n ) + i ];
+                        result->data[ ( c * n ) + i ] = result->data[ ( pivotRow * n ) + i ];
+                        result->data[ ( pivotRow * n ) + i ] = swap;
+                    }
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+
+                pivot = scratch->data[ ( c * n ) + c ];
+
+                for ( i = 0; i < n; ++i )
+                {
+                    scratch->data[ ( c * n ) + i ] /= pivot;
+                    result->data[ ( c * n ) + i ] /= pivot;
+                }
+
+                for ( r = 0; r < n; ++r )
+                {
+                    if ( r != c )
+                    {
+                        factor = scratch->data[ ( r * n ) + c ];
+
+                        for ( i = 0; i < n; ++i )
+                        {
+                            scratch->data[ ( r * n ) + i ] -=
+                                    factor * scratch->data[ ( c * n ) + i ];
+                            result->data[ ( r * n ) + i ] -=
+                                    factor * result->data[ ( c * n ) + i ];
+                        }
+                    }
+                    else
+                    {
+                        /* Intentionally blank */
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t matrixInverse ( const mtrx_t* const a, mtrx_t* result, mtrx_t* scratch )
+{
+    uint8_t retVal = FALSE;
+    uint32_t n = 0;
+    uint32_t i = 0;
+    uint32_t r = 0;
+    uint32_t c = 0;
+    uint32_t pivotRow = 0;
+    float pivot = 0.0f;
+    float magnitude = 0.0f;
+    float best = 0.0f;
+    float factor = 0.0f;
+    float swap = 0.0f;
+
+    if ( ( a->rows == a->cols ) && ( result->rows == a->rows ) &&
+            ( result->cols == a->cols ) && ( scratch->rows == a->rows ) &&
+            ( scratch->cols == a->cols ) && ( result->data != a->data ) &&
+            ( scratch->data != a->data ) && ( result->data != scratch->data ) )
+    {
+        n = a->rows;
+
+        for ( i = 0; i < ( n * n ); ++i )
+        {
+            scratch->data[ i ] = a->data[ i ];
+        }
+
+        ( void ) matrixIdentity ( result );
+
+        retVal = TRUE;
+
+        for ( c = 0; ( c < n ) && ( retVal == TRUE ); ++c )
+        {
+            /* Partial pivoting: the largest magnitude in this column, at or
+               below the diagonal, becomes the pivot row. */
+            pivotRow = c;
+            best = scratch->data[ ( c * n ) + c ];
+            magnitude = best;
+
+            if ( best < 0.0f )
+            {
+                best = -best;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            r = c;
+
+            if ( best == 0.0f )
+            {
+                retVal = FALSE;
+            }
+            else
+            {
+                if ( pivotRow != c )
+                {
+                    for ( i = 0; i < n; ++i )
+                    {
+                        swap = scratch->data[ ( c * n ) + i ];
+                        scratch->data[ ( c * n ) + i ] = scratch->data[ ( pivotRow * n ) + i ];
+                        scratch->data[ ( pivotRow * n ) + i ] = swap;
+
+                        swap = result->data[ ( c * n ) + i ];
+                        result->data[ ( c * n ) + i ] = result->data[ ( pivotRow * n ) + i ];
+                        result->data[ ( pivotRow * n ) + i ] = swap;
+                    }
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+
+                pivot = scratch->data[ ( c * n ) + c ];
+
+                for ( i = 0; i < n; ++i )
+                {
+                    scratch->data[ ( c * n ) + i ] /= pivot;
+                    result->data[ ( c * n ) + i ] /= pivot;
+                }
+
+                for ( r = 0; r < n; ++r )
+                {
+                    if ( r != c )
+                    {
+                        factor = scratch->data[ ( r * n ) + c ];
+
+                        for ( i = 0; i < n; ++i )
+                        {
+                            scratch->data[ ( r * n ) + i ] -=
+                                    factor * scratch->data[ ( c * n ) + i ];
+                            result->data[ ( r * n ) + i ] -=
+                                    factor * result->data[ ( c * n ) + i ];
+                        }
+                    }
+                    else
+                    {
+                        /* Intentionally blank */
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

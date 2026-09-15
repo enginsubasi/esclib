@@ -1,0 +1,82 @@
+# what: matrixMul accepts a result that shares storage with an operand, so it computes against values it has already overwritten.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/matrix/matrixlib.c
+TEST MatrixLib_Test
+--- FIND
+uint8_t matrixMul ( const mtrx_t* const a, const mtrx_t* const b, mtrx_t* result )
+{
+    uint8_t retVal = FALSE;
+    uint32_t r = 0;
+    uint32_t c = 0;
+    uint32_t k = 0;
+    float sum = 0.0f;
+
+    if ( ( a->cols == b->rows ) && ( result->rows == a->rows ) &&
+            ( result->cols == b->cols ) && ( result->data != a->data ) &&
+            ( result->data != b->data ) )
+    {
+        for ( r = 0; r < a->rows; ++r )
+        {
+            for ( c = 0; c < b->cols; ++c )
+            {
+                sum = 0.0f;
+
+                for ( k = 0; k < a->cols; ++k )
+                {
+                    sum += a->data[ ( r * a->cols ) + k ] *
+                            b->data[ ( k * b->cols ) + c ];
+                }
+
+                result->data[ ( r * result->cols ) + c ] = sum;
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t matrixMul ( const mtrx_t* const a, const mtrx_t* const b, mtrx_t* result )
+{
+    uint8_t retVal = FALSE;
+    uint32_t r = 0;
+    uint32_t c = 0;
+    uint32_t k = 0;
+    float sum = 0.0f;
+
+    if ( ( a->cols == b->rows ) && ( result->rows == a->rows ) &&
+            ( result->cols == b->cols ) )
+    {
+        for ( r = 0; r < a->rows; ++r )
+        {
+            for ( c = 0; c < b->cols; ++c )
+            {
+                sum = 0.0f;
+
+                for ( k = 0; k < a->cols; ++k )
+                {
+                    sum += a->data[ ( r * a->cols ) + k ] *
+                            b->data[ ( k * b->cols ) + c ];
+                }
+
+                result->data[ ( r * result->cols ) + c ] = sum;
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

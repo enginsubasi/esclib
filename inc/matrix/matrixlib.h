@@ -1,13 +1,3 @@
-/**
- * @file
- * @brief   Placeholder. The matrixlib module is not implemented.
- *
- * @warning matrixlib.c holds only a file banner. This header declares types and nothing
- *          else. Including it compiles, so nothing warns you here, but
- *          calling anything from this module fails at link time. Treat
- *          it as a reserved name, not as a module you can use.
- */
-
 #ifndef MATRIXLIB_H_
 #define MATRIXLIB_H_
 
@@ -35,7 +25,9 @@
 
 typedef struct
 {
-    float *matrix;
+    float* data;
+    uint32_t rows;
+    uint32_t cols;
 } mtrx_t;
 
 /* ENUMS */
@@ -44,8 +36,20 @@ typedef struct
 
 /* FUNCTION PROTOTYPES */
 
+uint8_t matrixInit ( mtrx_t* driver, float* data, uint32_t rows, uint32_t cols );
+void matrixZero ( mtrx_t* driver );
+uint8_t matrixIdentity ( mtrx_t* driver );
+float matrixGet ( const mtrx_t* const driver, uint32_t row, uint32_t col );
+uint8_t matrixSet ( mtrx_t* driver, uint32_t row, uint32_t col, float value );
+uint8_t matrixAdd ( const mtrx_t* const a, const mtrx_t* const b, mtrx_t* result );
+uint8_t matrixSub ( const mtrx_t* const a, const mtrx_t* const b, mtrx_t* result );
+uint8_t matrixScale ( const mtrx_t* const a, float scalar, mtrx_t* result );
+uint8_t matrixMul ( const mtrx_t* const a, const mtrx_t* const b, mtrx_t* result );
+uint8_t matrixTranspose ( const mtrx_t* const a, mtrx_t* result );
+uint8_t matrixInverse ( const mtrx_t* const a, mtrx_t* result, mtrx_t* scratch );
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MATRIXLIB_H_ */   
+#endif /* MATRIXLIB_H_ */

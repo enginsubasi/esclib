@@ -102,7 +102,8 @@ variant exists to serve.
 | `statistic` | Variance, standard deviation, covariance. | `i32` `u32` |
 | `interp` | The value *between* two entries of an ascending table. Calibration and linearisation curves. | `i32` |
 | `basicarray` | 1D array limiting. | `i32` `u32` |
-| `basicmatrix` | 1D and 2D thresholding and limiting. | `i32` `u32` `u8` |
+| `basicmatrix` | 1D and 2D thresholding and limiting on a bare array. | `i32` `u32` `u8` |
+| `matrixlib` | Linear algebra on a matrix that carries its shape: add, multiply, transpose, invert. | — |
 | `complex` | Complex arithmetic and the polar conversions. | — |
 | `q16` | Q16 fixed-point arithmetic for the caller: multiply, divide, square root, conversions. | — |
 

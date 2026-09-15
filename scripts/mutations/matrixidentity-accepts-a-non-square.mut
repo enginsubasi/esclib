@@ -1,0 +1,73 @@
+# what: matrixIdentity writes ones down a diagonal that runs off the edge of a matrix that is not square.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/matrix/matrixlib.c
+TEST MatrixLib_Test
+--- FIND
+uint8_t matrixIdentity ( mtrx_t* driver )
+{
+    uint8_t retVal = FALSE;
+    uint32_t r = 0;
+    uint32_t c = 0;
+
+    if ( driver->rows == driver->cols )
+    {
+        for ( r = 0; r < driver->rows; ++r )
+        {
+            for ( c = 0; c < driver->cols; ++c )
+            {
+                if ( r == c )
+                {
+                    driver->data[ ( r * driver->cols ) + c ] = 1.0f;
+                }
+                else
+                {
+                    driver->data[ ( r * driver->cols ) + c ] = 0.0f;
+                }
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t matrixIdentity ( mtrx_t* driver )
+{
+    uint8_t retVal = FALSE;
+    uint32_t r = 0;
+    uint32_t c = 0;
+
+    if ( driver->rows != 0 )
+    {
+        for ( r = 0; r < driver->rows; ++r )
+        {
+            for ( c = 0; c < driver->cols; ++c )
+            {
+                if ( r == c )
+                {
+                    driver->data[ ( r * driver->cols ) + c ] = 1.0f;
+                }
+                else
+                {
+                    driver->data[ ( r * driver->cols ) + c ] = 0.0f;
+                }
+            }
+        }
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END
