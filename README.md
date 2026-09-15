@@ -171,12 +171,26 @@ notably weak on short ones.
 |---|---|
 | `comstxetx` | Binary framing with DLE escaping, so any byte value crosses the link, and a two-byte check installed at `Init` — `crc16` or `checksumFletcher16` go in directly. A bad frame is dropped and counted. |
 | `comat` | AT command protocol, ASCII, no check by design. |
+| `commodbus` | Modbus RTU framing: silence-delimited frames, address filtering, the check installed at `Init` — `crc16` is already the right polynomial. Framing only, no function codes. |
 | `comgenbuf` | Queue of variable-length packets in one flat buffer. Keeps the packet boundaries `circBuf` loses. |
 | `comsafe` | Black-channel safety framing over an untrusted transport: connection id, sequence number, independent check, watchdog. |
 | `comsec` | Authenticated framing with replay protection. The MAC is injected; the module holds no cryptography and provides no confidentiality. |
 
-The first two are byte-driven state machines: `xxxReceive` per byte from the
+The first three are byte-driven state machines: `xxxReceive` per byte from the
 ISR, `xxxEvaluate` from the main loop, `xxxTimeoutCounter` from a periodic tick.
+
+`commodbus` is the odd one of those three, because RTU has **no start byte and
+no end byte** — a frame is delimited by silence, three and a half character
+times of an idle line. So the tick is not a timeout here, it is the framing
+itself, and the silence is expressed in ticks the way `softtimer`'s periods
+are: the module is never told the baud rate, because converting character times
+into ticks is one expression that belongs where the baud rate is configured.
+It is framing and nothing above it — no function codes, no register map, no
+exception responses, because a register map is the application's data and a
+table of handlers is what `fsm` already is. Two counters, not one: a frame for
+another device is **ignored**, a frame that failed its check is **rejected**,
+and keeping them apart is what leaves the reject count meaning "the line is
+bad" on a bus where most traffic is addressed to somebody else.
 
 `comgenbuf` is the layer above them. `circBuf` is a queue of bytes and loses
 where one packet ends and the next begins; this stores a two-byte length with

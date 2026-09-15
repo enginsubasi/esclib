@@ -1,0 +1,51 @@
+# what: A frame longer than the buffer is truncated rather than refused, so the parser above is handed the first half of a message as if it were a whole one.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/commodbus.c
+TEST ComModbus_Test
+--- FIND
+void commodbusReceive ( commodbus_t* driver, uint8_t data )
+{
+    if ( driver->rxReadyToEvaluate == FALSE )
+    {
+        if ( driver->rxIndex < driver->rxSize )
+        {
+            driver->rxBuffer[ driver->rxIndex ] = data;
+            ++driver->rxIndex;
+        }
+        else
+        {
+            driver->rxOverrun = TRUE;
+        }
+
+        driver->silenceCounter = 0u;
+    }
+    else
+    {
+        driver->rxDropped = TRUE;
+    }
+}
+--- REPLACE
+void commodbusReceive ( commodbus_t* driver, uint8_t data )
+{
+    if ( driver->rxReadyToEvaluate == FALSE )
+    {
+        if ( driver->rxIndex < driver->rxSize )
+        {
+            driver->rxBuffer[ driver->rxIndex ] = data;
+            ++driver->rxIndex;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        driver->silenceCounter = 0u;
+    }
+    else
+    {
+        driver->rxDropped = TRUE;
+    }
+}
+--- END

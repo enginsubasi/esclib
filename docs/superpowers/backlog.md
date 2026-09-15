@@ -299,9 +299,27 @@ This one was not chosen from a list of things that would be nice. Two files in t
 
 Seven functions, eight mutations, all caught.
 
+## 23. commodbus, the protocol an industrial project actually meets — DONE 15/09/2026
+
+`comstxetx` frames binary the way this library would design it. `commodbus` frames it the way the field already decided, and the two differ in the one place that matters: **RTU has no start byte and no end byte**. A frame ends when the line has been idle for three and a half character times. So the periodic tick is not a timeout bolted onto the framing — it *is* the framing, and everything else follows from that. The silence is expressed in ticks, `softtimer`'s rule, and the module is never told the baud rate: turning character times into ticks is one expression that belongs where the baud rate is configured, and taking a baud rate in would hand this module a second thing it cannot check.
+
+**The scope was the real decision, and it is framing only.** No function codes, no register map, no exception responses. A register map is the application's data and this library allocates nothing; a table of handlers is what `fsm` already is. What a project cannot write for itself in an afternoon is the part below that — where a frame begins and ends, whether it is addressed here, and whether it survived the line.
+
+Three details are the module:
+
+**The check travels low byte first.** Modbus is big endian in every field of every payload and little endian in its own check, which is the sort of thing that is obvious once and never again. A frame built the obvious way is the right length, right in every other byte, and refused by every peer on the bus — so the test pins the two halves separately, because the encoder and the decoder can each be wrong in the same direction and agree with each other perfectly.
+
+**A frame for another device is ignored, not rejected**, and the two have separate counters. On a multidrop bus with ten devices, nine tenths of what each one hears is addressed to somebody else; counting that as a fault would leave the reject count meaning nothing, when the one thing it is for is telling somebody the line is bad.
+
+**t1.5 is deliberately absent.** The intra-character gap would cost a second threshold and a second piece of state, to reject a frame with a hole in the middle of it — and a hole in the middle means bytes from two different frames concatenated, which the check refuses with overwhelming probability. The reason is written in the file rather than left as a gap for somebody to notice.
+
+Nine mutations, and one of them survived its first run and was worth the trouble. The truncation mutation — keeping what fits instead of refusing the whole frame — passed, because the test fed twelve arbitrary bytes into an eight byte buffer and the truncated remains failed the check anyway. The fixture that tells them apart is a **valid eight byte frame with four more bytes behind it**: truncation there hands the parser a frame that passes its check and is half of what was sent. That is the failure the rule exists for, and until the fixture matched it the mutation was checking nothing.
+
+368 bytes of code, nothing in `.data` or `.bss`.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers, and cordic, which two other files had been asking for in writing. Nothing is outstanding, and for the first time nothing is reserved either.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers, cordic, which two other files had been asking for in writing, and commodbus, which is the framing an industrial bus actually uses. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

@@ -1,0 +1,51 @@
+# what: A received byte no longer restarts the silence, so a frame is cut in half wherever the count happens to run out — which is the whole of RTU framing, since there is no end byte to fall back on.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/commodbus.c
+TEST ComModbus_Test
+--- FIND
+void commodbusReceive ( commodbus_t* driver, uint8_t data )
+{
+    if ( driver->rxReadyToEvaluate == FALSE )
+    {
+        if ( driver->rxIndex < driver->rxSize )
+        {
+            driver->rxBuffer[ driver->rxIndex ] = data;
+            ++driver->rxIndex;
+        }
+        else
+        {
+            driver->rxOverrun = TRUE;
+        }
+
+        driver->silenceCounter = 0u;
+    }
+    else
+    {
+        driver->rxDropped = TRUE;
+    }
+}
+--- REPLACE
+void commodbusReceive ( commodbus_t* driver, uint8_t data )
+{
+    if ( driver->rxReadyToEvaluate == FALSE )
+    {
+        if ( driver->rxIndex < driver->rxSize )
+        {
+            driver->rxBuffer[ driver->rxIndex ] = data;
+            ++driver->rxIndex;
+        }
+        else
+        {
+            driver->rxOverrun = TRUE;
+        }
+
+        driver->silenceCounter = driver->silenceCounter;
+    }
+    else
+    {
+        driver->rxDropped = TRUE;
+    }
+}
+--- END

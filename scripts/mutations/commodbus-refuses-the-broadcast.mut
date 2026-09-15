@@ -1,0 +1,140 @@
+# what: A broadcast is treated as somebody else's frame, so the device never sees a command addressed to every device on the bus.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/commodbus.c
+TEST ComModbus_Test
+--- FIND
+void commodbusEvaluate ( commodbus_t* driver )
+{
+    uint16_t received = 0u;
+    uint16_t computed = 0u;
+    uint32_t payloadLength = 0u;
+    uint8_t frameAddress = 0u;
+
+    if ( driver->rxReadyToEvaluate == TRUE )
+    {
+        if ( driver->rxOverrun == TRUE )
+        {
+            ++driver->rxRejectCount;
+        }
+        else if ( driver->rxIndex < COMMODBUS_MIN_FRAME )
+        {
+            ++driver->rxRejectCount;
+        }
+        else
+        {
+            payloadLength = driver->rxIndex - COMMODBUS_CHECK_SIZE;
+
+            /* Low byte first, which is this protocol's one little endian
+               field. */
+            received = ( uint16_t ) driver->rxBuffer[ payloadLength ];
+            received = ( uint16_t ) ( received |
+                       ( uint16_t ) ( ( uint16_t ) driver->rxBuffer[ payloadLength + 1u ] << 8 ) );
+
+            computed = driver->checksum ( driver->rxBuffer, payloadLength );
+
+            frameAddress = driver->rxBuffer[ 0 ];
+
+            if ( received != computed )
+            {
+                ++driver->rxRejectCount;
+            }
+            else if ( ( frameAddress != driver->address ) &&
+                      ( ( uint32_t ) frameAddress != COMMODBUS_BROADCAST ) )
+            {
+                ++driver->rxIgnoredCount;
+            }
+            else
+            {
+                driver->packetProcess ( driver->rxBuffer, payloadLength );
+            }
+        }
+
+        if ( driver->rxDropped == TRUE )
+        {
+            ++driver->rxRejectCount;
+            driver->rxDropped = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        driver->rxIndex = 0u;
+        driver->rxOverrun = FALSE;
+        driver->rxReadyToEvaluate = FALSE;
+        driver->silenceCounter = 0u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- REPLACE
+void commodbusEvaluate ( commodbus_t* driver )
+{
+    uint16_t received = 0u;
+    uint16_t computed = 0u;
+    uint32_t payloadLength = 0u;
+    uint8_t frameAddress = 0u;
+
+    if ( driver->rxReadyToEvaluate == TRUE )
+    {
+        if ( driver->rxOverrun == TRUE )
+        {
+            ++driver->rxRejectCount;
+        }
+        else if ( driver->rxIndex < COMMODBUS_MIN_FRAME )
+        {
+            ++driver->rxRejectCount;
+        }
+        else
+        {
+            payloadLength = driver->rxIndex - COMMODBUS_CHECK_SIZE;
+
+            /* Low byte first, which is this protocol's one little endian
+               field. */
+            received = ( uint16_t ) driver->rxBuffer[ payloadLength ];
+            received = ( uint16_t ) ( received |
+                       ( uint16_t ) ( ( uint16_t ) driver->rxBuffer[ payloadLength + 1u ] << 8 ) );
+
+            computed = driver->checksum ( driver->rxBuffer, payloadLength );
+
+            frameAddress = driver->rxBuffer[ 0 ];
+
+            if ( received != computed )
+            {
+                ++driver->rxRejectCount;
+            }
+            else if ( frameAddress != driver->address )
+            {
+                ++driver->rxIgnoredCount;
+            }
+            else
+            {
+                driver->packetProcess ( driver->rxBuffer, payloadLength );
+            }
+        }
+
+        if ( driver->rxDropped == TRUE )
+        {
+            ++driver->rxRejectCount;
+            driver->rxDropped = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        driver->rxIndex = 0u;
+        driver->rxOverrun = FALSE;
+        driver->rxReadyToEvaluate = FALSE;
+        driver->silenceCounter = 0u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- END
