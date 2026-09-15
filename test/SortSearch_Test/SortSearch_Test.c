@@ -189,6 +189,7 @@ static void sortDegenerateCase ( void )
     uint32_t work[ 3 ] = { 7u, 7u, 7u };
     uint32_t two[ 2 ] = { 9u, 4u };
     uint32_t three[ 3 ] = { 3u, 1u, 2u };
+    float workF[ 3 ] = { 7.0f, 7.0f, 7.0f };
 
     printf ( "degenerate lengths\n" );
 
@@ -209,6 +210,26 @@ static void sortDegenerateCase ( void )
     sortInsertionu32 ( work, 0u );
     check ( "the other three survive length 0 too",
             ( uint8_t ) ( ( work[ 0 ] == 7u ) && ( work[ 2 ] == 7u ) ) );
+
+    /*
+     * And the float sorts, which carry their own copy of the same guard. Until
+     * 15/09/2026 every degenerate length here was checked on the u32 width
+     * only, so the float length - 1 wrap had no coverage at all — the mirror
+     * image of the hole CLAUDE.md records for MAF_Test and EMAF_Test, where
+     * only the float halves were touched and the defects were in the integer
+     * ones. A mutation that removed the float guard survived the whole suite.
+     */
+    sortSelection ( workF, 0u );
+    sortHeap ( workF, 0u );
+    sortBubble ( workF, 0u );
+    sortInsertion ( workF, 0u );
+    check ( "the float sorts survive length 0 as well",
+            ( uint8_t ) ( ( workF[ 0 ] == 7.0f ) && ( workF[ 1 ] == 7.0f ) &&
+                          ( workF[ 2 ] == 7.0f ) ) );
+
+    sortSelection ( workF, 1u );
+    sortHeap ( workF, 1u );
+    check ( "and length 1", ( uint8_t ) ( workF[ 0 ] == 7.0f ) );
 
     sortHeapu32 ( work, 3u );
     check ( "all equal elements stay put",
@@ -362,6 +383,22 @@ static void findCase ( void )
             ( uint8_t ) ( searchBinaryi32 ( wantI, LEN, 2147483646, &idx ) == FALSE ) );
     check ( "searchBinaryi32 with a zero length",
             ( uint8_t ) ( searchBinaryi32 ( wantI, 0u, 0, &idx ) == FALSE ) );
+
+    /*
+     * The same three on the float width, which had none of them. The right
+     * bound of every binary search in this file is a uint32_t and each width
+     * carries its own copy of the m == 0 guard that keeps it from wrapping,
+     * so checking one width proves nothing about the others.
+     */
+    check ( "searchBinary reports a float below every element",
+            ( uint8_t ) ( searchBinary ( wantF, LEN, -100.0f, &idx, epsilon ) == FALSE ) );
+    check ( "searchBinary reports a float above every element",
+            ( uint8_t ) ( searchBinary ( wantF, LEN, 1.0e9f, &idx, epsilon ) == FALSE ) );
+    check ( "searchBinary with a zero length",
+            ( uint8_t ) ( searchBinary ( wantF, 0u, 1.0f, &idx, epsilon ) == FALSE ) );
+    check ( "searchBinary finds the first float element",
+            searchBinary ( wantF, LEN, wantF[ 0 ], &idx, epsilon ) );
+    check ( "at index 0", ( uint8_t ) ( idx == 0u ) );
 
     check ( "searchLineari32 finds a negative item",
             searchLineari32 ( srcI, LEN, -2, &idx ) );

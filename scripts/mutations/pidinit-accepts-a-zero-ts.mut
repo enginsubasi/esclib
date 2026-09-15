@@ -1,0 +1,109 @@
+# what: pidInit accepts a zero sample period, which pidControl divides by; the resulting nan compares false against both output bounds and passes through the limiter untouched.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/control/pid.c
+TEST Control_Test
+--- FIND
+uint8_t pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
+                float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( ts != 0 ) )
+    {
+        driver->output = pidOutputMinLimit;
+
+        // Error memory. Without this the first derivative term would use garbage.
+        driver->error = 0;
+        driver->lastError = 0;
+
+        // Term accumulators. partI integrates, so it must start from a known value.
+        driver->partP = 0;
+        driver->partI = 0;
+        driver->partD = 0;
+
+        // Coefficients.
+        driver->kp = kp;
+        driver->ki = ki;
+        driver->kd = kd;
+
+        driver->ts = ts;
+
+        // Limits of proportional part.
+        driver->pMax = pPartMaxLimit;
+        driver->pMin = pPartMinLimit;
+
+        // Limits of integral part.
+        driver->iMax = iPartMaxLimit;
+        driver->iMin = iPartMinLimit;
+
+        // Limits of derivative part.
+        driver->dMax = dPartMaxLimit;
+        driver->dMin = dPartMinLimit;
+
+        // Limits of PID output value.
+        driver->pidMax = pidOutputMaxLimit;
+        driver->pidMin = pidOutputMinLimit;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t pidInit ( pidc_t* driver, float kp, float ki, float kd, float ts, float pPartMaxLimit, float pPartMinLimit, float iPartMaxLimit, float iPartMinLimit,
+                float dPartMaxLimit, float dPartMinLimit, float pidOutputMaxLimit, float pidOutputMinLimit )
+{
+    uint8_t retVal = FALSE;
+
+    if ( driver != NULL )
+    {
+        driver->output = pidOutputMinLimit;
+
+        // Error memory. Without this the first derivative term would use garbage.
+        driver->error = 0;
+        driver->lastError = 0;
+
+        // Term accumulators. partI integrates, so it must start from a known value.
+        driver->partP = 0;
+        driver->partI = 0;
+        driver->partD = 0;
+
+        // Coefficients.
+        driver->kp = kp;
+        driver->ki = ki;
+        driver->kd = kd;
+
+        driver->ts = ts;
+
+        // Limits of proportional part.
+        driver->pMax = pPartMaxLimit;
+        driver->pMin = pPartMinLimit;
+
+        // Limits of integral part.
+        driver->iMax = iPartMaxLimit;
+        driver->iMin = iPartMinLimit;
+
+        // Limits of derivative part.
+        driver->dMax = dPartMaxLimit;
+        driver->dMin = dPartMinLimit;
+
+        // Limits of PID output value.
+        driver->pidMax = pidOutputMaxLimit;
+        driver->pidMin = pidOutputMinLimit;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

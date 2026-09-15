@@ -1,0 +1,96 @@
+# what: searchBinary lets its unsigned right bound underflow when the item is below the first element.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/search/search.c
+TEST SortSearch_Test
+--- FIND
+uint8_t searchBinary ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
+{
+    uint8_t retVal = FALSE;
+    uint32_t l = 0;
+    uint32_t r = 0;
+    uint32_t m = 0;
+
+    if ( length != 0 )
+    {
+        r = length - 1;
+
+        while ( l <= r )
+        {
+            m = l + ( ( r - l ) >> 1 ); // divide by 2
+
+            if ( isEqualf ( array[ m ], item, epsilon ) == TRUE )
+            {
+                ( *foundIndex ) = m;
+                retVal = TRUE;
+                break;
+            }
+
+            if ( array[ m ] < item )
+            {
+                l = m + 1;
+            }
+            else
+            {
+                if ( m == 0 )
+                {
+                    // The item is below the first element. Ending the search
+                    // this way keeps the unsigned right bound from underflowing.
+                    l = m + 1;
+                }
+                else
+                {
+                    r = m - 1;
+                }
+            }
+        }
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t searchBinary ( const float* const array, uint32_t length, float item, uint32_t* const foundIndex, float epsilon )
+{
+    uint8_t retVal = FALSE;
+    uint32_t l = 0;
+    uint32_t r = 0;
+    uint32_t m = 0;
+
+    if ( length != 0 )
+    {
+        r = length - 1;
+
+        while ( l <= r )
+        {
+            m = l + ( ( r - l ) >> 1 ); // divide by 2
+
+            if ( isEqualf ( array[ m ], item, epsilon ) == TRUE )
+            {
+                ( *foundIndex ) = m;
+                retVal = TRUE;
+                break;
+            }
+
+            if ( array[ m ] < item )
+            {
+                l = m + 1;
+            }
+            else
+            {
+                r = m - 1;
+            }
+        }
+    }
+    else
+    {
+        /* Intentionally blank. */
+    }
+
+    return ( retVal );
+}
+--- END

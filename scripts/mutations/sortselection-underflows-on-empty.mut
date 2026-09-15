@@ -1,0 +1,65 @@
+# what: sortSelection computes length - 1 on a zero length array, so the loop runs about four thousand million times.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/sort/sort.c
+TEST SortSearch_Test
+--- FIND
+void sortSelection ( float* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t j = 0;
+    uint32_t lengthM1 = 0;      // Length minus 1.
+    uint32_t minElmIndex = 0;   // Minimum elements index.
+
+    if ( length != 0 )
+    {
+        lengthM1 = length - 1;  // Optimize loop operations.
+    }
+    else
+    {
+        // Keep lengthM1 at zero so that the loop below does not run.
+        lengthM1 = 0;
+    }
+
+    for ( i = 0; i < lengthM1; ++i )
+    {
+        minElmIndex = i;
+
+        for ( j = i + 1; j < length; ++j )
+        {
+            if ( array[ j ] < array[ minElmIndex ] )
+            {
+                minElmIndex = j;
+            }
+        }
+
+        swapForSort ( &array[ minElmIndex ], &array[ i ] );
+    }
+}
+--- REPLACE
+void sortSelection ( float* array, uint32_t length )
+{
+    uint32_t i = 0;
+    uint32_t j = 0;
+    uint32_t lengthM1 = 0;      // Length minus 1.
+    uint32_t minElmIndex = 0;   // Minimum elements index.
+
+    lengthM1 = length - 1;
+
+    for ( i = 0; i < lengthM1; ++i )
+    {
+        minElmIndex = i;
+
+        for ( j = i + 1; j < length; ++j )
+        {
+            if ( array[ j ] < array[ minElmIndex ] )
+            {
+                minElmIndex = j;
+            }
+        }
+
+        swapForSort ( &array[ minElmIndex ], &array[ i ] );
+    }
+}
+--- END

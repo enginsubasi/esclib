@@ -187,6 +187,14 @@ modules of their own.
 - When a bug is fixed, the test gets a check aimed at that specific bug, so the
   regression fails rather than passing quietly. `CLAUDE.md` keeps the table of
   which test pins which bug.
+- **A test that claims `Init` writes a field has to poison the struct first.**
+  A driver is a stack local, so the memory is usually zero already or holds the
+  previous case's values, and a missing assignment reads as if it had happened.
+  `Control_Test` fills the driver with a non-zero byte pattern before each
+  `pidInit` for exactly this reason.
+- **A check on one width proves nothing about the others.** Each width carries
+  its own copy of the code, so a degenerate length or a bound that wraps has to
+  be checked on every width that has one, not on whichever was convenient.
 - **And the pin gets a mutation.** A file under `scripts/mutations/`
   reintroduces the defect and names the test that has to fail because of it.
   Without one, a pin that stops biting — an assertion softened while tidying a

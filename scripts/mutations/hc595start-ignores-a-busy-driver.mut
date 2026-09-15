@@ -1,0 +1,54 @@
+# what: hc595Start takes the pins while the blocking transfer already holds them, so the two transfer modes collide.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE drv/hc595_drv.c
+TEST ShiftRegister_Test
+--- FIND
+uint8_t hc595Start ( hc595_t* driver )
+{
+    uint8_t retVal = FALSE;
+
+    if ( ( driver != NULL ) && ( driver->state != HC595_BUSY ) &&
+            ( driver->state != HC595_BLOCKING ) )
+    {
+        driver->phase = HC595_PHASE_SHIFT;
+        driver->byteIndex = 0;
+        driver->bitIndex = 0;
+        driver->stepIndex = 0;
+
+        driver->state = HC595_BUSY;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t hc595Start ( hc595_t* driver )
+{
+    uint8_t retVal = FALSE;
+
+    if ( driver != NULL )
+    {
+        driver->phase = HC595_PHASE_SHIFT;
+        driver->byteIndex = 0;
+        driver->bitIndex = 0;
+        driver->stepIndex = 0;
+
+        driver->state = HC595_BUSY;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

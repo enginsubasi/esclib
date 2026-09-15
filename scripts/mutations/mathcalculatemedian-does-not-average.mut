@@ -1,0 +1,49 @@
+# what: mathCalculateMedian takes one middle element of an even length array instead of averaging the two.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/math/basicmath.c
+TEST Math_Test
+--- FIND
+float mathCalculateMedian ( const float* const array, uint32_t length )
+{
+    float retVal = 0;
+
+    if ( length == 0 )
+    {
+        retVal = 0;
+    }
+    else if ( ( length % 2 ) == 0 )
+    {
+        // Even length. The median is the mean of the two middle elements.
+        retVal = ( array[ ( length / 2 ) - 1 ] + array[ ( length / 2 ) ] ) / 2;
+    }
+    else
+    {
+        retVal = array[ ( length / 2 ) ];
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+float mathCalculateMedian ( const float* const array, uint32_t length )
+{
+    float retVal = 0;
+
+    if ( length == 0 )
+    {
+        retVal = 0;
+    }
+    else if ( ( length % 2 ) == 0 )
+    {
+        // Even length. The median is the mean of the two middle elements.
+        retVal = array[ ( length / 2 ) ];
+    }
+    else
+    {
+        retVal = array[ ( length / 2 ) ];
+    }
+
+    return ( retVal );
+}
+--- END

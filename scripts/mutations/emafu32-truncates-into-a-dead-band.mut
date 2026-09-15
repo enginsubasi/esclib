@@ -1,0 +1,19 @@
+# what: emafIterationu32 truncates its accumulator every sample, so the output stalls a count short of a steady input and never arrives.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/emaf.c
+TEST Filter_Test
+--- FIND
+void emafIterationu32 ( emafu32_t* driver, uint32_t newData )
+{
+    driver->accumulator = ( ( ( float ) newData * driver->alpha ) +
+                            ( driver->accumulator * driver->alphan ) );
+}
+--- REPLACE
+void emafIterationu32 ( emafu32_t* driver, uint32_t newData )
+{
+    driver->accumulator = ( float ) ( uint32_t ) ( ( ( float ) newData * driver->alpha ) +
+                            ( driver->accumulator * driver->alphan ) );
+}
+--- END

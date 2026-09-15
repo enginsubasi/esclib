@@ -65,6 +65,26 @@ static uint8_t openInit ( pidc_t* driver, float kp, float ki, float kd, float ts
                        1000.0f, -1000.0f ) );
 }
 
+/*
+ * Fills a driver with a non zero byte pattern, so that any field Init fails to
+ * write shows up as a wrong number rather than as an accidental zero.
+ *
+ * 0x5A5A5A5A is a valid float of about 1.5e16, chosen over 0xFF so that the
+ * failure is a wrong value rather than a nan — a nan compares false against
+ * everything and could pass a check by accident, which is the whole problem
+ * being guarded against here.
+ */
+static void poison ( void* driver, uint32_t size )
+{
+    uint8_t* bytes = ( uint8_t* ) driver;
+    uint32_t i = 0;
+
+    for ( i = 0; i < size; ++i )
+    {
+        bytes[ i ] = 0x5Au;
+    }
+}
+
 /* --------------------------------------------------------------- pidInit */
 
 static void pidInitCase ( void )
@@ -625,9 +645,65 @@ static void pidFixedPointCase ( void )
             ( uint8_t ) ( pidGetOutputi32 ( &driver ) == 12 ) );
 }
 
+/*
+ * pidInit has to write every field it promises to, and a stack local driver
+ * cannot show that on its own: the memory is usually zero already, or holds
+ * the previous test's values, so a missing assignment reads as if it had
+ * happened. Until 15/09/2026 that is exactly what the checks below relied on —
+ * a mutation that deleted the whole initial state block from pidInit passed
+ * the entire suite. Poisoning first is what makes the assignment observable.
+ *
+ * The defect being pinned is real and was fixed in July 2026: pidInit left
+ * error, lastError, partP, partI and partD unset, so the first derivative term
+ * differentiated against whatever was on the stack and the integrator started
+ * from it.
+ */
+static void pidInitClearsStateCase ( void )
+{
+    pidc_t driver;
+
+    printf ( "pidInit clears its state\n" );
+
+    poison ( &driver, ( uint32_t ) sizeof ( driver ) );
+
+    check ( "Init over a poisoned driver",
+            openInit ( &driver, 0.0f, 0.0f, 1.0f, 0.5f ) );
+
+    /*
+     * Derivative only, so the output is ( error - lastError ) / ts. With
+     * lastError cleared that is 1.0 / 0.5, which is 2. With the poison left in
+     * place it is about minus three times ten to the sixteen.
+     */
+    pidControl ( &driver, 1.0f );
+    check ( "the first derivative differentiates against a cleared lastError",
+            nearly ( pidGetOutput ( &driver ), 2.0f ) );
+
+    /* Integral only, so the output is the running sum of error times ts. */
+    poison ( &driver, ( uint32_t ) sizeof ( driver ) );
+
+    check ( "Init over a poisoned driver again",
+            openInit ( &driver, 0.0f, 1.0f, 0.0f, 0.5f ) );
+
+    pidControl ( &driver, 2.0f );
+    check ( "and the integrator starts from a cleared partI",
+            nearly ( pidGetOutput ( &driver ), 1.0f ) );
+
+    /* Proportional only, which reads no memory at all and so must be exact. */
+    poison ( &driver, ( uint32_t ) sizeof ( driver ) );
+
+    check ( "Init over a poisoned driver once more",
+            openInit ( &driver, 3.0f, 0.0f, 0.0f, 0.5f ) );
+
+    pidControl ( &driver, 2.0f );
+    check ( "and the proportional term is untouched by what was there",
+            nearly ( pidGetOutput ( &driver ), 6.0f ) );
+}
+
 int main ( void )
 {
     pidInitCase ( );
+    printf ( "\n" );
+    pidInitClearsStateCase ( );
     printf ( "\n" );
     proportionalCase ( );
     printf ( "\n" );

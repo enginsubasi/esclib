@@ -1,0 +1,175 @@
+# what: rampIteration takes its full last step instead of landing on the target, so the setpoint overshoots and turns around.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/control/ramp.c
+TEST Ramp_Test
+--- FIND
+void rampIteration ( ramp_t* driver, float target )
+{
+    float remaining = 0;
+    float distance = 0;
+    float vEnvelope = 0;
+    float vDesired = 0;
+    float maxDv = 0;
+    float step = 0;
+    float stepMagnitude = 0;
+
+    remaining = target - driver->position;
+
+    distance = remaining;
+
+    if ( distance < 0 )
+    {
+        distance = -distance;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    vEnvelope = sqrtf ( 2.0f * driver->maxAcceleration * distance );
+
+    if ( vEnvelope > driver->maxVelocity )
+    {
+        vDesired = driver->maxVelocity;
+    }
+    else
+    {
+        vDesired = vEnvelope;
+    }
+
+    if ( remaining < 0 )
+    {
+        vDesired = -vDesired;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    maxDv = driver->maxAcceleration * driver->ts;
+
+    if ( ( vDesired - driver->velocity ) > maxDv )
+    {
+        driver->velocity += maxDv;
+    }
+    else if ( ( vDesired - driver->velocity ) < -maxDv )
+    {
+        driver->velocity -= maxDv;
+    }
+    else
+    {
+        driver->velocity = vDesired;
+    }
+
+    step = driver->velocity * driver->ts;
+
+    stepMagnitude = step;
+
+    if ( stepMagnitude < 0 )
+    {
+        stepMagnitude = -stepMagnitude;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( stepMagnitude >= distance )
+    {
+        driver->position = target;
+        driver->velocity = 0;
+        driver->arrived = TRUE;
+    }
+    else
+    {
+        driver->position += step;
+        driver->arrived = FALSE;
+    }
+}
+--- REPLACE
+void rampIteration ( ramp_t* driver, float target )
+{
+    float remaining = 0;
+    float distance = 0;
+    float vEnvelope = 0;
+    float vDesired = 0;
+    float maxDv = 0;
+    float step = 0;
+    float stepMagnitude = 0;
+
+    remaining = target - driver->position;
+
+    distance = remaining;
+
+    if ( distance < 0 )
+    {
+        distance = -distance;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    vEnvelope = sqrtf ( 2.0f * driver->maxAcceleration * distance );
+
+    if ( vEnvelope > driver->maxVelocity )
+    {
+        vDesired = driver->maxVelocity;
+    }
+    else
+    {
+        vDesired = vEnvelope;
+    }
+
+    if ( remaining < 0 )
+    {
+        vDesired = -vDesired;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    maxDv = driver->maxAcceleration * driver->ts;
+
+    if ( ( vDesired - driver->velocity ) > maxDv )
+    {
+        driver->velocity += maxDv;
+    }
+    else if ( ( vDesired - driver->velocity ) < -maxDv )
+    {
+        driver->velocity -= maxDv;
+    }
+    else
+    {
+        driver->velocity = vDesired;
+    }
+
+    step = driver->velocity * driver->ts;
+
+    stepMagnitude = step;
+
+    if ( stepMagnitude < 0 )
+    {
+        stepMagnitude = -stepMagnitude;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( stepMagnitude >= distance )
+    {
+        driver->position += step;
+        driver->velocity = 0;
+        driver->arrived = TRUE;
+    }
+    else
+    {
+        driver->position += step;
+        driver->arrived = FALSE;
+    }
+}
+--- END

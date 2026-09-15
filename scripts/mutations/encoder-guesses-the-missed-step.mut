@@ -1,0 +1,127 @@
+# what: encoderUpdate guesses a direction when both channels changed instead of standing still and counting the event.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/encoder/encoder.c
+TEST Encoder_Test
+--- FIND
+void encoderUpdate ( encoder_t* driver, uint8_t channelA, uint8_t channelB )
+{
+    static const int8_t stepTable[ 16 ] =
+    {
+         0,  1, -1,  0,
+        -1,  0,  0,  1,
+         1,  0,  0, -1,
+         0, -1,  1,  0
+    };
+
+    uint8_t newState = 0;
+    uint8_t oldState = 0;
+    int8_t step = 0;
+
+    if ( channelA != 0 )
+    {
+        newState = 2u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( channelB != 0 )
+    {
+        newState |= 1u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    oldState = driver->state;
+
+    if ( ( uint8_t ) ( oldState ^ newState ) == ENCODER_DIAGONAL )
+    {
+        ++driver->errorCount;
+    }
+    else
+    {
+        step = stepTable[ ( oldState << 2 ) | newState ];
+
+        if ( step != 0 )
+        {
+            driver->position += step;
+            driver->direction = step;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    driver->state = newState;
+}
+--- REPLACE
+void encoderUpdate ( encoder_t* driver, uint8_t channelA, uint8_t channelB )
+{
+    static const int8_t stepTable[ 16 ] =
+    {
+         0,  1, -1,  0,
+        -1,  0,  0,  1,
+         1,  0,  0, -1,
+         0, -1,  1,  0
+    };
+
+    uint8_t newState = 0;
+    uint8_t oldState = 0;
+    int8_t step = 0;
+
+    if ( channelA != 0 )
+    {
+        newState = 2u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    if ( channelB != 0 )
+    {
+        newState |= 1u;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    oldState = driver->state;
+
+    if ( ( uint8_t ) ( oldState ^ newState ) == ENCODER_DIAGONAL )
+    {
+        /* mutant: the table that answers plus or minus two on the diagonal */
+        if ( driver->direction != 0 )
+        {
+            driver->position += ( driver->direction * 2 );
+        }
+        else
+        {
+            driver->position += 2;
+        }
+    }
+    else
+    {
+        step = stepTable[ ( oldState << 2 ) | newState ];
+
+        if ( step != 0 )
+        {
+            driver->position += step;
+            driver->direction = step;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    driver->state = newState;
+}
+--- END

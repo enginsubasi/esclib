@@ -1,0 +1,87 @@
+# what: encoderInit starts from an assumed zero instead of the levels it was given, so the first update reads as a transition that never happened.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/encoder/encoder.c
+TEST Encoder_Test
+--- FIND
+uint8_t encoderInit ( encoder_t* driver, uint8_t channelA, uint8_t channelB )
+{
+    uint8_t retVal = FALSE;
+    uint8_t state = 0;
+
+    if ( driver != NULL )
+    {
+        if ( channelA != 0 )
+        {
+            state = 2u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( channelB != 0 )
+        {
+            state |= 1u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        driver->state = state;
+        driver->position = 0;
+        driver->direction = ( int8_t ) ENC_STOPPED;
+        driver->errorCount = 0;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t encoderInit ( encoder_t* driver, uint8_t channelA, uint8_t channelB )
+{
+    uint8_t retVal = FALSE;
+    uint8_t state = 0;
+
+    if ( driver != NULL )
+    {
+        if ( channelA != 0 )
+        {
+            state = 2u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        if ( channelB != 0 )
+        {
+            state |= 1u;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+
+        driver->state = 0;
+        driver->position = 0;
+        driver->direction = ( int8_t ) ENC_STOPPED;
+        driver->errorCount = 0;
+
+        retVal = TRUE;
+    }
+    else
+    {
+        retVal = FALSE;
+    }
+
+    return ( retVal );
+}
+--- END

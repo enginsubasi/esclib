@@ -1,0 +1,43 @@
+# what: complexDiv adds where it must subtract, so the imaginary part of every quotient has the wrong sign.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/complex/complex.c
+TEST ComplexMath_Test
+--- FIND
+void complexDiv ( const complex_t* const cprm1, const complex_t* const cprm2, complex_t* result )
+{
+    float denominator = 0;
+
+    denominator = ( cprm2->re * cprm2->re ) + ( cprm2->im * cprm2->im );
+
+    if ( denominator != 0 )
+    {
+        result->re = ( ( cprm1->re * cprm2->re ) + ( cprm1->im * cprm2->im ) ) / denominator;
+        result->im = ( ( cprm1->im * cprm2->re ) - ( cprm1->re * cprm2->im ) ) / denominator;
+    }
+    else
+    {
+        result->re = 0;
+        result->im = 0;
+    }
+}
+--- REPLACE
+void complexDiv ( const complex_t* const cprm1, const complex_t* const cprm2, complex_t* result )
+{
+    float denominator = 0;
+
+    denominator = ( cprm2->re * cprm2->re ) + ( cprm2->im * cprm2->im );
+
+    if ( denominator != 0 )
+    {
+        result->re = ( ( cprm1->re * cprm2->re ) + ( cprm1->im * cprm2->im ) ) / denominator;
+        result->im = ( ( cprm1->im * cprm2->re ) + ( cprm1->re * cprm2->im ) ) / denominator;
+    }
+    else
+    {
+        result->re = 0;
+        result->im = 0;
+    }
+}
+--- END

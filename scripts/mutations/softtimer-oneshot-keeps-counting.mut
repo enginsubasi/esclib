@@ -1,0 +1,60 @@
+# what: A one-shot timer reloads like a periodic one and keeps expiring after it has already fired.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/timer/softtimer.c
+TEST SoftTimer_Test
+--- FIND
+void softtimerTick ( softtimer_t* driver )
+{
+    if ( driver->state == ( uint8_t ) STS_RUNNING )
+    {
+        ++driver->counter;
+
+        if ( driver->counter >= driver->period )
+        {
+            driver->expired = TRUE;
+
+            if ( driver->mode == ( uint8_t ) STM_PERIODIC )
+            {
+                driver->counter -= driver->period;
+            }
+            else
+            {
+                driver->state = ( uint8_t ) STS_EXPIRED;
+            }
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- REPLACE
+void softtimerTick ( softtimer_t* driver )
+{
+    if ( driver->state == ( uint8_t ) STS_RUNNING )
+    {
+        ++driver->counter;
+
+        if ( driver->counter >= driver->period )
+        {
+            driver->expired = TRUE;
+
+            driver->counter -= driver->period;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- END
