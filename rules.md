@@ -1,0 +1,191 @@
+# Library Rules
+
+This file holds the rules that shape the *library*: what a module may depend on,
+how it is laid out, and what a new one has to look like. The rules that shape the
+*code inside* a module — brace style, naming, the `Init` contract, `const`, the
+Doxygen tag set — live in `codingReference.md` and are not repeated here.
+
+## 1. Freestanding
+
+The library targets bare metal.
+
+- No heap. `malloc`, `calloc`, `realloc` and `free` appear nowhere, ever.
+- No operating system, no threads, no file I/O, no `errno`.
+- No `printf` or any other stdio call in `src/` or `drv/`. Printing belongs in
+  `test/` and `sample/` only.
+- Fixed-width types from `<stdint.h>` throughout. A bare `int`, `long` or
+  `unsigned` in an interface is a portability bug.
+- The only standard headers a module may include are `<stdint.h>`, `<stddef.h>`
+  and `<math.h>`, and the last one only where it is genuinely used.
+- C89-compatible style. Declarations at the top of a block, no variable-length
+  arrays, no designated initializers.
+
+## 2. Module independence
+
+**No module includes another module's header.** Every `.c` includes its own
+header and nothing else from this tree.
+
+This is the rule the whole layout exists to protect. The library is consumed by
+copying a module's `.h`/`.c` pair into a target project, so a cross-module
+include turns a one-file copy into a dependency hunt. Where two modules would
+otherwise share code, the code is duplicated and the file banner says so — see
+the bracketing search in `interp.c`, copied from `searchUpperBound`.
+
+Where a module genuinely needs something another one produces, it takes it as a
+parameter or as a callback installed at `Init`. `comstxetx` verifies frames with
+a checksum function whose signature is the one `crc16` already has, so `crc16`
+goes in directly and neither module knows about the other. `encoder` consumes
+what two `bininp` outputs produce and includes neither header.
+
+## 3. Layout
+
+```
+inc/<group>/<name>.h   <-->  src/<group>/<name>.c   strict 1:1 pair
+drv/<name>.h, <name>.c                              hardware drivers, side by side
+template/inc/generic.h, template/src/generic.c      copy these to start a module
+test/<Name>_Test/                                   one standalone main() per module
+sample/                                             standalone examples, not library code
+```
+
+A header with no source, or a source with no header, is a defect unless it is
+listed as a known gap in `CLAUDE.md`.
+
+There is no build system and there is not meant to be one. Nothing in this tree
+produces a shippable artifact. `run_tests.sh` builds and runs the tests and
+ships nothing.
+
+## 4. Header contract
+
+Every header is `template/inc/generic.h` with content filled into fixed
+sections. All of the sections stay, including the empty ones:
+
+```c
+#ifndef <NAME>_H_
+#define <NAME>_H_
+#ifdef __cplusplus
+ extern "C" {
+#endif
+#include <stdint.h>
+/* FUNCTION DEFINITIONS */
+/* DEFINITIONS */
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+/* TYPEDEFS */
+/* STRUCTURES */
+/* ENUMS */
+/* EXTERNS */
+/* FUNCTION PROTOTYPES */
+```
+
+`TRUE` and `FALSE` are redefined per header, guarded by `#ifndef`, precisely so
+that a module stays self-contained when it is copied out alone.
+
+Enums use a `SCREAMING_CASE` tag with short prefixed members: `BS_EMPTY`,
+`BB_OVERWRITE`, `HC595_DLY_MS`.
+
+Every header must be includable on its own, and all of them together must
+compile in one translation unit. That second check is what catches a duplicate
+include guard or a clashing typedef.
+
+## 5. The driver-struct pattern
+
+Every stateful module has the same shape, and a new one must match it.
+
+- One `typedef struct { ... } <prefix>_t;` holding all state. Always a typedef —
+  the caller never writes the `struct` keyword.
+- **The caller owns all storage.** Buffers are passed into `Init` as pointers.
+  The module never allocates and never holds static state of its own.
+- The first parameter of every function is `<prefix>_t* driver`.
+- Names are the module prefix plus a verb: `xxxInit`, then
+  `xxxUpdate` / `xxxIteration` / `xxxControl` / `xxxReceive`, then
+  `xxxGetValue` / `xxxGetOutput`.
+- Hardware and I/O are injected as function pointers stored in the struct at
+  `Init`. **Library code never calls a HAL directly.** See `drv/hc595_drv.h`
+  (`sckDrv`, `rckDrv`, `datDrv`, `dlyMs`, `dlyNop`) and
+  `inc/communication/comat.h` (`packetProcess`, `txTransmissionTrigger`).
+- Protocol modules are byte-driven state machines: `xxxReceive` per byte from
+  the ISR, `xxxEvaluate` from the main loop, `xxxTimeoutCounter` from a periodic
+  tick.
+
+A module that owns no caller storage and no callbacks is a value type rather
+than a driver, and is exempt — `complex_t` is the only one.
+
+## 6. Time
+
+The library has no clock. A module that needs time takes it one of two ways:
+
+- **A sample period at `Init`**, as `pid` and `ramp` do, so limits and gains are
+  written in units per second rather than per call.
+- **A tick the caller drives from a fixed-rate ISR**, as `softtimer`,
+  `comatTimeoutCounter` and `hc595Interrupt` do. The interrupt rate *is* the
+  unit, and periods are expressed in ticks.
+
+`softtimer` is the only time abstraction, and by rule 2 no other module may use
+it. Modules that need a counter keep their own.
+
+## 7. Width variants
+
+A module that is useful without an FPU carries integer variants beside the float
+one, in the same file, named with a type suffix: `mafIterationi32`,
+`circBufAddu32`, `statVariancei32`. These are width variants of one module, not
+modules of their own.
+
+- An integer variant carries every intermediate wide enough that the documented
+  input range cannot overflow it. `interpCalculatei32` and `mathMapi32` use
+  `int64_t` for exactly this reason.
+- An integer division rounds to nearest rather than truncating, and accounts for
+  the sign of the divisor where the divisor may be negative.
+- A fixed-point variant states its Q format in the file banner and in the
+  `@brief` of every function that takes or returns a scaled value.
+- A width exists because a caller needs it, not for symmetry. `mathMap` has no
+  `u32` variant because a `u32` map cannot express the descending input range
+  that would make it worth having.
+
+## 8. Preconditions and error handling
+
+- A precondition that can be checked once is checked at `Init`, not per call.
+  `interpInit` verifies that the table ascends strictly so that
+  `interpCalculate` can divide without testing the divisor.
+- A precondition the module cannot check is documented and the caller carries
+  it. The binary searches require an ascending array and give a confident wrong
+  answer without one; `sortIsSorted` exists so the caller can check it cheaply.
+- **A module never guesses.** When the input is ambiguous the module refuses and
+  counts the event, so the caller can see it: `encoderGetErrorCount` counts a
+  missed quadrature step rather than inventing a direction, and
+  `comstxetxGetRejectCount` counts a frame that failed its check rather than
+  swallowing it.
+- A status return is never optional. `hc595OneShot` and `hc595Start` both report
+  whether they took the pins; ignoring the answer silently skips a transfer.
+
+## 9. Testing
+
+- Every module with functions has a test under `test/<Name>_Test/`, a standalone
+  `main()` that builds from the test file plus the module sources its
+  `#include "..."` lines name.
+- **Every exported symbol is referenced by at least one test.**
+- New tests assert and return non-zero on failure. They do not print values for
+  a human to compare — seven older tests do, and they are legacy, not a pattern
+  to follow.
+- Expected values come from an independent model — a hand calculation, a
+  published vector, a transliteration of the algorithm — never from running this
+  implementation and recording what it said.
+- When a bug is fixed, the test gets a check aimed at that specific bug, so the
+  regression fails rather than passing quietly. `CLAUDE.md` keeps the table of
+  which test pins which bug.
+
+## 10. Verification before commit
+
+Every `.c` under `src/` and `drv/` compiles clean under `-Wall -Wextra`. **Zero
+warnings, no exceptions** — a new warning is a regression, not background noise.
+
+```bash
+sh run_tests.sh              # build and run every test
+sh scripts/check.sh          # warnings, header coexistence, symbol coverage
+```
+
+Commit messages are terse and prefixed: `+` for an addition, `*` for a fix or an
+update. `+ bininpGetRisingValue function`, `* bugfix`.
