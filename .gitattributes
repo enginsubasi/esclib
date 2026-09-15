@@ -9,3 +9,4 @@
 *.md    text
 *.txt   text
 *.cbp   text
+*.sh    text eol=lf
