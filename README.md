@@ -50,7 +50,7 @@ An `i32`/`u32` suffix on a function name selects the variant.
 | `maf` | Moving average. Smooths, at the cost of a window of delay. | `i32` `u32` |
 | `emaf` | Exponential moving average. Smooths with one state word. | `i32` `u32` |
 | `median` | Rejects impulses outright rather than averaging them in. | `i32` `u32` |
-| `biquad` | Shapes a response in hertz. The only way to notch mains hum. | — |
+| `biquad` | Shapes a response in hertz. The only way to notch mains hum. | `i32` (Q16) |
 | `slew` | Bounds the rate of change. No target, chases the last sample. | `i32` `u32` |
 | `deadband` | Holds the output still until the input really moves. | `i32` `u32` |
 | `alphabeta` | Estimates position *and* velocity from position alone. | `i32` (Q16) |
@@ -58,6 +58,12 @@ An `i32`/`u32` suffix on a function name selects the variant.
 Pick by what is wrong with the signal: noise that averages out wants `maf` or
 `emaf`, noise that does not wants `median`, a specific frequency wants `biquad`,
 a jumpy actuator wants `slew`, a twitching display wants `deadband`.
+
+`biquad`'s four designers — low pass, high pass, band pass, notch — take a
+corner in hertz and are float only. The `i32` variant takes the five
+coefficients they produce, converted to Q16 once on a host, because computing a
+cosine at boot would pull the whole software float library onto the part the
+variant exists to serve.
 
 ### Control — `inc/control`
 

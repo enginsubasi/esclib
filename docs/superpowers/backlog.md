@@ -90,9 +90,22 @@ Five weeks after the work above, none of it was written down. CLAUDE.md still cl
 - **`src/communication/comsec.c`** was a zero byte file. CLAUDE.md described it as holding a banner, which is what it holds now.
 - **`.gitattributes`** now pins `*.sh` to LF. Without it a fresh clone on Windows checks the scripts out with CRLF, which `dash` will not run — the one thing that would have made the runner useless on the machine it was written on.
 
+## 9. `biquad` was the last float only filter — DONE 15/09/2026
+
+Every other filter in the tree carried an integer width. `biquad` did not, which meant a part with no FPU could have the whole filter set except the one that shapes a response in hertz — and the notch has no substitute anywhere else in the library.
+
+`biquadIniti32`, `biquadIterationi32`, `biquadGetOutputi32` and `biquadReseti32`, Q16, state in `int64_t`. Two decisions in it were settled by measuring against an independent model rather than by argument:
+
+- **No `i32` designer.** The four designers turn hertz into coefficients with a `cosf` and a `sinf`. Running that at boot on an FPU free part links the software float library, which costs more than the filter saves, and the design is a compile time constant in every real use. The `i32` width takes the five coefficients; the file gives the one line that converts them.
+- **The shift rounds, where `emafi32` and `alphabetai32` truncate.** A truncating shift loses half an LSB toward minus infinity every sample. Measured: a symmetric sine through a truncating Q16 low pass leaves a standing offset of half a count, and the rounded form leaves none. The test pins it as a sum over forty thousand samples and the mutation was confirmed — putting the plain shift back fails that check and only that check.
+
+The same measurement found Q16's floor, which is documented rather than guarded: a low pass narrower than about one part in five hundred of the sample rate quantizes `b0` to a handful of LSBs and its dc gain goes visibly wrong. A notch is unaffected at any q.
+
+`FilterSet_Test` grew forty checks, including one that designs the filter with the float `biquadInitLowPass` and asserts the Q16 literals the rest of the case uses are what it converts to — so the two widths cannot drift apart silently.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants. Nothing is outstanding.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s included. Nothing is outstanding.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 

@@ -1,6 +1,7 @@
 /*
  * Covers the filters added alongside maf and emaf: median, biquad, slew,
- * alphabeta and deadband, plus the integer variant that went into emaf itself.
+ * alphabeta and deadband, plus the integer variants that went into emaf,
+ * alphabeta and biquad themselves.
  *
  * Asserts rather than printing values for a human to compare, so it needs no
  * output.txt and returns non zero on the first failure. Expected values were
@@ -672,6 +673,264 @@ static void biquadCase ( void )
     check ( "and it stays there", flat );
 }
 
+/* ----------------------------------------------- biquad, Q16 i32 variant */
+
+/*
+ * Coefficient sets for a 1 kHz sample rate, taken from the float designers in
+ * this module and converted to Q16 by hand, which is what a caller of the
+ * fixed point width has to do. The conversion itself is checked below.
+ */
+#define BQ_LOWPASS      4421, 8841, 4421, -74906, 27053    /* 100 Hz, q 0.7071 */
+#define BQ_NOTCH        65200, -124018, 65200, -124018, 64864 /* 50 Hz, q 30   */
+#define BQ_HIGHPASS     41874, -83748, 41874, -74906, 27053 /* 100 Hz, q 0.7071 */
+#define BQ_BANDPASS     1871, 0, -1871, -103012, 61794     /* 100 Hz, q 10     */
+
+/* The conversion a caller applies to a designed coefficient. */
+static int32_t toQ16 ( float value )
+{
+    int32_t retVal = 0;
+
+    if ( value >= 0.0f )
+    {
+        retVal = ( int32_t ) ( ( value * 65536.0f ) + 0.5f );
+    }
+    else
+    {
+        retVal = ( int32_t ) ( ( value * 65536.0f ) - 0.5f );
+    }
+
+    return ( retVal );
+}
+
+/* Largest absolute output over the given number of samples of a sine. */
+static int32_t sweepi32 ( biquadi32_t* driver, float sampleRate, float frequency,
+                            uint32_t settle, uint32_t measure, float amplitude )
+{
+    uint32_t i = 0;
+    int32_t peak = 0;
+    int32_t value = 0;
+
+    for ( i = 0; i < ( settle + measure ); ++i )
+    {
+        biquadIterationi32 ( driver,
+                                ( int32_t ) ( amplitude *
+                                    sinf ( ( 2.0f * 3.14159265f * frequency * ( float ) i ) / sampleRate ) ) );
+
+        if ( i >= settle )
+        {
+            value = biquadGetOutputi32 ( driver );
+
+            if ( value < 0 )
+            {
+                value = -value;
+            }
+            else
+            {
+                /* Intentionally blank. */
+            }
+
+            if ( value > peak )
+            {
+                peak = value;
+            }
+            else
+            {
+                /* Intentionally blank. */
+            }
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    return ( peak );
+}
+
+static void biquadi32Case ( void )
+{
+    biquadi32_t driver;
+    biquad_t designer;
+    uint32_t i = 0;
+    uint8_t flat = TRUE;
+    int64_t sum = 0;
+
+    printf ( "biquad i32 variant\n" );
+
+    check ( "NULL driver is rejected",
+            ( uint8_t ) ( biquadIniti32 ( NULL, 65536, 0, 0, 0, 0 ) == FALSE ) );
+    check ( "Init", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+
+    /*
+     * The float designer and the Q16 literals above have to describe the same
+     * filter, or every expected value below is measuring the wrong thing.
+     */
+    check ( "the float low pass design converts to the Q16 set used here",
+            biquadInitLowPass ( &designer, 1000.0f, 100.0f, 0.7071f ) );
+    check ( "b0 converts",  ( uint8_t ) ( toQ16 ( designer.b0 ) == 4421 ) );
+    check ( "b1 converts",  ( uint8_t ) ( toQ16 ( designer.b1 ) == 8841 ) );
+    check ( "b2 converts",  ( uint8_t ) ( toQ16 ( designer.b2 ) == 4421 ) );
+    check ( "a1 converts",  ( uint8_t ) ( toQ16 ( designer.a1 ) == -74906 ) );
+    check ( "a2 converts",  ( uint8_t ) ( toQ16 ( designer.a2 ) == 27053 ) );
+
+    /* Dc gain of one, in both signs and over four decades of amplitude. */
+    check ( "Init for dc", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+
+    for ( i = 0; i < 5000u; ++i )
+    {
+        biquadIterationi32 ( &driver, 1000 );
+    }
+
+    check ( "a low pass settles exactly on a steady input",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 1000 ) );
+
+    check ( "Init for a negative dc", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+
+    for ( i = 0; i < 5000u; ++i )
+    {
+        biquadIterationi32 ( &driver, -2500 );
+    }
+
+    check ( "and on a negative one, with no rounding offset",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == -2500 ) );
+
+    check ( "Init for a large dc", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+
+    for ( i = 0; i < 5000u; ++i )
+    {
+        biquadIterationi32 ( &driver, 1000000 );
+    }
+
+    check ( "and on a million counts, which Q16 in an int32_t state could not hold",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 1000000 ) );
+
+    /*
+     * The reason biquadShifti32 rounds instead of shifting. A truncating shift
+     * loses half an LSB every sample, which on a symmetric input shows up as a
+     * standing offset: the same run with a plain >> sums to about -20000 here,
+     * where the rounded form sums to zero. Checked as a sum rather than as a
+     * single sample, because half a count never appears in one reading.
+     */
+    check ( "Init for the rounding check", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+
+    sum = 0;
+
+    for ( i = 0; i < 44000u; ++i )
+    {
+        biquadIterationi32 ( &driver,
+                                ( int32_t ) ( 10000.0f *
+                                    sinf ( ( 2.0f * 3.14159265f * 10.0f * ( float ) i ) / 1000.0f ) ) );
+
+        if ( i >= 4000u )
+        {
+            sum += biquadGetOutputi32 ( &driver );
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    check ( "a symmetric input leaves no standing offset",
+            ( uint8_t ) ( ( sum > -400 ) && ( sum < 400 ) ) );
+
+    /* Reset settles the state with no transient at all. */
+    check ( "Init for reset", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+    biquadReseti32 ( &driver, 1000 );
+
+    check ( "reset puts a low pass straight on its steady output",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 1000 ) );
+
+    flat = TRUE;
+
+    for ( i = 0; i < 200u; ++i )
+    {
+        biquadIterationi32 ( &driver, 1000 );
+
+        if ( biquadGetOutputi32 ( &driver ) != 1000 )
+        {
+            flat = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    check ( "and it stays there, with no settling at all", flat );
+
+    check ( "Init a high pass", biquadIniti32 ( &driver, BQ_HIGHPASS ) );
+    biquadReseti32 ( &driver, 1000 );
+
+    check ( "reset settles a high pass on zero, because it has no dc gain",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 0 ) );
+
+    flat = TRUE;
+
+    for ( i = 0; i < 200u; ++i )
+    {
+        biquadIterationi32 ( &driver, 1000 );
+
+        if ( biquadGetOutputi32 ( &driver ) != 0 )
+        {
+            flat = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank. */
+        }
+    }
+
+    check ( "and stays there too", flat );
+
+    check ( "Init a band pass", biquadIniti32 ( &driver, BQ_BANDPASS ) );
+    biquadReseti32 ( &driver, 5000 );
+    check ( "a band pass settles on zero as well",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 0 ) );
+
+    check ( "Init a notch", biquadIniti32 ( &driver, BQ_NOTCH ) );
+    biquadReseti32 ( &driver, 5000 );
+    check ( "a notch settles on the input, because its dc gain is one",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 5000 ) );
+
+    /*
+     * Poles on the unit circle at dc make 1 + a1 + a2 zero, so there is no
+     * settled value to compute and the state is cleared rather than divided.
+     */
+    check ( "Init a set with no dc gain at all",
+            biquadIniti32 ( &driver, 65536, 0, 0, -65536, 0 ) );
+    biquadReseti32 ( &driver, 1234 );
+    check ( "a zero dc denominator clears rather than divides",
+            ( uint8_t ) ( biquadGetOutputi32 ( &driver ) == 0 ) );
+
+    /* The response itself, which is the whole point of the module. */
+    check ( "Init the notch for its response", biquadIniti32 ( &driver, BQ_NOTCH ) );
+    check ( "the notch cuts its own frequency by better than 50 dB",
+            ( uint8_t ) ( sweepi32 ( &driver, 1000.0f, 50.0f, 4000u, 1000u, 10000.0f ) < 32 ) );
+
+    check ( "re-init the notch", biquadIniti32 ( &driver, BQ_NOTCH ) );
+    check ( "and passes a decade below it untouched",
+            ( uint8_t ) ( sweepi32 ( &driver, 1000.0f, 10.0f, 4000u, 1000u, 10000.0f ) > 9900 ) );
+
+    check ( "re-init the notch again", biquadIniti32 ( &driver, BQ_NOTCH ) );
+    check ( "and two octaves above it almost untouched",
+            ( uint8_t ) ( sweepi32 ( &driver, 1000.0f, 200.0f, 4000u, 1000u, 10000.0f ) > 9000 ) );
+
+    check ( "Init the low pass for its response", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+    check ( "the low pass passes a decade below its corner",
+            ( uint8_t ) ( sweepi32 ( &driver, 1000.0f, 10.0f, 4000u, 1000u, 10000.0f ) > 9900 ) );
+
+    check ( "re-init the low pass", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+
+    i = ( uint32_t ) sweepi32 ( &driver, 1000.0f, 100.0f, 4000u, 1000u, 10000.0f );
+    check ( "sits 3 dB down at the corner itself",
+            ( uint8_t ) ( ( i > 6900u ) && ( i < 7250u ) ) );
+
+    check ( "re-init the low pass again", biquadIniti32 ( &driver, BQ_LOWPASS ) );
+    check ( "and is 39 dB down two octaves above it",
+            ( uint8_t ) ( sweepi32 ( &driver, 1000.0f, 400.0f, 4000u, 1000u, 10000.0f ) < 200 ) );
+}
+
 /* ---------------------------------------------------- emaf, i32 variant */
 
 static void emafi32Case ( void )
@@ -738,6 +997,8 @@ int main ( void )
     alphabetai32Case ( );
     printf ( "\n" );
     biquadCase ( );
+    printf ( "\n" );
+    biquadi32Case ( );
     printf ( "\n" );
     emafi32Case ( );
 
