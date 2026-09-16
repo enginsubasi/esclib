@@ -1,0 +1,29 @@
+# what: The table is indexed by the incoming byte instead of by the byte mixed with the value so far, so every byte after the first is folded in wrongly. The first byte still comes out right, which is why a one byte check would pass it.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/crc16.c
+TEST CRC_Test
+--- FIND
+uint16_t crc16Update ( uint16_t crc, uint8_t data )
+{
+    uint16_t retVal = 0;
+    uint8_t index = 0;
+
+    index = ( uint8_t ) ( data ^ crc );
+    retVal = ( uint16_t ) ( ( crc >> 8 ) ^ crc16Table[ index ] );
+
+    return ( retVal );
+}
+--- REPLACE
+uint16_t crc16Update ( uint16_t crc, uint8_t data )
+{
+    uint16_t retVal = 0;
+    uint8_t index = 0;
+
+    index = data;
+    retVal = ( uint16_t ) ( ( crc >> 8 ) ^ crc16Table[ index ] );
+
+    return ( retVal );
+}
+--- END

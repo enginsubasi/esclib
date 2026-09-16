@@ -19,6 +19,10 @@
 #define FALSE 0
 #endif
 
+/* Where a streaming CRC16 starts. crc16 ( a, n ) is this seed run through
+   crc16Update once for every byte. */
+#define CRC16_SEED              0xFFFFu
+
 /* TYPEDEFS */
 
 /* STRUCTURES */
@@ -31,6 +35,8 @@
 
 uint16_t crc16 ( const uint8_t* const array, uint32_t size );
 uint16_t crc16Alt ( const uint8_t* const array, uint32_t size );
+uint16_t crc16Update ( uint16_t crc, uint8_t data );
+uint16_t crc16AltUpdate ( uint16_t crc, uint8_t data );
 
 #ifdef __cplusplus
 }

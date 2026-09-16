@@ -1,5 +1,6 @@
 /*
- * Covers crc8, crc8Dallas, crc16, crc16Alt, crc32 and crc32Alt.
+ * Covers crc8, crc8Dallas, crc16, crc16Alt, crc32 and crc32Alt, and the
+ * streaming entry point of each of them.
  *
  * Asserts rather than printing values for a human to compare, so it needs no
  * output.txt and returns non zero on failure.
@@ -437,6 +438,104 @@ static void sensitivityCase ( void )
                           ( crc32 ( buffer, 4u ) == base32 ) ) );
 }
 
+
+/* ------------------------------------------------------------- streaming */
+
+static uint8_t streamBuffer[ 256 ];
+
+static void streamingCase ( void )
+{
+    uint32_t i = 0;
+    uint32_t n = 0;
+    uint16_t sixteen = 0;
+    uint16_t sixteenAlt = 0;
+    uint32_t thirtyTwo = 0;
+    uint32_t thirtyTwoAlt = 0;
+    uint8_t eight = 0;
+    uint8_t dallas = 0;
+    uint8_t ok = TRUE;
+
+    printf ( "a byte at a time\n" );
+
+    for ( i = 0; i < 256u; ++i )
+    {
+        streamBuffer[ i ] = ( uint8_t ) ( ( i * 7u ) + 3u );
+    }
+
+    /*
+     * Every prefix rather than one length. An Update that agreed with the
+     * whole buffer form at 256 bytes and nowhere else would still be wrong,
+     * and the ways it goes wrong — a seed applied twice, a byte taken into
+     * the wrong end, a table indexed by the byte instead of by the byte mixed
+     * with the value so far — show at particular lengths rather than at all
+     * of them. The empty prefix is in here too: the seed alone has to be what
+     * the whole buffer form gives for no bytes.
+     */
+    for ( n = 0; n <= 256u; ++n )
+    {
+        sixteen = CRC16_SEED;
+        sixteenAlt = CRC16_SEED;
+        thirtyTwo = CRC32_SEED;
+        thirtyTwoAlt = CRC32_SEED;
+        eight = CRC8_SEED;
+        dallas = CRC8_DALLAS_SEED;
+
+        for ( i = 0; i < n; ++i )
+        {
+            sixteen = crc16Update ( sixteen, streamBuffer[ i ] );
+            sixteenAlt = crc16AltUpdate ( sixteenAlt, streamBuffer[ i ] );
+            thirtyTwo = crc32Update ( thirtyTwo, streamBuffer[ i ] );
+            thirtyTwoAlt = crc32AltUpdate ( thirtyTwoAlt, streamBuffer[ i ] );
+            eight = crc8Update ( eight, streamBuffer[ i ] );
+            dallas = crc8DallasUpdate ( dallas, streamBuffer[ i ] );
+        }
+
+        if ( ( sixteen != crc16 ( streamBuffer, n ) ) ||
+             ( sixteenAlt != crc16 ( streamBuffer, n ) ) ||
+             ( thirtyTwo != crc32 ( streamBuffer, n ) ) ||
+             ( thirtyTwoAlt != crc32 ( streamBuffer, n ) ) ||
+             ( eight != crc8 ( streamBuffer, n ) ) ||
+             ( dallas != crc8Dallas ( streamBuffer, n ) ) )
+        {
+            ok = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "every prefix streams to what the whole buffer form gives", ok );
+
+    /* The published check value, reached a byte at a time. */
+    sixteen = CRC16_SEED;
+
+    for ( i = 0; i < 9u; ++i )
+    {
+        sixteen = crc16Update ( sixteen, checkVector[ i ] );
+    }
+
+    check ( "the MODBUS check value, streamed",
+            ( uint8_t ) ( sixteen == 0x4B37u ) );
+
+    /*
+     * What the zero seed is for. A 1-Wire ROM read is seven bytes and the CRC
+     * of those seven, and taking all eight into the same running value gives
+     * zero — which is how a reader checks the read without holding it.
+     */
+    dallas = CRC8_DALLAS_SEED;
+
+    for ( i = 0; i < 7u; ++i )
+    {
+        dallas = crc8DallasUpdate ( dallas, streamBuffer[ i ] );
+    }
+
+    dallas = crc8DallasUpdate ( dallas, crc8Dallas ( streamBuffer, 7u ) );
+
+    check ( "a Dallas read including its own CRC streams to zero",
+            ( uint8_t ) ( dallas == 0x00u ) );
+}
+
 int main ( void )
 {
     crc8Case ( );
@@ -456,6 +555,8 @@ int main ( void )
     crc32AltCase ( );
     printf ( "\n" );
     sensitivityCase ( );
+    printf ( "\n" );
+    streamingCase ( );
 
     printf ( "\n" );
 

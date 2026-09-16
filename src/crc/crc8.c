@@ -3,7 +3,7 @@
   *
   * @file      crc8.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.2.0
   * @date      15/09/2026
   *
   * @brief     CRC8 Calculation functions.
@@ -13,6 +13,10 @@
   *
   * @par History
   * 15/09/2026 Created. @n
+  * 16/09/2026 crc8Update and crc8DallasUpdate added. A 1-Wire ROM @n
+  *            read arrives a byte at a time and an SMBus transfer @n
+  *            is built a byte at a time, so both polynomials get @n
+  *            the streaming form. @n
   *
   * @note      Two functions rather than one, because the two CRC8s an embedded
   *            project actually meets are different polynomials and neither can
@@ -143,4 +147,78 @@ uint8_t crc8Dallas ( const uint8_t* const array, uint32_t size )
     }
 
     return ( crc );
+}
+
+/**
+ * @brief   Takes one byte into an SMBus CRC8 that is being computed a piece at
+ *          a time.
+ *
+ * @param[in]   crc     the value so far, CRC8_SEED before the first byte.
+ * @param[in]   data    the byte.
+ *
+ * @return  The value including that byte.
+ *
+ * @note    CRC8_SEED run through this once per byte gives exactly what crc8
+ *          gives over the same bytes. An SMBus packet error code is computed
+ *          over the address and command bytes as they go out, which is this
+ *          shape rather than the whole buffer one.
+ */
+uint8_t crc8Update ( uint8_t crc, uint8_t data )
+{
+    uint8_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = ( uint8_t ) ( crc ^ data );
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x80u ) != 0u )
+        {
+            retVal = ( uint8_t ) ( ( retVal << 1 ) ^ 0x07u );
+        }
+        else
+        {
+            retVal = ( uint8_t ) ( retVal << 1 );
+        }
+    }
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Takes one byte into a Dallas 1-Wire CRC8 that is being computed a
+ *          piece at a time.
+ *
+ * @param[in]   crc     the value so far, CRC8_DALLAS_SEED before the first
+ *                      byte.
+ * @param[in]   data    the byte.
+ *
+ * @return  The value including that byte.
+ *
+ * @note    CRC8_DALLAS_SEED run through this once per byte gives exactly what
+ *          crc8Dallas gives over the same bytes. A ROM read arrives eight
+ *          bytes at a time over a one wire bus, and checking it as it arrives
+ *          is why the zero seed is worth having: the whole read including its
+ *          CRC checks to zero.
+ */
+uint8_t crc8DallasUpdate ( uint8_t crc, uint8_t data )
+{
+    uint8_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = ( uint8_t ) ( crc ^ data );
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x01u ) != 0u )
+        {
+            retVal = ( uint8_t ) ( ( retVal >> 1 ) ^ 0x8Cu );
+        }
+        else
+        {
+            retVal = ( uint8_t ) ( retVal >> 1 );
+        }
+    }
+
+    return ( retVal );
 }

@@ -1,0 +1,29 @@
+# what: The value is shifted down rather than up before the table is mixed in, which is the reflected form of a polynomial that is not reflected.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/crc32.c
+TEST CRC_Test
+--- FIND
+uint32_t crc32Update ( uint32_t crc, uint8_t data )
+{
+    uint32_t retVal = 0;
+    uint32_t index = 0;
+
+    index = ( ( crc >> 24 ) ^ ( uint32_t ) data ) & 255u;
+    retVal = ( crc << 8 ) ^ crc32Table[ index ];
+
+    return ( retVal );
+}
+--- REPLACE
+uint32_t crc32Update ( uint32_t crc, uint8_t data )
+{
+    uint32_t retVal = 0;
+    uint32_t index = 0;
+
+    index = ( ( crc >> 24 ) ^ ( uint32_t ) data ) & 255u;
+    retVal = ( crc >> 8 ) ^ crc32Table[ index ];
+
+    return ( retVal );
+}
+--- END

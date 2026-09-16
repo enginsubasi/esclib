@@ -1,0 +1,51 @@
+# what: The incoming byte is never mixed into the value, so every payload of the same length gets the same check.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/crc8.c
+TEST CRC_Test
+--- FIND
+uint8_t crc8Update ( uint8_t crc, uint8_t data )
+{
+    uint8_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = ( uint8_t ) ( crc ^ data );
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x80u ) != 0u )
+        {
+            retVal = ( uint8_t ) ( ( retVal << 1 ) ^ 0x07u );
+        }
+        else
+        {
+            retVal = ( uint8_t ) ( retVal << 1 );
+        }
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t crc8Update ( uint8_t crc, uint8_t data )
+{
+    uint8_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = crc;
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x80u ) != 0u )
+        {
+            retVal = ( uint8_t ) ( ( retVal << 1 ) ^ 0x07u );
+        }
+        else
+        {
+            retVal = ( uint8_t ) ( retVal << 1 );
+        }
+    }
+
+    return ( retVal );
+}
+--- END

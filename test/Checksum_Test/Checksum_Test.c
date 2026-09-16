@@ -130,6 +130,82 @@ static void hookCase ( void )
                           checksumFletcher16 ( sample, 4u ) ) );
 }
 
+
+/* ------------------------------------------------------------- streaming */
+
+static uint8_t streamBuffer[ 256 ];
+
+static void streamingCase ( void )
+{
+    uint32_t i = 0;
+    uint32_t n = 0;
+    uint16_t fletcher = 0;
+    uint32_t adler = 0;
+    uint8_t ok = TRUE;
+
+    printf ( "a byte at a time\n" );
+
+    for ( i = 0; i < 256u; ++i )
+    {
+        streamBuffer[ i ] = ( uint8_t ) ( ( i * 7u ) + 3u );
+    }
+
+    /*
+     * Every prefix, for the reason CRC_Test gives. These two carry their
+     * accumulators inside the value they return, so there is no state to pass
+     * but the value itself, and a version that unpacked them the wrong way
+     * round would still look like a checksum.
+     */
+    for ( n = 0; n <= 256u; ++n )
+    {
+        fletcher = CHECKSUM_FLETCHER16_SEED;
+        adler = CHECKSUM_ADLER32_SEED;
+
+        for ( i = 0; i < n; ++i )
+        {
+            fletcher = checksumFletcher16Update ( fletcher, streamBuffer[ i ] );
+            adler = checksumAdler32Update ( adler, streamBuffer[ i ] );
+        }
+
+        if ( ( fletcher != checksumFletcher16 ( streamBuffer, n ) ) ||
+             ( adler != checksumAdler32 ( streamBuffer, n ) ) )
+        {
+            ok = FALSE;
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    check ( "every prefix streams to what the whole buffer form gives", ok );
+
+    /*
+     * Adler32 begins at one, not at zero. Seeding it at zero gives a number
+     * that looks exactly like a checksum and is the right one for nothing,
+     * which is why the seed is a define rather than a line in a comment.
+     */
+    adler = 0;
+
+    for ( i = 0; i < 16u; ++i )
+    {
+        adler = checksumAdler32Update ( adler, streamBuffer[ i ] );
+    }
+
+    check ( "seeding Adler32 at zero gives the wrong answer",
+            ( uint8_t ) ( adler != checksumAdler32 ( streamBuffer, 16u ) ) );
+
+    /*
+     * And wrong by a specific amount, which is what says the seed belongs to
+     * the first accumulator alone. That one ends one higher, and the second
+     * accumulator sums the first once per byte, so it ends one higher for
+     * every byte there was — sixteen here.
+     */
+    check ( "and wrong by one in the low half and by the byte count in the high",
+            ( uint8_t ) ( ( adler + 1u + ( 16u << 16 ) ) ==
+                          checksumAdler32 ( streamBuffer, 16u ) ) );
+}
+
 int main ( void )
 {
     narrowCase ( );
@@ -139,6 +215,9 @@ int main ( void )
 
     printf ( "\n" );
     hookCase ( );
+
+    printf ( "\n" );
+    streamingCase ( );
 
     printf ( "\n" );
 

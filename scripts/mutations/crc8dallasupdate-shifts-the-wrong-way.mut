@@ -1,0 +1,51 @@
+# what: The Dallas polynomial is walked from the top bit rather than the bottom one, so the streaming form computes the SMBus direction with the Dallas constant and matches neither.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/crc8.c
+TEST CRC_Test
+--- FIND
+uint8_t crc8DallasUpdate ( uint8_t crc, uint8_t data )
+{
+    uint8_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = ( uint8_t ) ( crc ^ data );
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x01u ) != 0u )
+        {
+            retVal = ( uint8_t ) ( ( retVal >> 1 ) ^ 0x8Cu );
+        }
+        else
+        {
+            retVal = ( uint8_t ) ( retVal >> 1 );
+        }
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint8_t crc8DallasUpdate ( uint8_t crc, uint8_t data )
+{
+    uint8_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = ( uint8_t ) ( crc ^ data );
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x80u ) != 0u )
+        {
+            retVal = ( uint8_t ) ( ( retVal << 1 ) ^ 0x8Cu );
+        }
+        else
+        {
+            retVal = ( uint8_t ) ( retVal << 1 );
+        }
+    }
+
+    return ( retVal );
+}
+--- END

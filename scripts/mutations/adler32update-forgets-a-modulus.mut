@@ -1,0 +1,41 @@
+# what: The second accumulator is not reduced, so it grows past the modulus and the streaming form parts company with the whole buffer one as soon as a payload is long enough to matter.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/checksum.c
+TEST Checksum_Test
+--- FIND
+uint32_t checksumAdler32Update ( uint32_t checksum, uint8_t data )
+{
+    uint32_t retVal = 0;
+    uint32_t sum1 = 0;
+    uint32_t sum2 = 0;
+
+    sum1 = checksum & 0x0000FFFFu;
+    sum2 = ( checksum >> 16 ) & 0x0000FFFFu;
+
+    sum1 = ( sum1 + data ) % CHECKSUM_ADLER_BASE;
+    sum2 = ( sum2 + sum1 ) % CHECKSUM_ADLER_BASE;
+
+    retVal = ( sum2 << 16 ) | sum1;
+
+    return ( retVal );
+}
+--- REPLACE
+uint32_t checksumAdler32Update ( uint32_t checksum, uint8_t data )
+{
+    uint32_t retVal = 0;
+    uint32_t sum1 = 0;
+    uint32_t sum2 = 0;
+
+    sum1 = checksum & 0x0000FFFFu;
+    sum2 = ( checksum >> 16 ) & 0x0000FFFFu;
+
+    sum1 = ( sum1 + data ) % CHECKSUM_ADLER_BASE;
+    sum2 = sum2 + sum1;
+
+    retVal = ( sum2 << 16 ) | sum1;
+
+    return ( retVal );
+}
+--- END

@@ -1,0 +1,51 @@
+# what: One bit of the polynomial in the bit by bit form is wrong, so it disagrees with the table form it must match exactly.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/crc16.c
+TEST CRC_Test
+--- FIND
+uint16_t crc16AltUpdate ( uint16_t crc, uint8_t data )
+{
+    uint16_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = ( uint16_t ) ( crc ^ ( ( uint16_t ) data ) );
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x0001u ) != 0u )
+        {
+            retVal = ( uint16_t ) ( ( retVal >> 1 ) ^ 0xA001u );
+        }
+        else
+        {
+            retVal = ( uint16_t ) ( retVal >> 1 );
+        }
+    }
+
+    return ( retVal );
+}
+--- REPLACE
+uint16_t crc16AltUpdate ( uint16_t crc, uint8_t data )
+{
+    uint16_t retVal = 0;
+    uint8_t j = 0;
+
+    retVal = ( uint16_t ) ( crc ^ ( ( uint16_t ) data ) );
+
+    for ( j = 0; j < 8; ++j )
+    {
+        if ( ( retVal & 0x0001u ) != 0u )
+        {
+            retVal = ( uint16_t ) ( ( retVal >> 1 ) ^ 0xA003u );
+        }
+        else
+        {
+            retVal = ( uint16_t ) ( retVal >> 1 );
+        }
+    }
+
+    return ( retVal );
+}
+--- END

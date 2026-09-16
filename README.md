@@ -176,6 +176,20 @@ is what `sortIsSorted` is for.
 nearly the cost of a plain sum; `Adler32` is stronger on long payloads and
 notably weak on short ones.
 
+All of these took a whole buffer until 16/09/2026, which is the wrong shape for
+two of the jobs they are used for: a frame arriving a byte at a time on an
+interrupt, and a firmware image checked while it is being written. Each
+polynomial now has an `Update` taking the value so far and one byte, with the
+starting value as a named seed — `crc16Update`, `crc32Update`, `crc8Update`,
+`crc8DallasUpdate`, and the bit-by-bit partner of each table form, because a
+caller who took `crc16Alt` to save the flash should not get the table back to
+stream. The whole-buffer form is exactly the seed run through the Update once
+per byte, and the test checks that over *every* prefix of a buffer. `checksum`
+gained two, for `Fletcher16` and `Adler32` only: the other three are one
+operation a byte that a caller writes inline. Their state is their own return
+value, so streaming needs no struct, and `CHECKSUM_ADLER32_SEED` is one rather
+than zero — the thing to get wrong.
+
 ### Communication — `inc/communication`
 
 | module | what it is for |

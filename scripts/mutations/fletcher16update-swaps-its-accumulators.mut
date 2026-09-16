@@ -1,0 +1,41 @@
+# what: The two accumulators are unpacked the wrong way round, so the one that sums the bytes sums the running total instead. It still looks like a checksum and is the right one for nothing.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/crc/checksum.c
+TEST Checksum_Test
+--- FIND
+uint16_t checksumFletcher16Update ( uint16_t checksum, uint8_t data )
+{
+    uint16_t retVal = 0;
+    uint16_t sum1 = 0;
+    uint16_t sum2 = 0;
+
+    sum1 = ( uint16_t ) ( checksum & 0x00FFu );
+    sum2 = ( uint16_t ) ( ( checksum >> 8 ) & 0x00FFu );
+
+    sum1 = ( uint16_t ) ( ( sum1 + data ) % CHECKSUM_FLETCHER_BASE );
+    sum2 = ( uint16_t ) ( ( sum2 + sum1 ) % CHECKSUM_FLETCHER_BASE );
+
+    retVal = ( uint16_t ) ( ( sum2 << 8 ) | sum1 );
+
+    return ( retVal );
+}
+--- REPLACE
+uint16_t checksumFletcher16Update ( uint16_t checksum, uint8_t data )
+{
+    uint16_t retVal = 0;
+    uint16_t sum1 = 0;
+    uint16_t sum2 = 0;
+
+    sum1 = ( uint16_t ) ( ( checksum >> 8 ) & 0x00FFu );
+    sum2 = ( uint16_t ) ( checksum & 0x00FFu );
+
+    sum1 = ( uint16_t ) ( ( sum1 + data ) % CHECKSUM_FLETCHER_BASE );
+    sum2 = ( uint16_t ) ( ( sum2 + sum1 ) % CHECKSUM_FLETCHER_BASE );
+
+    retVal = ( uint16_t ) ( ( sum2 << 8 ) | sum1 );
+
+    return ( retVal );
+}
+--- END

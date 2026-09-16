@@ -3,7 +3,7 @@
   *
   * @file      checksum.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.0.1
+  * @version   0.1.0
   * @date      05/08/2026
   *
   * @brief     Stateless checksums, for links where a full CRC is more than
@@ -24,6 +24,10 @@
   *
   * @par History
   * 05/08/2026 Created @n
+  * 16/09/2026 checksumFletcher16Update and checksumAdler32Update @n
+  *            added, so the two that carry state can be computed as @n
+  *            the bytes arrive. The other three need no such thing: @n
+  *            a caller writes x ^= b or x += b itself. @n
   *
   ******************************************************************************
   */
@@ -170,6 +174,79 @@ uint32_t checksumAdler32 ( const uint8_t* const array, uint32_t size )
         sum1 = ( sum1 + array[ i ] ) % CHECKSUM_ADLER_BASE;
         sum2 = ( sum2 + sum1 ) % CHECKSUM_ADLER_BASE;
     }
+
+    retVal = ( sum2 << 16 ) | sum1;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Takes one byte into a Fletcher16 that is being computed a piece at
+ *          a time.
+ *
+ * @param[in]   checksum    the value so far, CHECKSUM_FLETCHER16_SEED before
+ *                          the first byte.
+ * @param[in]   data        the byte.
+ *
+ * @return  The value including that byte.
+ *
+ * @note    The state is the result. Fletcher16 returns its two accumulators
+ *          packed into the value it gives back, so there is nothing to carry
+ *          between calls but the value itself, and no struct.
+ *
+ * @note    Only the two algorithms with state get a streaming form.
+ *          checksumXor, checksumSum8 and checksumSum16 are one operation a
+ *          byte that the caller writes directly, and there is nothing in them
+ *          to get wrong. These two have a modulus and an accumulator that
+ *          feeds on the other, which is exactly what a hand written version
+ *          gets wrong.
+ */
+uint16_t checksumFletcher16Update ( uint16_t checksum, uint8_t data )
+{
+    uint16_t retVal = 0;
+    uint16_t sum1 = 0;
+    uint16_t sum2 = 0;
+
+    sum1 = ( uint16_t ) ( checksum & 0x00FFu );
+    sum2 = ( uint16_t ) ( ( checksum >> 8 ) & 0x00FFu );
+
+    sum1 = ( uint16_t ) ( ( sum1 + data ) % CHECKSUM_FLETCHER_BASE );
+    sum2 = ( uint16_t ) ( ( sum2 + sum1 ) % CHECKSUM_FLETCHER_BASE );
+
+    retVal = ( uint16_t ) ( ( sum2 << 8 ) | sum1 );
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Takes one byte into an Adler32 that is being computed a piece at a
+ *          time.
+ *
+ * @param[in]   checksum    the value so far, CHECKSUM_ADLER32_SEED before the
+ *                          first byte.
+ * @param[in]   data        the byte.
+ *
+ * @return  The value including that byte.
+ *
+ * @note    The state is the result, as in checksumFletcher16Update.
+ *
+ * @note    **The seed is one, not zero**, because Adler32's first accumulator
+ *          starts at one. Seeding it at zero gives a checksum that is wrong
+ *          for every input and looks like a checksum, which is why
+ *          CHECKSUM_ADLER32_SEED exists rather than a comment telling the
+ *          caller to remember.
+ */
+uint32_t checksumAdler32Update ( uint32_t checksum, uint8_t data )
+{
+    uint32_t retVal = 0;
+    uint32_t sum1 = 0;
+    uint32_t sum2 = 0;
+
+    sum1 = checksum & 0x0000FFFFu;
+    sum2 = ( checksum >> 16 ) & 0x0000FFFFu;
+
+    sum1 = ( sum1 + data ) % CHECKSUM_ADLER_BASE;
+    sum2 = ( sum2 + sum1 ) % CHECKSUM_ADLER_BASE;
 
     retVal = ( sum2 << 16 ) | sum1;
 
