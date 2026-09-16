@@ -92,7 +92,11 @@ update in an interrupt. `fsm` is the general form of the machines `comat` and
 corner in hertz and are float only. The `i32` variant takes the five
 coefficients they produce, converted to Q16 once on a host, because computing a
 cosine at boot would pull the whole software float library onto the part the
-variant exists to serve.
+variant exists to serve. The case that cannot be a constant computed on a host
+is the mains notch in a product shipping to both 50 Hz and 60 Hz countries, and
+that is what `cordic` is for: `sample/NotchNoFpu` designs exactly that at boot
+with no float at all, and `Integration_Test` checks the result against the float
+designer's coefficients.
 
 ### Control — `inc/control`
 
