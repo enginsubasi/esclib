@@ -324,6 +324,7 @@ rather than a single call:
 | `FilteredScale` | `pack` → `median` → `biquad` → `interp`. A 24-bit converter read, one bad sample thrown away, mains hum notched out, counts turned into kilograms. |
 | `MotionLoop` | `ramp` → `encoder` → `pid` → `dcMotor`. Four modules that disagree about what a number means, and the conversions between them. |
 | `FramedLink` | `comstxetx` + `crc16` + `comgenbuf`. The ISR/main-loop split, with a payload that contains the framing bytes themselves. |
+| `NotchNoFpu` | `cordic` + `q16` + `biquad`'s `i32` width. A mains notch designed **at boot with no float at all**, because a product that ships to 50 Hz and 60 Hz countries cannot carry one compile-time constant. |
 
 The hardware is faked in each, so they build and run anywhere; on a real board
 that one function is all that changes. The other directories under `sample/`

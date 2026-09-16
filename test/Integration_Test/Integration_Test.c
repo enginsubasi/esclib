@@ -14,6 +14,8 @@
  *   the receive path     comstxetx -> comgenbuf -> comsafe
  *   the motion loop      ramp -> encoder -> pid -> dcMotor
  *   the measurement      pack -> median -> biquad -> interp
+ *   the design           cordic -> q16 -> biquad i32
+ *   the phasor           complexi32 -> cordic
  *
  * Asserts rather than printing, so it needs no output.txt and returns non zero
  * on failure.
@@ -35,6 +37,9 @@
 #include "median.h"
 #include "biquad.h"
 #include "interp.h"
+#include "cordic.h"
+#include "q16.h"
+#include "complex.h"
 
 static uint32_t failures = 0;
 
@@ -717,6 +722,264 @@ static void bridgeOrderCase ( void )
             near ( dcMotorGetSpeed ( &motor ), 0.0f, 0.0001f ) );
 }
 
+
+/* ------------------------------------------------ a design with no float */
+
+/*
+ * The sample rate and the notch this designs for: mains hum at 50 Hz in a
+ * 1 kHz control loop, with a q of 4, which is 4.0 in Q16.
+ */
+#define NOFPU_SAMPLE_RATE   1000u
+#define NOFPU_CENTRE        50u
+#define NOFPU_Q             262144
+
+/* An amplitude that is a plain count, as a converter reading would be. */
+#define NOFPU_AMPLITUDE     1000
+
+/* How near two Q16 values have to be. The cordic sine is good to one LSB and
+   each divide adds another, so eight is loose enough to be honest about the
+   arithmetic and tight enough that a wrong design misses it by thousands. */
+#define NOFPU_TOLERANCE     8
+
+static uint8_t nearQ16 ( int32_t got, float want )
+{
+    int32_t wanted = 0;
+    int32_t difference = 0;
+
+    if ( want >= 0.0f )
+    {
+        wanted = ( int32_t ) ( ( want * 65536.0f ) + 0.5f );
+    }
+    else
+    {
+        wanted = ( int32_t ) ( ( want * 65536.0f ) - 0.5f );
+    }
+
+    difference = got - wanted;
+
+    if ( difference < 0 )
+    {
+        difference = -difference;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( ( uint8_t ) ( difference <= NOFPU_TOLERANCE ) );
+}
+
+static uint8_t within ( int32_t got, int32_t want, int32_t tolerance )
+{
+    int32_t difference = got - want;
+
+    if ( difference < 0 )
+    {
+        difference = -difference;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( ( uint8_t ) ( difference <= tolerance ) );
+}
+
+static uint8_t angleWithin ( uint32_t got, uint32_t want, uint32_t tolerance )
+{
+    uint32_t difference = got - want;
+
+    if ( difference > CORDIC_HALF )
+    {
+        difference = 0u - difference;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+
+    return ( ( uint8_t ) ( difference <= tolerance ) );
+}
+
+/* The binary angle of one sample step at a frequency, as integer arithmetic:
+   a frequency that is a fraction of the sample rate is that fraction of a
+   turn, and there is no pi in it. */
+static uint32_t stepAngle ( uint32_t frequency )
+{
+    return ( ( uint32_t ) ( ( ( ( uint64_t ) frequency ) << 32 ) /
+                            ( uint64_t ) NOFPU_SAMPLE_RATE ) );
+}
+
+/*
+ * Runs a tone of the given frequency through the filter and reports the
+ * largest output after it has settled. The tone is generated with cordic too,
+ * because a part with no FPU has no other way to make one.
+ */
+static int32_t toneThrough ( biquadi32_t* driver, uint32_t frequency )
+{
+    uint32_t i = 0;
+    uint32_t phase = 0;
+    uint32_t step = stepAngle ( frequency );
+    int32_t sample = 0;
+    int32_t output = 0;
+    int32_t worst = 0;
+
+    biquadReseti32 ( driver, 0 );
+
+    for ( i = 0; i < 2000u; ++i )
+    {
+        phase = phase + step;
+        sample = ( int32_t ) ( ( ( ( int64_t ) cordicSin ( phase ) ) *
+                                 NOFPU_AMPLITUDE ) >> 16 );
+
+        biquadIterationi32 ( driver, sample );
+
+        if ( i >= 1000u )
+        {
+            output = biquadGetOutputi32 ( driver );
+
+            if ( output < 0 )
+            {
+                output = -output;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+
+            if ( output > worst )
+            {
+                worst = output;
+            }
+            else
+            {
+                /* Intentionally blank */
+            }
+        }
+        else
+        {
+            /* Intentionally blank */
+        }
+    }
+
+    return ( worst );
+}
+
+static void noFpuDesignCase ( void )
+{
+    biquadi32_t fixed;
+    biquad_t reference;
+    uint32_t angle = 0;
+    int32_t sine = 0;
+    int32_t cosine = 0;
+    int32_t alpha = 0;
+    int32_t a0 = 0;
+    int32_t b0 = 0;
+    int32_t b1 = 0;
+    int32_t a2 = 0;
+
+    printf ( "a biquad designed at boot with no float\n" );
+
+    /*
+     * biquad's four designers take a corner in hertz and are float only, and
+     * the module says why: a cosine at boot pulls the whole software float
+     * library onto the part the fixed point variant exists to serve. cordic
+     * is that cosine. By the independence rule biquad may not include it, so
+     * the design belongs in caller code — which is what this file is.
+     *
+     * The notch is the case that cannot be a compile time constant: a field
+     * running on 50 Hz mains and one running on 60 Hz need different
+     * coefficients from the same binary.
+     *
+     * Not one float appears between here and biquadIniti32.
+     */
+    angle = stepAngle ( NOFPU_CENTRE );
+
+    cordicSinCos ( angle, &sine, &cosine );
+
+    /* alpha = sin ( w0 ) / ( 2q ), in Q16. */
+    alpha = q16Div ( sine, 2 * NOFPU_Q );
+
+    a0 = 65536 + alpha;
+
+    b0 = q16Div ( 65536, a0 );
+    b1 = q16Div ( -2 * cosine, a0 );
+    a2 = q16Div ( 65536 - alpha, a0 );
+
+    check ( "the coefficients install",
+            biquadIniti32 ( &fixed, b0, b1, b0, b1, a2 ) );
+
+    /*
+     * And they are the coefficients the float designer produces. This is the
+     * whole claim: the same filter, arrived at without an FPU. The reference
+     * runs here because a test may use floats — the design above may not.
+     */
+    check ( "the float designer, for comparison",
+            biquadInitNotch ( &reference, 1000.0f, 50.0f, 4.0f ) );
+
+    check ( "b0 agrees with the float design", nearQ16 ( b0, reference.b0 ) );
+    check ( "b1 agrees", nearQ16 ( b1, reference.b1 ) );
+    check ( "a1 agrees", nearQ16 ( b1, reference.a1 ) );
+    check ( "a2 agrees", nearQ16 ( a2, reference.a2 ) );
+
+    /*
+     * Then the filter does what it was designed to do, which no comparison of
+     * coefficients can show: a tone at the notch is gone and one well outside
+     * it is untouched. Both tones are made with cordic as well.
+     */
+    check ( "a tone at the notch frequency is removed",
+            ( uint8_t ) ( toneThrough ( &fixed, NOFPU_CENTRE ) <
+                          ( NOFPU_AMPLITUDE / 20 ) ) );
+    check ( "and a tone well outside it passes",
+            ( uint8_t ) ( toneThrough ( &fixed, 200u ) >
+                          ( ( NOFPU_AMPLITUDE * 4 ) / 5 ) ) );
+}
+
+/* --------------------------------------------- a phasor, length and angle */
+
+static void phasorCase ( void )
+{
+    complexi32_t voltage;
+    complexi32_t current;
+    complexi32_t power;
+    int32_t sine = 0;
+    int32_t cosine = 0;
+    int32_t magnitude = 0;
+    uint32_t angle = 0;
+
+    printf ( "a phasor read back as a length and an angle\n" );
+
+    /*
+     * complexi32 has no polar pair and says why: a fixed point magnitude needs
+     * a square root and a fixed point angle needs an atan2, which together are
+     * a module of their own. That module is cordic, and this is the caller who
+     * has both — an energy meter, where the two phasors multiply into an
+     * apparent power and the angle between them is the power factor.
+     *
+     * 230 volts at zero degrees, 5 amps at minus thirty.
+     */
+    cordicSinCos ( 0xEAAAAAABu, &sine, &cosine );
+
+    complexIniti32 ( &voltage, 230 * 65536, 0 );
+    complexIniti32 ( &current, 5 * cosine, 5 * sine );
+
+    complexMuli32 ( &voltage, &current, &power );
+
+    cordicPolar ( power.re, power.im, &magnitude, &angle );
+
+    check ( "the length is the product of the two lengths",
+            within ( magnitude, 1150 * 65536, 4096 ) );
+    check ( "the angle is the sum of the two angles",
+            angleWithin ( angle, 0xEAAAAAABu, 4096u ) );
+
+    /*
+     * And the power factor is the cosine of that angle, which is the number
+     * the meter actually reports. 0.866 in Q16 is 56756.
+     */
+    check ( "and the power factor falls out of it",
+            within ( cordicCos ( angle ), 56756, 64 ) );
+}
+
 int main ( void )
 {
     receivePathCase ( );
@@ -726,6 +989,10 @@ int main ( void )
     measurementCase ( );
     printf ( "\n" );
     bridgeOrderCase ( );
+    printf ( "\n" );
+    noFpuDesignCase ( );
+    printf ( "\n" );
+    phasorCase ( );
 
     printf ( "\n" );
 
