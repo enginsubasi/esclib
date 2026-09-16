@@ -40,15 +40,21 @@ jobs:
       - name: Tests
         run: sh run_tests.sh
 
-      # The same tests again with the undefined behaviour sanitizer on, which
-      # is a different question from whether they pass: it asks whether the
-      # answers were arrived at legally. It found six signed left shifts in
-      # the fixed point paths on 15/09/2026, every one of them giving the
-      # right answer with this compiler. -fno-sanitize-recover makes the
+      # The same tests again with the sanitizers on, which is a different
+      # question from whether they pass: it asks whether the answers were
+      # arrived at legally. The undefined behaviour one found six signed left
+      # shifts in the fixed point paths on 15/09/2026, every one of them
+      # giving the right answer with this compiler. The address one joined it
+      # on 16/09/2026 and answers a question UBSan cannot: seven functions in
+      # this tree take bytes from a link nobody controls — comstxetxReceive,
+      # comatReceive, commodbusReceive, cobsDecode, comsafeCheckFrame,
+      # comsecCheckFrame and comgenbufPop — and an index walked past the end
+      # of a caller's buffer is not undefined arithmetic, it is a read that
+      # returns whatever was next in memory. -fno-sanitize-recover makes the
       # first report the exit status rather than a line in the log.
       - name: Tests, sanitized
         env:
-          CFLAGS: -fsanitize=undefined -fno-sanitize-recover=all -O1
+          CFLAGS: -fsanitize=address,undefined -fno-sanitize-recover=all -O1
           UBSAN_OPTIONS: print_stacktrace=1
         run: sh run_tests.sh
 

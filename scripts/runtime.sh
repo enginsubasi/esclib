@@ -13,6 +13,20 @@
 # for. That is the right trade — an int64_t intermediate is what keeps those
 # variants correct — but the cost is real and belongs next to the claim.
 #
+# There are two kinds of reference and this used to report them as one, which
+# was found on 16/09/2026 rather than designed in:
+#
+#   calls        an instruction in the object branches to the helper. This is
+#                read from the relocations, so it is what the code does.
+#   links only   the object names the helper in its symbol table and no
+#                instruction reaches it. gcc declares a libcall while it is
+#                weighing an expansion and keeps the declaration after throwing
+#                the code away, so this happens without anything in the source
+#                asking for it — text names a signed divide and divides nothing
+#                signed. It is not free either: an undefined symbol pulls its
+#                archive member into a plain link, and only --gc-sections drops
+#                it again.
+#
 # Reading the output:
 #     __aeabi_f*          software single precision float
 #     __aeabi_d*          software double precision, which nothing here should
@@ -22,13 +36,17 @@
 #     __aeabi_uldivmod    64-bit unsigned divide
 #     __aeabi_idiv(mod)   32-bit divide, which a Cortex-M0 also lacks
 #
-# This is a report, not a gate. scripts/check.sh is where a rule is enforced.
+# This is a report, not a gate, with one exception: no module may need a double
+# precision helper, and that rule counts both kinds of reference, because a
+# double that reached even a discarded expansion came from somewhere.
+# scripts/check.sh is where the rest of the rules are enforced.
 #
 # Environment:
 #     CC       compiler, default arm-none-eabi-gcc
 #     CFLAGS   target flags, default -Os for a Cortex-M0, which is the part
 #              with the fewest instructions and so the most helpers
 #     NM       symbol lister, default derived from CC
+#     OBJDUMP  disassembler, default derived from CC
 #
 # Exit status is the number of modules that failed to build.
 
@@ -50,6 +68,11 @@ if [ -z "$NM" ]; then
     command -v "$NM" >/dev/null 2>&1 || NM=nm
 fi
 
+if [ -z "$OBJDUMP" ]; then
+    OBJDUMP=$(printf '%s' "$CC" | sed 's/gcc$/objdump/')
+    command -v "$OBJDUMP" >/dev/null 2>&1 || OBJDUMP=objdump
+fi
+
 outdir=$(mktemp -d 2>/dev/null || echo /tmp/esclib_runtime.$$)
 mkdir -p "$outdir"
 
@@ -58,6 +81,7 @@ echo
 
 failures=0
 doubles=0
+listedonly=0
 
 printf '%-16s %s\n' module "runtime helpers"
 printf '%-16s %s\n' ---------------- ------------------------------------------------
@@ -78,15 +102,31 @@ for f in src/*/*.c drv/*.c; do
         continue
     fi
 
-    helpers=$($NM -u "$obj" 2>/dev/null | grep -oE '__aeabi_[a-z0-9]+' | sort -u | tr '\n' ' ')
+    # What the code branches to, taken from the relocations.
+    $OBJDUMP -dr "$obj" 2>/dev/null \
+        | awk '$2 ~ /^R_/ { print $NF }' \
+        | grep -oE '__aeabi_[a-z0-9]+' | sort -u > "$outdir/called.txt"
 
-    if [ -n "$helpers" ]; then
-        printf '%-16s %s\n' "$name" "$helpers"
+    # What the object names, which is what the linker acts on.
+    $NM -u "$obj" 2>/dev/null \
+        | grep -oE '__aeabi_[a-z0-9]+' | sort -u > "$outdir/named.txt"
+
+    called=$(tr '\n' ' ' < "$outdir/called.txt")
+    only=$(grep -vxF -f "$outdir/called.txt" "$outdir/named.txt" 2>/dev/null \
+           | tr '\n' ' ')
+
+    if [ -n "$called" ]; then
+        printf '%-16s %s\n' "$name" "$called"
     else
         printf '%-16s %s\n' "$name" "none"
     fi
 
-    case "$helpers" in
+    if [ -n "$only" ]; then
+        printf '%-16s links only: %s\n' "" "$only"
+        listedonly=$((listedonly + 1))
+    fi
+
+    case "$called$only" in
         *__aeabi_d*)
             doubles=$((doubles + 1))
             ;;
@@ -104,6 +144,14 @@ if [ "$doubles" -eq 0 ]; then
 else
     echo "$doubles module(s) pull in double precision helpers — see above."
     failures=$((failures + doubles))
+fi
+
+if [ "$listedonly" -gt 0 ]; then
+    echo
+    echo "$listedonly module(s) name a helper that no instruction reaches."
+    echo "Nothing in the source asked for those: gcc declares a libcall while"
+    echo "weighing an expansion and keeps the declaration after discarding the"
+    echo "code. A plain link still pulls each one in; --gc-sections drops them."
 fi
 
 echo

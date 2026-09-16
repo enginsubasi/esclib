@@ -24,10 +24,14 @@
 #              The sanitizers go in here, and they ask a different question
 #              from whether the tests pass — whether the answers were arrived
 #              at legally. This is what found six signed left shifts in the
-#              fixed point paths, all of them giving the right answer:
-#                  CFLAGS="-fsanitize=undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
-#              Where there is no libubsan, as on a MinGW host, trap mode needs
-#              no runtime library and reports the same thing as a SIGILL:
+#              fixed point paths, all of them giving the right answer, and
+#              what watches the decoders for a read past the end of a
+#              caller's buffer:
+#                  CFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
+#              A MinGW host has neither libasan nor libubsan. Trap mode needs
+#              no runtime library and reports the same thing as a SIGILL, but
+#              it covers the undefined behaviour half only — the address half
+#              runs in CI:
 #                  CFLAGS="-fsanitize=undefined -fsanitize-undefined-trap-on-error -O1" sh run_tests.sh
 #     LINKONLY set to 1 to compile and link without running. Use this with a
 #              cross compiler to check the source sets are complete:

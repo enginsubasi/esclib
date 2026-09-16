@@ -241,8 +241,9 @@ sh scripts/size.sh           # code size per module
 sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 
 # The tests again, asking whether the answers were arrived at legally rather
-# than whether they are right. Trap mode where there is no libubsan.
-CFLAGS="-fsanitize=undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
+# than whether they are right: undefined arithmetic, and a read past the end of
+# a caller's buffer. Trap mode covers the first half where there is no libubsan.
+CFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
 ```
 
 The first six are gates, so is the sanitized run, and CI runs all of them on
@@ -258,7 +259,10 @@ length converted to float for a divide — and they are written out now.
 `size.sh` is a report. `runtime.sh` is mostly one too, with a single rule in
 it: nothing here may pull in a double precision helper, because this library is
 single precision throughout and a `__aeabi_d*` means a `double` slipped into an
-expression.
+expression. It separates what a module **calls**, taken from the relocations,
+from what it only **names** in its symbol table — gcc leaves a declaration
+behind when it discards an expansion, and those cost flash in a link without
+`--gc-sections` although no instruction reaches them.
 
 Commit messages are terse and prefixed: `+` for an addition, `*` for a fix or an
 update. `+ bininpGetRisingValue function`, `* bugfix`.

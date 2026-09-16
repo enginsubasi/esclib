@@ -361,6 +361,18 @@ Ten mutations, all caught. Two properties are recorded as unpinned rather than p
 
 712 bytes of code, nothing in `.data` or `.bss`.
 
+## 27. Two corrections to the measuring instruments — DONE 16/09/2026
+
+Neither of these added a feature. Both made an existing claim true.
+
+**The address sanitizer joined the undefined behaviour one in CI.** The sanitized run has asked since 15/09/2026 whether the answers were arrived at legally, and it was asking half the question. Undefined arithmetic is what UBSan sees; a read past the end of a caller's buffer is not undefined arithmetic at all, it is a read of whatever was next in memory, and this library has seven functions that take bytes from a link nobody controls — `comstxetxReceive`, `comatReceive`, `commodbusReceive`, `cobsDecode`, `comsafeCheckFrame`, `comsecCheckFrame` and `comgenbufPop`. Adding `address` to the flag list costs one word and covers all of them at once. It cannot be checked on this machine: a MinGW host has neither `libasan` nor `libubsan`, which is why the local run uses trap mode, and trap mode has no address half. So this one is verified in CI and nowhere else, and saying so is part of the change.
+
+**`scripts/runtime.sh` was reporting two different things as one.** Writing `text` turned up `__aeabi_idiv` and `__aeabi_ldivmod` in its report for a module that divides nothing signed. Neither is called: the object names them in its symbol table with no relocation reaching them, because gcc declares a libcall while it is weighing an expansion and keeps the declaration after throwing the code away. The script read `nm -u`, so it could not tell that from a real call. It now reads the relocations for what a module **calls** and keeps `nm -u` for what it only **names**, and prints the second on its own line. Three modules carry one: `checksum` names a signed 32-bit divide, `maf` an unsigned 64-bit one, `text` both signed divides.
+
+The distinction matters in both directions. The uncalled ones are not harmless — an undefined symbol pulls its archive member into a plain link and only `--gc-sections` drops it, so they cost flash on a build that does not use it. And the called ones are what every helper claim in CLAUDE.md was meant to be about; checked against the new column, all of them hold as written, which is the good outcome: the instrument was wrong and the readings taken from it were not.
+
+The double precision rule still counts both kinds. A `double` that reached even a discarded expansion came from somewhere.
+
 ## Everything on this list is built
 
 `softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers, cordic, which two other files had been asking for in writing, commodbus, which is the framing an industrial bus actually uses, cobs, which is the other answer to the question comstxetx answers, text, the stdio this library does not have, and rms, statistic in the shape an interrupt can call. Nothing is outstanding, and for the first time nothing is reserved either.
