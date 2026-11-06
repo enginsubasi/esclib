@@ -305,7 +305,7 @@ enforces that rather than trusting the caller.
 ## Building
 
 There is nothing to build. Copy the pair you need and add the `.c` to your own
-project. The two scripts in the tree build only the tests and ship nothing.
+project. The scripts in the tree build only the tests and ship nothing.
 
 ```bash
 sh run_tests.sh              # build and run every test with a host compiler
@@ -315,6 +315,7 @@ STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails the test that pins it
 sh scripts/size.sh           # code size per module
 sh scripts/runtime.sh        # which compiler runtime helpers each module needs
+sh scripts/stack.sh          # stack depth per module; nothing recurses
 sh scripts/samples.sh        # build and run every example under sample/
 ```
 
@@ -366,7 +367,9 @@ the test that pins it to fail; `sh scripts/mutate.sh` runs them and CI gates on
 the result. The whole library is 25 kB of code across 47 modules on a Cortex-M0
 at `-Os`, which `sh scripts/size.sh` measures, and **zero bytes of RAM** — no
 module holds static state, and `sh scripts/check.sh` checks that rather than
-taking it on trust.
+taking it on trust. The stack is the other half of the same promise: the
+deepest call path in any module is 120 bytes, nothing recurses and no frame
+is sized at run time, and `sh scripts/stack.sh` gates on the last two.
 
 ## License
 

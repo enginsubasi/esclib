@@ -87,6 +87,12 @@ jobs:
       - name: Runtime helpers
         run: sh scripts/runtime.sh
 
+      # The stack half of "the caller owns all storage": nothing recurses
+      # and no frame is sized at run time. The depth per module is printed
+      # for the log; the two rules are the gate.
+      - name: Stack
+        run: sh scripts/stack.sh
+
       # Every source set links for a bare metal target without being run.
       - name: Cross link
         run: CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
@@ -102,5 +108,6 @@ jobs:
           dash -n scripts/mutate.sh
           dash -n scripts/portable.sh
           dash -n scripts/size.sh
+          dash -n scripts/stack.sh
           dash -n scripts/runtime.sh
           dash -n scripts/samples.sh

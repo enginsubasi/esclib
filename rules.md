@@ -237,6 +237,7 @@ sh scripts/check.sh          # warnings, headers, symbol coverage, static storag
 STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails its test
 sh scripts/portable.sh       # C99 pedantically, and every header and module as C++
+sh scripts/stack.sh          # stack depth; nothing recurses, no frame is dynamic
 sh scripts/size.sh           # code size per module
 sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 
@@ -246,7 +247,7 @@ sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 CFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
 ```
 
-The first six are gates, so is the sanitized run, and CI runs all of them on
+The first seven are gates, so is the sanitized run, and CI runs all of them on
 every push. **A passing test is not the same as a defined program**: the six
 signed left shifts UBSan found on 15/09/2026 passed every test in the tree,
 because the compiler did the obvious thing with each of them. Only the
@@ -263,6 +264,16 @@ expression. It separates what a module **calls**, taken from the relocations,
 from what it only **names** in its symbol table — gcc leaves a declaration
 behind when it discards an expansion, and those cost flash in a link without
 `--gc-sections` although no instruction reaches them.
+
+`stack.sh` is the stack half of the storage rule, and it is a gate with two
+rules: **nothing recurses**, because a cycle in the call graph has no bound
+that can be read off the source, and **no frame is dynamic**, because a
+variable length array is an allocation in all but name. It reads the
+compiler's own call graph, so it judges the code that was emitted, and it
+builds a probe that breaks both rules before it trusts itself with the tree.
+The depth it reports stops at two boundaries it cannot see past — compiler
+runtime helpers and callbacks installed at `Init` — and says which modules
+cross each.
 
 Commit messages are terse and prefixed: `+` for an addition, `*` for a fix or an
 update. `+ bininpGetRisingValue function`, `* bugfix`.

@@ -1,6 +1,6 @@
 # esclib backlog
 
-Created 2026-08-05, last updated 2026-09-15.
+Created 2026-08-05, last updated 2026-11-07.
 
 Every item on this list has been built, and the one decision it carried is settled. Each entry records what was actually done and, where the outcome differed from the proposal, why.
 
@@ -399,9 +399,19 @@ Writing that test also found a mistake of mine rather than the module's. The fir
 
 Writing it found two mistakes, both mine and both in the test rather than the library. The binary angle I used for minus thirty degrees was minus sixty — a third of `0x100000000` rather than a twelfth — which the power factor check caught and the angle check could not, because the angle check compared the recovered angle against the same wrong constant. And the reference coefficients I wrote into the sample's output were invented rather than computed; they are computed now. Neither was a defect in a module, but both are the reason a test that only compares a thing against itself is worth nothing.
 
+## 30. How deep the stack goes — DONE 07/11/2026
+
+`scripts/check.sh` has proved since 15/09/2026 that no module holds a byte of `.data` or `.bss`, which is the static half of the rule that the caller owns all storage. The stack is the other half and nothing measured it. Two claims in the tree were about exactly that — `sortHeap` "stays in place without recursing" and nothing allocates — and both were text.
+
+**`scripts/stack.sh`** builds every module with `-fstack-usage` and `-fcallgraph-info`, so the graph it walks is the compiler's rather than one parsed out of the source, and gates on two rules: **nothing recurses**, and **no frame is dynamic**, which in C means a variable length array or `alloca`. Beside the gate it reports the deepest path through each module, a function's own frame plus the deepest module function it calls, and flags the two boundaries it cannot see past: compiler runtime helpers, which belong to the toolchain, and callbacks installed at `Init`, which belong to the caller.
+
+**The gate is checked before it is trusted.** The script first builds a probe with a recursion and a variable length array in it and fails unless both rules fire. A script that stopped reading what the compiler writes — a renamed field, a compiler without `-fcallgraph-info` — would otherwise report a clean tree for ever, which is the mutation harness's argument applied to a script instead of a test. The recursion in the probe makes two calls, because a single one could be turned into a loop and a probe the optimizer can dissolve proves nothing. A missing report for a module that built is a failure too, and that guard fired on the first draft, whose `awk` had died on every module and printed an empty, passing table.
+
+**Measured at `-Os` for a Cortex-M0: the deepest path in the tree is 120 bytes**, `matrixInverse`'s own 88 plus the 32 of the `matrixIdentity` it calls, followed by `textToQ16` and `cordicAtan2` at 104. The backlog had recorded `matrixInverse` at 96 from its frame alone; the path is the number a caller budgets with. Nothing recurses and no frame is dynamic, so the gate held on the day it was written, as expected — what changed is that it is now checked on every push.
+
 ## Everything on this list is built
 
-`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers, cordic, which two other files had been asking for in writing, commodbus, which is the framing an industrial bus actually uses, cobs, which is the other answer to the question comstxetx answers, text, the stdio this library does not have, rms, statistic in the shape an interrupt can call, a streaming form for every check in the tree, and the composition tests that check what cordic claimed. Nothing is outstanding, and for the first time nothing is reserved either.
+`softtimer`, the `comstxetx` transparency and integrity work, `checksum`, `interp`, the `basicmath` scalars, `ramp` and `encoder`, and after them the widths and the Q16 variants, `biquad`'s and `mathLerp`'s included, and then `dcMotor`'s speed control, `crc8`, `pack`, `fir` and `goertzel`, the mutation harness that keeps the tests honest, `q16`, `sched`, `fsm`, and finally the four stubs, a measurement pass over what the fixed point variants cost, the composition tests and worked examples that had never existed, the last three width gaps, a sanitizer run that found six pieces of undefined behaviour hiding behind correct answers, cordic, which two other files had been asking for in writing, commodbus, which is the framing an industrial bus actually uses, cobs, which is the other answer to the question comstxetx answers, text, the stdio this library does not have, rms, statistic in the shape an interrupt can call, a streaming form for every check in the tree, the composition tests that check what cordic claimed, and a stack gate. Nothing is outstanding, and for the first time nothing is reserved either.
 
 The last open question — whether a test runner belongs in the tree — was **settled on 06/08/2026: it does.** The throwaway script that had run the suite for six modules became `run_tests.sh` at the repository root, and the "no runner" line in CLAUDE.md was rewritten rather than left to quietly contradict the tree.
 
@@ -411,4 +421,4 @@ Two things were fixed before it was checked in, neither of which mattered while 
 
 ## What is not here
 
-This list held only additions. Nothing on it was a defect, and the four stub files — `comsec`, `comsafe`, `comgenbuf`, `matrixlib` — are deliberately still stubs; CLAUDE.md's "Known gaps" section is where those live, not here.
+This list held only additions. The four stub files it once pointed away from — `comsec`, `comsafe`, `comgenbuf`, `matrixlib` — are stubs no longer: all four were implemented on 15/09/2026 (entry 17), and CLAUDE.md's "Known gaps" section is empty for the same reason.

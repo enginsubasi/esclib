@@ -96,7 +96,7 @@ It is written to POSIX `sh` and is checked under `dash`, not only under the Git 
 
 An `output.txt` difference is reported and never counted as a failure, because regenerating one is a judgement call about whether the module moved or the expectation did.
 
-Six more scripts sit under `scripts/`, added 15/09/2026, and follow the same no-maintenance rule — their file lists come from the tree, so a new module needs no edit to any of them:
+Seven more scripts sit under `scripts/`, six added 15/09/2026 and `stack.sh` on 07/11/2026, and follow the same no-maintenance rule — their file lists come from the tree, so a new module needs no edit to any of them:
 
 ```bash
 sh scripts/check.sh            # warnings, header coexistence, symbol coverage, static storage
@@ -105,6 +105,7 @@ sh scripts/mutate.sh           # every known defect still fails the test that pi
 sh scripts/portable.sh         # C99 pedantically, and every header and module as C++
 sh scripts/size.sh             # code size per module
 sh scripts/runtime.sh          # which compiler runtime helpers each module needs
+sh scripts/stack.sh            # stack depth per module; nothing recurses, no frame is dynamic
 sh scripts/samples.sh          # build and run every example under sample/
 sh scripts/doc.sh              # the Doxygen reference into doc/, which is .gitignore'd
 ```
@@ -127,7 +128,7 @@ CFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -O1" sh run_tests
 CFLAGS="-fsanitize=undefined -fsanitize-undefined-trap-on-error -O1" sh run_tests.sh
 ```
 
-`.github/workflows/ci.yml` runs `scripts/check.sh` in both profiles, `run_tests.sh` plain and again under the address and undefined behaviour sanitizers, `scripts/portable.sh`, `scripts/mutate.sh`, `scripts/samples.sh`, `scripts/size.sh`, `scripts/runtime.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
+`.github/workflows/ci.yml` runs `scripts/check.sh` in both profiles, `run_tests.sh` plain and again under the address and undefined behaviour sanitizers, `scripts/portable.sh`, `scripts/mutate.sh`, `scripts/samples.sh`, `scripts/size.sh`, `scripts/runtime.sh`, `scripts/stack.sh`, the cross link and a `dash -n` of every script on each push. A red badge in the README is the same signal a warning is.
 
 A single test still builds directly, and that is often what you want mid-change:
 
@@ -274,6 +275,7 @@ That runs the three checks this section used to spell out by hand, and exits wit
 - **Symbols.** Every `' T '` symbol from the objects is grepped for in `test/*/*.c`, and checked against the module prefixes derived from the source file names — so an untested export and an unprefixed one both fail here.
 - **Strict.** `STRICT=1` adds `-Wconversion -Wsign-conversion -Wshadow -Wdouble-promotion -Wcast-qual`. The tree was made clean under all of them on 15/09/2026, so this is a gate rather than an aspiration. The eight warnings it found were one pattern — an array length converted to `float` for a divide, in `maf`, `basicmath` and `statistic` — correct in every case, since a length past 2^24 is not reachable, and implicit in every case. They are written out now.
 - **Storage.** Every module object's `.data` and `.bss` must both be empty. The caller owns all storage and a module holds no static state of its own, which was stated in `rules.md` and checked nowhere until 15/09/2026; a writable static is the rule being broken and lands in one of those two sections. A read-only table is `.rodata` and counts as code, which is why `crc16` carries one and still passes.
+- **Stack.** `sh scripts/stack.sh`, a script of its own because it reads two files the compiler writes beside each object — `-fstack-usage` and `-fcallgraph-info`. Two rules: **nothing recurses** and **no frame is dynamic**. Storage above is the static half of "the caller owns all storage" and this is the other half: a cycle in the call graph has no bound readable from the source, and a variable length array is an allocation under another name. The graph is the compiler's, so a recursion the optimizer turned into a loop is not reported, because it is no longer there. Before judging the tree it builds a probe with one recursion and one variable length array, and fails unless both rules fire on it — a script that silently stopped reading what the compiler writes would otherwise report a clean tree for ever. Measured on 07/11/2026 at `-Os` for a Cortex-M0: the deepest path is `matrixInverse` at 120 bytes, its own 88 plus `matrixIdentity`'s 32, nothing recurses — which is the first time `sortHeap`'s "does not recurse" was checked rather than written — and no frame is dynamic. The path stops at runtime helpers and at callbacks installed at `Init`, which the report flags per module, because neither belongs to this library.
 
 The script keeps its objects, so `arm-none-eabi-nm` over the directory it names still answers a one-off question about the symbol table.
 
