@@ -30,6 +30,7 @@ typedef struct
     
     uint8_t output;
     uint8_t rising;
+    uint8_t falling;
 } bininp_t;
 
 /* ENUMS */
@@ -42,6 +43,7 @@ uint8_t bininpInit ( bininp_t* driver, uint32_t filterCount );
 void bininpUpdate ( bininp_t* driver, uint8_t newData );
 uint8_t bininpGetValue ( const bininp_t* const driver );
 uint8_t bininpGetRisingValue ( bininp_t* driver );
+uint8_t bininpGetFallingValue ( bininp_t* driver );
 
 #ifdef __cplusplus
 }

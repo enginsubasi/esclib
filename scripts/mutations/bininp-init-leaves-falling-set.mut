@@ -1,0 +1,12 @@
+# what: bininpInit leaves the falling flag as it found it, so a driver on a dirty stack reports a release that never happened.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/bininp/bininp.c
+TEST Logic_Test
+--- FIND
+        driver->rising = FALSE;
+        driver->falling = FALSE;
+--- REPLACE
+        driver->rising = FALSE;
+--- END

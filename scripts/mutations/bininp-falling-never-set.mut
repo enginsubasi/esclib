@@ -1,0 +1,17 @@
+# what: The falling flag is never set, so bininpGetFallingValue always returns FALSE — the defect bininpGetRisingValue had until 29/07/2026, in its new counterpart.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/bininp/bininp.c
+TEST Logic_Test
+--- FIND
+            else
+            {
+                driver->falling = TRUE;
+            }
+--- REPLACE
+            else
+            {
+                /* Intentionally blank. */
+            }
+--- END

@@ -1,0 +1,13 @@
+# what: Reading the falling flag does not clear it, so after the first release it reports one on every call.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/bininp/bininp.c
+TEST Logic_Test
+--- FIND
+    retVal = driver->falling;
+
+    driver->falling = FALSE;
+--- REPLACE
+    retVal = driver->falling;
+--- END

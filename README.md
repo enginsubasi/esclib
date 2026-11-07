@@ -266,7 +266,7 @@ under one key and counter break every guarantee at once.
 | `softtimer` | `inc/timer` | One-shot and periodic timers counting calls to `softtimerTick`. The library's only time abstraction. |
 | `sched` | `inc/timer` | Table of periodic tasks. The tick marks them due, the main loop runs them, and a task that could not keep up is counted. |
 | `fsm` | `inc/fsm` | Table-driven state machine. An event no row accepts is counted, never guessed at. |
-| `bininp` | `inc/bininp` | Debounced binary input with a rising-edge flag. |
+| `bininp` | `inc/bininp` | Debounced binary input with a rising-edge and a falling-edge flag, each cleared by reading it. |
 | `encoder` | `inc/encoder` | Quadrature decoding at four counts per cycle. A missed step is counted, never guessed. |
 | `logic` | `inc/logic` | D and RS flip-flops. |
 | `pack` | `inc/pack` | Multi-byte values to and from a byte buffer, either endianness, with the signed and 24-bit readers that C has no type for. |
@@ -358,14 +358,14 @@ CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
 
 ## Status
 
-Every module has a test, and every one of the 401 exported symbols is
+Every module has a test, and every one of the 402 exported symbols is
 referenced by at least one of them. There are no reserved names and no stubs
 left: `comgenbuf`, `matrixlib`, `comsafe` and `comsec` were placeholders from
 2022 and 2023 and were implemented on 15/09/2026. The seven functions that
 take bytes from a link are also fuzzed, under the address sanitizer in CI, for
 bounds, for what they hand back, and for recovery after noise.
 
-One hundred and forty-four mutations reintroduce a known defect each and require
+One hundred and fifty-one mutations reintroduce a known defect each and require
 the test that pins it to fail; `sh scripts/mutate.sh` runs them and CI gates on
 the result. The whole library is 25 kB of code across 47 modules on a Cortex-M0
 at `-Os`, which `sh scripts/size.sh` measures, and **zero bytes of RAM** — no

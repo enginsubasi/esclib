@@ -1,0 +1,12 @@
+# what: bininpInit leaves the debounce counter as it found it, the other half of the 29/07/2026 defect, so the first differing sample can flip the output alone.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/bininp/bininp.c
+TEST Logic_Test
+--- FIND
+        driver->filterCount = filterCount;
+        driver->filterCounter = 0;
+--- REPLACE
+        driver->filterCount = filterCount;
+--- END

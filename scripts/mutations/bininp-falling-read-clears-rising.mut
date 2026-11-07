@@ -1,0 +1,16 @@
+# what: Reading the falling flag clears the rising one too, so a press and a release between two reads lose the press.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/bininp/bininp.c
+TEST Logic_Test
+--- FIND
+    retVal = driver->falling;
+
+    driver->falling = FALSE;
+--- REPLACE
+    retVal = driver->falling;
+
+    driver->falling = FALSE;
+    driver->rising = FALSE;
+--- END

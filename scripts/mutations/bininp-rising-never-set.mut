@@ -1,0 +1,17 @@
+# what: The rising flag is never set, which is the 29/07/2026 defect itself: bininpGetRisingValue returned FALSE on every call.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/bininp/bininp.c
+TEST Logic_Test
+--- FIND
+            if ( driver->output == FALSE )
+            {
+                driver->rising = TRUE;
+            }
+--- REPLACE
+            if ( driver->output == FALSE )
+            {
+                /* Intentionally blank. */
+            }
+--- END

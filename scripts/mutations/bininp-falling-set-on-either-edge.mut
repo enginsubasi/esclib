@@ -1,0 +1,14 @@
+# what: Any change of the output sets the falling flag, so a press reads as a release as well.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/bininp/bininp.c
+TEST Logic_Test
+--- FIND
+            driver->output = currentPhysicalValue;
+            driver->filterCounter = 0;
+--- REPLACE
+            driver->falling = TRUE;
+            driver->output = currentPhysicalValue;
+            driver->filterCounter = 0;
+--- END

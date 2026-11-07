@@ -17,6 +17,23 @@
 
 static uint32_t failures = 0;
 
+/*
+ * Fills a driver with a non-zero byte pattern before Init. A driver is a
+ * stack local, and a stack that happens to be zero makes a field Init never
+ * wrote read as if it had been cleared. 0x5A is TRUE to every flag here,
+ * which is the value a missing clear would leave behind.
+ */
+static void poison ( void* driver, uint32_t size )
+{
+    uint8_t* bytes = ( uint8_t* ) driver;
+    uint32_t i = 0;
+
+    for ( i = 0; i < size; ++i )
+    {
+        bytes[ i ] = 0x5Au;
+    }
+}
+
 static void check ( const char* what, uint8_t condition )
 {
     if ( condition == TRUE )
@@ -104,10 +121,24 @@ static void bininpInitCase ( void )
 
     check ( "a NULL driver is rejected",
             ( uint8_t ) ( bininpInit ( NULL, 3u ) == FALSE ) );
+    poison ( &driver, ( uint32_t ) sizeof ( driver ) );
     check ( "a valid driver is accepted", bininpInit ( &driver, 3u ) );
     check ( "and starts cleared", ( uint8_t ) ( bininpGetValue ( &driver ) == FALSE ) );
     check ( "with no rising edge pending",
             ( uint8_t ) ( bininpGetRisingValue ( &driver ) == FALSE ) );
+    check ( "and no falling edge pending",
+            ( uint8_t ) ( bininpGetFallingValue ( &driver ) == FALSE ) );
+
+    /*
+     * The counter must start at zero too. Left at the poison it is already
+     * past the threshold, so the very first differing sample would flip the
+     * output where four are needed.
+     */
+    poison ( &driver, ( uint32_t ) sizeof ( driver ) );
+    ( void ) bininpInit ( &driver, 3u );
+    bininpUpdate ( &driver, TRUE );
+    check ( "and the debounce count starts from zero",
+            ( uint8_t ) ( bininpGetValue ( &driver ) == FALSE ) );
 
     /* A filter count of zero is legal: it accepts the first differing sample. */
     check ( "a zero filter count is accepted", bininpInit ( &driver, 0u ) );
@@ -245,6 +276,91 @@ static void bininpRisingCase ( void )
             bininpGetRisingValue ( &driver ) );
 }
 
+static void bininpFallingCase ( void )
+{
+    bininp_t driver;
+    uint32_t i = 0;
+
+    printf ( "bininpGetFallingValue\n" );
+
+    check ( "Init", bininpInit ( &driver, 1u ) );
+
+    /* A rising edge is not a falling one. */
+    for ( i = 0; i < 2u; ++i )
+    {
+        bininpUpdate ( &driver, TRUE );
+    }
+
+    check ( "the output rose", ( uint8_t ) ( bininpGetValue ( &driver ) == TRUE ) );
+    check ( "and that did not set the falling flag",
+            ( uint8_t ) ( bininpGetFallingValue ( &driver ) == FALSE ) );
+
+    /*
+     * One low sample is below the threshold of a filter count of one. A
+     * flag set on the raw input rather than on the filtered output would
+     * already be standing here.
+     */
+    bininpUpdate ( &driver, FALSE );
+    check ( "a bounce below the threshold is not an edge",
+            ( uint8_t ) ( bininpGetFallingValue ( &driver ) == FALSE ) );
+
+    bininpUpdate ( &driver, FALSE );
+    check ( "the output fell", ( uint8_t ) ( bininpGetValue ( &driver ) == FALSE ) );
+    check ( "the falling edge is reported", bininpGetFallingValue ( &driver ) );
+    check ( "and reading it cleared the flag",
+            ( uint8_t ) ( bininpGetFallingValue ( &driver ) == FALSE ) );
+
+    /*
+     * The two flags are independent. A press and a release between two
+     * reads are both reported, and reading one leaves the other standing.
+     */
+    check ( "Init again", bininpInit ( &driver, 1u ) );
+    ( void ) bininpGetRisingValue ( &driver );
+
+    for ( i = 0; i < 2u; ++i )
+    {
+        bininpUpdate ( &driver, TRUE );
+    }
+
+    for ( i = 0; i < 2u; ++i )
+    {
+        bininpUpdate ( &driver, FALSE );
+    }
+
+    check ( "a press and a release unread: the falling edge is there",
+            bininpGetFallingValue ( &driver ) );
+    check ( "and reading it left the rising edge standing",
+            bininpGetRisingValue ( &driver ) );
+
+    /* The other way round: reading the rising flag leaves the falling one. */
+    for ( i = 0; i < 2u; ++i )
+    {
+        bininpUpdate ( &driver, TRUE );
+    }
+
+    for ( i = 0; i < 2u; ++i )
+    {
+        bininpUpdate ( &driver, FALSE );
+    }
+
+    check ( "the rising edge read first", bininpGetRisingValue ( &driver ) );
+    check ( "left the falling edge standing", bininpGetFallingValue ( &driver ) );
+
+    /* The flag latches, as the rising one does. */
+    for ( i = 0; i < 2u; ++i )
+    {
+        bininpUpdate ( &driver, TRUE );
+    }
+
+    for ( i = 0; i < 22u; ++i )
+    {
+        bininpUpdate ( &driver, FALSE );
+    }
+
+    check ( "an unread falling edge is still waiting twenty calls later",
+            bininpGetFallingValue ( &driver ) );
+}
+
 int main ( void )
 {
     rsffCase ( );
@@ -256,6 +372,8 @@ int main ( void )
     bininpDebounceCase ( );
     printf ( "\n" );
     bininpRisingCase ( );
+    printf ( "\n" );
+    bininpFallingCase ( );
 
     printf ( "\n" );
 

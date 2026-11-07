@@ -3,7 +3,7 @@
   *
   * @file      bininp.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   1.1.1
+  * @version   1.2.0
   * @date      05/10/2020
   *
   * @brief     Binary input read and filtering.
@@ -28,6 +28,9 @@
   *            caller can pass data it holds in flash without casting @n
   *            the qualifier away. @n
   * 01/08/2026 The accessors that only read take a const driver. @n
+  * 07/11/2026 bininpGetFallingValue function is added, the falling @n
+  *            edge counterpart of bininpGetRisingValue. A release @n
+  *            is as much an event as a press. @n
   *
   ******************************************************************************
   */
@@ -56,6 +59,7 @@ uint8_t bininpInit ( bininp_t* driver, uint32_t filterCount )
 
         driver->output = FALSE;
         driver->rising = FALSE;
+        driver->falling = FALSE;
 
         retVal = TRUE;
     }
@@ -68,7 +72,7 @@ uint8_t bininpInit ( bininp_t* driver, uint32_t filterCount )
 }
 
 /**
- * @brief   Filters a new raw sample and updates the binary input's output and rising edge flag.
+ * @brief   Filters a new raw sample and updates the binary input's output and edge flags.
  * @param[in,out] driver   Binary input state.
  * @param[in]     newData  New raw sample; any nonzero value is treated as TRUE.
  */
@@ -92,14 +96,15 @@ void bininpUpdate ( bininp_t* driver, uint8_t newData )
 
         if ( driver->filterCounter > driver->filterCount )
         {
-            // The filtered value changed. A FALSE to TRUE change is a rising edge.
+            // The filtered value changed. A FALSE to TRUE change is a
+            // rising edge and a TRUE to FALSE change a falling one.
             if ( driver->output == FALSE )
             {
                 driver->rising = TRUE;
             }
             else
             {
-                /* Intentionally blank. */
+                driver->falling = TRUE;
             }
 
             driver->output = currentPhysicalValue;
@@ -135,6 +140,26 @@ uint8_t bininpGetRisingValue ( bininp_t* driver )
     retVal = driver->rising;
 
     driver->rising = FALSE;
+
+    return ( retVal );
+}
+
+/**
+ * @brief   Gets whether a falling edge occurred on the binary input and clears the flag.
+ * @param[in,out] driver  Binary input state.
+ * @return  TRUE when a falling edge occurred since the last call, FALSE otherwise.
+ * @note    The two flags are independent. Each latches its own edge and is
+ *          cleared only by reading it, so a press and a release that both
+ *          happen between two reads are both reported, and reading one
+ *          leaves the other standing.
+ */
+uint8_t bininpGetFallingValue ( bininp_t* driver )
+{
+    uint8_t retVal = 0;
+
+    retVal = driver->falling;
+
+    driver->falling = FALSE;
 
     return ( retVal );
 }
