@@ -1,0 +1,18 @@
+# what: cobsDecode accepts a frame that stops on a full run of 254, which the encoder always closes with a code byte of its own.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/cobs.c
+TEST Cobs_Test
+--- FIND
+    if ( ( sound == TRUE ) && ( code == ( COBS_RUN_MAX + 1u ) ) )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+--- REPLACE
+    /* mutant: a frame may stop on a full run */
+--- END

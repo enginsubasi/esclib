@@ -927,6 +927,19 @@ static void cobsRound ( void )
 
     if ( ok == TRUE )
     {
+        /*
+         * The decoder is strict, so a frame it accepts is the one frame of
+         * its payload: encoding what came out has to give back what went in.
+         */
+        encoded = exact ( cobsEncodedSize ( decodedLength ) );
+        expect ( ( uint8_t ) ( ( cobsEncode ( decoded, decodedLength, encoded,
+                                             cobsEncodedSize ( decodedLength ),
+                                             &encodedLength ) == TRUE ) &&
+                               ( encodedLength == length ) &&
+                               ( memcmp ( encoded, source, length ) == 0 ) ),
+                 "cobsDecode accepted a frame the encoder would not write" );
+        free ( encoded );
+
         expect ( ( uint8_t ) ( decodedLength <= capacity ),
                  "cobsDecode wrote past its capacity" );
         expect ( ( uint8_t ) ( ( decodedLength > capacity ) ||

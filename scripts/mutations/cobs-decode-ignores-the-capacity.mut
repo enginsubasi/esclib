@@ -27,9 +27,9 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
     }
 
     /*
-     * The validating pass. It reads a code byte, steps over the run it
-     * describes, and counts what the run would produce, so the frame is known
-     * to be sound and the payload's length is known before a byte is written.
+     * The validating pass. It reads a code byte, checks the run it describes,
+     * and counts what the run would produce, so the frame is known to be
+     * sound and the payload's length is known before a byte is written.
      */
     while ( ( read < length ) && ( sound == TRUE ) )
     {
@@ -46,6 +46,19 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
         }
         else
         {
+            /* A zero here is a delimiter inside the frame. */
+            for ( i = 0u; i < ( code - 1u ); ++i )
+            {
+                if ( source[ read + i ] == COBS_DELIMITER )
+                {
+                    sound = FALSE;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+            }
+
             read = read + ( code - 1u );
             decoded = decoded + ( code - 1u );
 
@@ -58,6 +71,20 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
                 /* Intentionally blank */
             }
         }
+    }
+
+    /*
+     * The encoder closes a full run with a code byte of its own even at the
+     * end of the payload, so a frame that stops on one is a second frame for
+     * a payload that already has one.
+     */
+    if ( ( sound == TRUE ) && ( code == ( COBS_RUN_MAX + 1u ) ) )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
     }
 
     if ( ( sound == TRUE ) && ( decoded <= capacity ) )
@@ -121,9 +148,9 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
     }
 
     /*
-     * The validating pass. It reads a code byte, steps over the run it
-     * describes, and counts what the run would produce, so the frame is known
-     * to be sound and the payload's length is known before a byte is written.
+     * The validating pass. It reads a code byte, checks the run it describes,
+     * and counts what the run would produce, so the frame is known to be
+     * sound and the payload's length is known before a byte is written.
      */
     while ( ( read < length ) && ( sound == TRUE ) )
     {
@@ -140,6 +167,19 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
         }
         else
         {
+            /* A zero here is a delimiter inside the frame. */
+            for ( i = 0u; i < ( code - 1u ); ++i )
+            {
+                if ( source[ read + i ] == COBS_DELIMITER )
+                {
+                    sound = FALSE;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+            }
+
             read = read + ( code - 1u );
             decoded = decoded + ( code - 1u );
 
@@ -152,6 +192,20 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
                 /* Intentionally blank */
             }
         }
+    }
+
+    /*
+     * The encoder closes a full run with a code byte of its own even at the
+     * end of the payload, so a frame that stops on one is a second frame for
+     * a payload that already has one.
+     */
+    if ( ( sound == TRUE ) && ( code == ( COBS_RUN_MAX + 1u ) ) )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
     }
 
     if ( sound == TRUE )

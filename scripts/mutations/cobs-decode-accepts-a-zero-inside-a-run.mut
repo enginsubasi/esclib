@@ -1,0 +1,22 @@
+# what: cobsDecode steps over a run without checking it for zeros, so 03 00 05 decodes to a payload whose own frame is 01 02 05.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/cobs.c
+TEST Cobs_Test
+--- FIND
+            /* A zero here is a delimiter inside the frame. */
+            for ( i = 0u; i < ( code - 1u ); ++i )
+            {
+                if ( source[ read + i ] == COBS_DELIMITER )
+                {
+                    sound = FALSE;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+            }
+--- REPLACE
+            /* mutant: the run is stepped over without looking inside it */
+--- END

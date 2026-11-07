@@ -3,7 +3,7 @@
   *
   * @file      cobs.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.2.0
   * @date      16/09/2026
   *
   * @brief     Consistent overhead byte stuffing: a payload with one byte value
@@ -14,6 +14,10 @@
   *
   * @par History
   * 16/09/2026 Created. @n
+  * 07/11/2026 cobsDecode is strict: it refuses a zero inside a run @n
+  *            and a frame that ends on a full run, the two frames @n
+  *            the encoder never writes, so every payload has @n
+  *            exactly one frame. Found by the fuzz harness. @n
   *
   * @note      This answers the same question comstxetx answers and gives a
   *            different answer, and the difference is a number rather than a
@@ -51,12 +55,19 @@
   *            module's.
   *
   * @note      cobsDecode validates the whole frame before it writes anything.
-  *            That is one extra pass, and it is nearly free: the first pass
-  *            reads only the code bytes and steps over the runs between them,
-  *            so it touches a two hundred and fifty fifth of the buffer. What
+  *            That is one extra pass, and it reads every byte once, because a
+  *            zero inside a run is one of the things it refuses. What
   *            it buys is that a malformed frame leaves the destination alone
   *            rather than half written, which matrixInverse cannot promise and
   *            says so, and comgenbufPop promises for the same reason.
+  *
+  * @note      **And the decoder is strict.** It accepts exactly the frames
+  *            cobsEncode writes, so every payload has one frame and one only.
+  *            A lenient decoder gives a payload several, which fools anything
+  *            that compares, signs or deduplicates frames rather than what
+  *            they carry — the reason text's base64 is strict, in a second
+  *            place. Until 07/11/2026 it accepted two frames the encoder
+  *            never writes, and the fuzz harness found both.
   *
   ******************************************************************************
   */
@@ -168,10 +179,15 @@ uint8_t cobsEncode ( const uint8_t* const source, uint32_t length,
  * @return  TRUE when the frame decoded, FALSE when it was malformed or the
  *          payload would not fit.
  *
- * @note    Three things make a frame malformed and all three are refused: a
+ * @note    Five things make a frame malformed and all five are refused: a
  *          code byte of zero, which the encoder cannot produce; a code byte
- *          claiming a run that reaches past the end of the frame; and a frame
- *          of no bytes at all, which is not the encoding of anything.
+ *          claiming a run that reaches past the end of the frame; a frame of
+ *          no bytes at all, which is not the encoding of anything; a zero
+ *          inside a run, which is the delimiter itself and cannot be part of
+ *          a frame; and a frame that ends on a full run of 254, because the
+ *          encoder always closes one with a code byte of its own. The last
+ *          two decode to a payload whose encoding is a different frame, so
+ *          refusing them is what leaves one frame for every payload.
  *
  * @note    Nothing is written unless the whole frame is sound. See the file
  *          banner for why that costs almost nothing here.
@@ -198,9 +214,9 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
     }
 
     /*
-     * The validating pass. It reads a code byte, steps over the run it
-     * describes, and counts what the run would produce, so the frame is known
-     * to be sound and the payload's length is known before a byte is written.
+     * The validating pass. It reads a code byte, checks the run it describes,
+     * and counts what the run would produce, so the frame is known to be
+     * sound and the payload's length is known before a byte is written.
      */
     while ( ( read < length ) && ( sound == TRUE ) )
     {
@@ -217,6 +233,19 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
         }
         else
         {
+            /* A zero here is a delimiter inside the frame. */
+            for ( i = 0u; i < ( code - 1u ); ++i )
+            {
+                if ( source[ read + i ] == COBS_DELIMITER )
+                {
+                    sound = FALSE;
+                }
+                else
+                {
+                    /* Intentionally blank */
+                }
+            }
+
             read = read + ( code - 1u );
             decoded = decoded + ( code - 1u );
 
@@ -229,6 +258,20 @@ uint8_t cobsDecode ( const uint8_t* const source, uint32_t length,
                 /* Intentionally blank */
             }
         }
+    }
+
+    /*
+     * The encoder closes a full run with a code byte of its own even at the
+     * end of the payload, so a frame that stops on one is a second frame for
+     * a payload that already has one.
+     */
+    if ( ( sound == TRUE ) && ( code == ( COBS_RUN_MAX + 1u ) ) )
+    {
+        sound = FALSE;
+    }
+    else
+    {
+        /* Intentionally blank */
     }
 
     if ( ( sound == TRUE ) && ( decoded <= capacity ) )

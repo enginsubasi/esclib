@@ -364,7 +364,7 @@ left: `comgenbuf`, `matrixlib`, `comsafe` and `comsec` were placeholders from
 take bytes from a link are also fuzzed, under the address sanitizer in CI, for
 bounds, for what they hand back, and for recovery after noise.
 
-One hundred and thirty-nine mutations reintroduce a known defect each and require
+One hundred and forty-two mutations reintroduce a known defect each and require
 the test that pins it to fail; `sh scripts/mutate.sh` runs them and CI gates on
 the result. The whole library is 25 kB of code across 47 modules on a Cortex-M0
 at `-Os`, which `sh scripts/size.sh` measures, and **zero bytes of RAM** — no

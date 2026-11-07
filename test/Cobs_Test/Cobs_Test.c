@@ -313,6 +313,17 @@ static void refusalCase ( void )
     frame[ 1 ] = 0x11u;
     frame[ 2 ] = 0x22u;
 
+    /*
+     * What lies past the three bytes handed over holds no zero, so the length
+     * is the only thing that can refuse this frame. A zero left there would
+     * let the zero-inside-a-run check refuse it instead, by reading bytes it
+     * was never given, and hide a decoder that follows the run anyway.
+     */
+    for ( i = 3u; i < 8u; ++i )
+    {
+        frame[ i ] = 0x33u;
+    }
+
     check ( "a run reaching past the end is refused",
             ( uint8_t ) ( cobsDecode ( frame, 3u, decoded, BUFFER_SIZE,
                                        &decodedLength ) == FALSE ) );
@@ -352,6 +363,44 @@ static void refusalCase ( void )
             ( uint8_t ) ( ( cobsDecode ( frame, 4u, decoded, 3u,
                                          &decodedLength ) == TRUE ) &&
                           ( decodedLength == 3u ) ) );
+
+    /*
+     * The two frames the encoder never writes. Each decodes, leniently, to a
+     * payload whose encoding is a different frame, which is what makes them
+     * a second spelling of a message rather than a message.
+     */
+    frame[ 0 ] = 0x03u;
+    frame[ 1 ] = 0x00u;
+    frame[ 2 ] = 0x05u;
+
+    for ( i = 0u; i < BUFFER_SIZE; ++i )
+    {
+        decoded[ i ] = 0xC3u;
+    }
+
+    check ( "a zero inside a run is refused, since 01 02 05 is that payload's frame",
+            ( uint8_t ) ( cobsDecode ( frame, 3u, decoded, BUFFER_SIZE,
+                                       &decodedLength ) == FALSE ) );
+    check ( "and the destination was left alone",
+            ( uint8_t ) ( decoded[ 0 ] == 0xC3u ) );
+
+    encoded[ 0 ] = 0xFFu;
+
+    for ( i = 1u; i <= COBS_RUN_MAX; ++i )
+    {
+        encoded[ i ] = ( uint8_t ) i;
+    }
+
+    check ( "a frame that stops on a full run is refused",
+            ( uint8_t ) ( cobsDecode ( encoded, COBS_RUN_MAX + 1u, decoded,
+                                       BUFFER_SIZE, &decodedLength ) == FALSE ) );
+
+    encoded[ COBS_RUN_MAX + 1u ] = 0x01u;
+
+    check ( "and the same run closed by its own code byte is accepted",
+            ( uint8_t ) ( ( cobsDecode ( encoded, COBS_RUN_MAX + 2u, decoded,
+                                         BUFFER_SIZE, &decodedLength ) == TRUE ) &&
+                          ( decodedLength == COBS_RUN_MAX ) ) );
 }
 
 /* ------------------------------------------------------------ the frame */
