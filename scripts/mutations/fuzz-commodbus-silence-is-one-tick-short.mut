@@ -1,0 +1,49 @@
+# what: The frame ends one tick early. Three and a half character times is the boundary the specification draws, and a device that ends a frame before it eats the first byte of the next one.
+#
+# The same defect as commodbus-silence-is-one-tick-short.mut, held against the fuzz
+# harness instead of the unit test, so the oracle that catches it
+# there is checked to keep catching it.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/commodbus.c
+TEST Fuzz_Test
+--- FIND
+void commodbusTimeoutCounter ( commodbus_t* driver )
+{
+    if ( ( driver->rxReadyToEvaluate == FALSE ) && ( driver->rxIndex > 0u ) )
+    {
+        if ( driver->silenceCounter >= driver->silenceTicks )
+        {
+            driver->rxReadyToEvaluate = TRUE;
+        }
+        else
+        {
+            ++driver->silenceCounter;
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- REPLACE
+void commodbusTimeoutCounter ( commodbus_t* driver )
+{
+    if ( ( driver->rxReadyToEvaluate == FALSE ) && ( driver->rxIndex > 0u ) )
+    {
+        if ( ( driver->silenceCounter + 1u ) >= driver->silenceTicks )
+        {
+            driver->rxReadyToEvaluate = TRUE;
+        }
+        else
+        {
+            ++driver->silenceCounter;
+        }
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+}
+--- END

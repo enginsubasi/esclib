@@ -3,7 +3,7 @@
   *
   * @file      comsec.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.1.1
   * @date      13/09/2022
   *
   * @brief     Authenticated framing with replay protection.
@@ -19,6 +19,11 @@
   *            else the way the rest of this library does. It does @n
   *            not contain any: the primitive is injected, exactly @n
   *            as comstxetx injects its check. @n
+  * 07/11/2026 comsecCheckFrame read the tag size through the driver @n
+  *            before testing the driver for NULL, so the guard it @n
+  *            carried could never fire and a compiler was free to @n
+  *            delete it. Found reading the receive path for the @n
+  *            fuzz harness. @n
   *
   * @note      **This module contains no cryptography.** It is the framing
   *            around one: a session id, a monotonic counter and a tag, with
@@ -319,7 +324,19 @@ uint8_t comsecCheckFrame ( comsec_t* driver, const uint8_t* const frame, uint32_
     uint16_t id = 0;
     uint8_t expected[ COMSEC_MAX_TAG ];
 
-    overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+    /*
+     * Only once the driver is known to be there. Read before the test, the
+     * test below could never be reached with a NULL, and a compiler that
+     * sees the dereference first is entitled to remove it altogether.
+     */
+    if ( driver != NULL )
+    {
+        overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
 
     if ( ( driver == NULL ) || ( frame == NULL ) )
     {

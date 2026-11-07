@@ -1,0 +1,49 @@
+# what: The receive timeout runs off the byte count rather than off the frame being open, so a frame opened on STX but carrying no payload byte never times out.
+#
+# The same defect as comstxetx-timeout-keyed-off-rxindex.mut, held against the fuzz
+# harness instead of the unit test, so the oracle that catches it
+# there is checked to keep catching it.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/communication/comstxetx.c
+TEST Fuzz_Test
+--- FIND
+void comstxetxTimeoutCounter ( comstxetx_t* driver )
+{
+    if ( ( driver->rxFrameOpen == TRUE ) && ( driver->rxReadyToEvaluate == FALSE ) )
+    {
+        if ( driver->rxTimeoutCounter > driver->rxTimeout )
+        {
+            // Terminate all received bytes.
+            driver->rxFrameOpen = FALSE;
+            driver->rxEscape = FALSE;
+            driver->rxIndex = 0;
+            driver->rxTimeoutCounter = 0;
+        }
+        else
+        {
+            ++driver->rxTimeoutCounter;
+        }
+    }
+}
+--- REPLACE
+void comstxetxTimeoutCounter ( comstxetx_t* driver )
+{
+    if ( ( driver->rxIndex != 0 ) && ( driver->rxReadyToEvaluate == FALSE ) )
+    {
+        if ( driver->rxTimeoutCounter > driver->rxTimeout )
+        {
+            // Terminate all received bytes.
+            driver->rxFrameOpen = FALSE;
+            driver->rxEscape = FALSE;
+            driver->rxIndex = 0;
+            driver->rxTimeoutCounter = 0;
+        }
+        else
+        {
+            ++driver->rxTimeoutCounter;
+        }
+    }
+}
+--- END

@@ -1,0 +1,19 @@
+# what: comsecCheckFrame reads the tag size through the driver before testing the driver for NULL, so its guard can never fire.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it. The test fails by
+# crashing, which run_tests.sh counts as a failure like any other.
+FILE src/communication/comsec.c
+TEST ComSec_Test
+--- FIND
+    if ( driver != NULL )
+    {
+        overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
+--- REPLACE
+    overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+--- END

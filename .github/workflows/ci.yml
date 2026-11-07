@@ -50,7 +50,9 @@ jobs:
       # comatReceive, commodbusReceive, cobsDecode, comsafeCheckFrame,
       # comsecCheckFrame and comgenbufPop — and an index walked past the end
       # of a caller's buffer is not undefined arithmetic, it is a read that
-      # returns whatever was next in memory. -fno-sanitize-recover makes the
+      # returns whatever was next in memory. Fuzz_Test is what feeds those
+      # seven input nobody chose, in buffers allocated at exactly the size
+      # each module was told. -fno-sanitize-recover makes the
       # first report the exit status rather than a line in the log.
       - name: Tests, sanitized
         env:

@@ -360,9 +360,11 @@ CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
 Every module has a test, and every one of the 401 exported symbols is
 referenced by at least one of them. There are no reserved names and no stubs
 left: `comgenbuf`, `matrixlib`, `comsafe` and `comsec` were placeholders from
-2022 and 2023 and were implemented on 15/09/2026.
+2022 and 2023 and were implemented on 15/09/2026. The seven functions that
+take bytes from a link are also fuzzed, under the address sanitizer in CI, for
+bounds, for what they hand back, and for recovery after noise.
 
-One hundred and thirty-two mutations reintroduce a known defect each and require
+One hundred and thirty-nine mutations reintroduce a known defect each and require
 the test that pins it to fail; `sh scripts/mutate.sh` runs them and CI gates on
 the result. The whole library is 25 kB of code across 47 modules on a Cortex-M0
 at `-Os`, which `sh scripts/size.sh` measures, and **zero bytes of RAM** — no

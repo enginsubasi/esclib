@@ -529,6 +529,16 @@ static void lengthCase ( void )
      */
     check ( "and every one of them was counted",
             ( uint8_t ) ( comsecGetRejectCount ( &driver ) == 3u ) );
+
+    /*
+     * The function carries a NULL guard, so the guard has to work. It read
+     * the tag size through the driver before testing it until 07/11/2026,
+     * which made this call a crash rather than a refusal.
+     */
+    check ( "a NULL driver is refused rather than dereferenced",
+            ( uint8_t ) ( comsecCheckFrame ( NULL, frame, 20u ) == FALSE ) );
+    check ( "and a NULL frame",
+            ( uint8_t ) ( comsecCheckFrame ( &driver, NULL, 20u ) == FALSE ) );
 }
 
 int main ( void )

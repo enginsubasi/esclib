@@ -15,7 +15,19 @@ uint8_t comsecCheckFrame ( comsec_t* driver, const uint8_t* const frame, uint32_
     uint16_t id = 0;
     uint8_t expected[ COMSEC_MAX_TAG ];
 
-    overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+    /*
+     * Only once the driver is known to be there. Read before the test, the
+     * test below could never be reached with a NULL, and a compiler that
+     * sees the dereference first is entitled to remove it altogether.
+     */
+    if ( driver != NULL )
+    {
+        overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
 
     if ( ( driver == NULL ) || ( frame == NULL ) )
     {
@@ -94,7 +106,19 @@ uint8_t comsecCheckFrame ( comsec_t* driver, const uint8_t* const frame, uint32_
     uint16_t id = 0;
     uint8_t expected[ COMSEC_MAX_TAG ];
 
-    overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+    /*
+     * Only once the driver is known to be there. Read before the test, the
+     * test below could never be reached with a NULL, and a compiler that
+     * sees the dereference first is entitled to remove it altogether.
+     */
+    if ( driver != NULL )
+    {
+        overhead = COMSEC_HEADER + ( uint32_t ) driver->tagSize;
+    }
+    else
+    {
+        /* Intentionally blank */
+    }
 
     if ( ( driver == NULL ) || ( frame == NULL ) )
     {
