@@ -23,7 +23,7 @@ jobs:
       - name: Install the cross compiler
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-arm-none-eabi
+          sudo apt-get install -y gcc-arm-none-eabi gcc-avr binutils-avr avr-libc
 
       # Warnings, header coexistence and symbol coverage. The cross compiler
       # is the one the tree is normally checked with.
@@ -95,6 +95,12 @@ jobs:
       - name: Stack
         run: sh scripts/stack.sh
 
+      # The tree on a part whose int is sixteen bits, which is the one
+      # integer width no other compiler here has. Warnings, and the pins
+      # for overflows that only a 16 bit int would show at run time.
+      - name: 16-bit int
+        run: sh scripts/int16.sh
+
       # Every source set links for a bare metal target without being run.
       - name: Cross link
         run: CC=arm-none-eabi-gcc CFLAGS=--specs=nosys.specs LINKONLY=1 sh run_tests.sh
@@ -111,5 +117,6 @@ jobs:
           dash -n scripts/portable.sh
           dash -n scripts/size.sh
           dash -n scripts/stack.sh
+          dash -n scripts/int16.sh
           dash -n scripts/runtime.sh
           dash -n scripts/samples.sh

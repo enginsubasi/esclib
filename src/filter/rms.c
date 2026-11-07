@@ -3,7 +3,7 @@
   *
   * @file      rms.c
   * @author    Engin Subasi <enginsubasi@gmail.com>, github.com/enginsubasi
-  * @version   0.1.0
+  * @version   0.1.1
   * @date      16/09/2026
   *
   * @brief     Mean, RMS and AC RMS of a signal, accumulated block by block as
@@ -14,6 +14,8 @@
   *
   * @par History
   * 16/09/2026 Created. @n
+  * 07/11/2026 The int32_t square is checked now, by scripts/int16.sh @n
+  *            on a build whose int is sixteen bits. No code change. @n
   *
   * @note      statistic already computes a mean and a standard deviation, and
   *            this is not a copy of it: statVariance wants the whole block in
@@ -65,7 +67,10 @@
   * @note      Inside that range everything is exact. A square is below 2^30,
   *            so it is formed in 32 bits — explicitly in int32_t, because on a
   *            part whose int is sixteen bits wide the product of two int16_t is
-  *            formed in int and overflows. Over at most 65536 samples the sum
+  *            formed in int and overflows. No test on a 32 bit host can see
+  *            that, so scripts/int16.sh checks it on an AVR build, by the
+  *            widening multiply the compiler has to call for it. Over at most
+  *            65536 samples the sum
   *            is below 2^31, the sum of squares below 2^46, and the block
   *            length times the sum of squares below 2^62, so N^2 times the
   *            variance is computed exactly as N times the sum of squares less

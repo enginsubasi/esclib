@@ -23,6 +23,12 @@
 #
 # Adding one costs a file. There is no list to keep in sync.
 #
+# TEST is usually a test program's name. It may instead be a gate script's
+# path, scripts/<name>.sh, for a defect only that gate can see — the int16_t
+# square that is right on every host and wrong on a 16 bit int is the case.
+# A gate that exits 126 or 127 could not run, and that is reported as NOT RUN
+# and counted with the mutations that were not applied, never as a catch.
+#
 # Environment:
 #     CC       host compiler, passed through to run_tests.sh, default gcc
 #     CFLAGS   extra flags, passed through
@@ -154,12 +160,26 @@ for mut in scripts/mutations/*.mut; do
     mutatedFile="$target"
     cp "$outdir/mutated" "$target"
 
-    sh run_tests.sh "$test" > "$outdir/run" 2>&1
+    # A TEST is a test program by name, or a gate script by path. Some defects
+    # are only visible to a gate: an int16_t square formed in int is right on
+    # every host and wrong on a part whose int is sixteen bits, and only
+    # scripts/int16.sh builds for one.
+    case "$test" in
+        scripts/*.sh) sh "$test" > "$outdir/run" 2>&1 ;;
+        *)            sh run_tests.sh "$test" > "$outdir/run" 2>&1 ;;
+    esac
     status=$?
 
     restore
 
-    if grep -q "BUILD FAIL" "$outdir/run"; then
+    if [ "$status" -eq 126 ] || [ "$status" -eq 127 ]; then
+        # The gate could not run at all — its compiler is missing, say. That
+        # is not a catch, and counting it as one would let a mutation pass
+        # for caught on any machine without the tool.
+        echo "NOT RUN    $name — $test could not run"
+        head -3 "$outdir/run" | sed 's/^/           /'
+        broken=$((broken + 1))
+    elif grep -q "BUILD FAIL" "$outdir/run"; then
         echo "BROKEN     $name — the mutation does not compile, so it proves nothing"
         sed -n '/BUILD FAIL/,$p' "$outdir/run" | head -5 | sed 's/^/           /'
         broken=$((broken + 1))

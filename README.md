@@ -316,6 +316,7 @@ sh scripts/mutate.sh         # every known defect still fails the test that pins
 sh scripts/size.sh           # code size per module
 sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 sh scripts/stack.sh          # stack depth per module; nothing recurses
+sh scripts/int16.sh          # the tree on a part whose int is 16 bits (avr-gcc)
 sh scripts/samples.sh        # build and run every example under sample/
 ```
 
@@ -364,7 +365,7 @@ left: `comgenbuf`, `matrixlib`, `comsafe` and `comsec` were placeholders from
 take bytes from a link are also fuzzed, under the address sanitizer in CI, for
 bounds, for what they hand back, and for recovery after noise.
 
-One hundred and forty-two mutations reintroduce a known defect each and require
+One hundred and forty-four mutations reintroduce a known defect each and require
 the test that pins it to fail; `sh scripts/mutate.sh` runs them and CI gates on
 the result. The whole library is 25 kB of code across 47 modules on a Cortex-M0
 at `-Os`, which `sh scripts/size.sh` measures, and **zero bytes of RAM** — no

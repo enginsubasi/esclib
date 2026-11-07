@@ -1,0 +1,16 @@
+# what: The square of an int16_t sample is formed in int, which on a part with a 16 bit int overflows for any sample past 181.
+#
+# Every host here has a 32 bit int, so Rms_Test passes with this in place and
+# always will; only a build for a 16 bit int can see it, and the run time
+# overflow is not a warning even there. scripts/int16.sh pins it by the helper
+# the multiply calls.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/filter/rms.c
+TEST scripts/int16.sh
+--- FIND
+    square = ( ( int32_t ) sample ) * ( ( int32_t ) sample );
+--- REPLACE
+    square = sample * sample;
+--- END

@@ -238,6 +238,7 @@ STRICT=1 sh scripts/check.sh # the same, under -Wconversion and its neighbours
 sh scripts/mutate.sh         # every known defect still fails its test
 sh scripts/portable.sh       # C99 pedantically, and every header and module as C++
 sh scripts/stack.sh          # stack depth; nothing recurses, no frame is dynamic
+sh scripts/int16.sh          # the tree on a part whose int is 16 bits (avr-gcc)
 sh scripts/size.sh           # code size per module
 sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 
@@ -247,7 +248,7 @@ sh scripts/runtime.sh        # which compiler runtime helpers each module needs
 CFLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -O1" sh run_tests.sh
 ```
 
-The first seven are gates, so is the sanitized run, and CI runs all of them on
+The first eight are gates, so is the sanitized run, and CI runs all of them on
 every push. **A passing test is not the same as a defined program**: the six
 signed left shifts UBSan found on 15/09/2026 passed every test in the tree,
 because the compiler did the obvious thing with each of them. Only the
@@ -274,6 +275,13 @@ builds a probe that breaks both rules before it trusts itself with the tree.
 The depth it reports stops at two boundaries it cannot see past — compiler
 runtime helpers and callbacks installed at `Init` — and says which modules
 cross each.
+
+`int16.sh` builds the tree for a part whose `int` is sixteen bits, which is
+the one thing no other compiler here can do: an `int16_t` product or a byte
+shifted past sixteen is wrong there and right on every host. Where an
+overflow would only show at run time it pins the widening multiply the
+compiler emitted, and a mutation whose `TEST` names the script holds each
+pin to it.
 
 Commit messages are terse and prefixed: `+` for an addition, `*` for a fix or an
 update. `+ bininpGetRisingValue function`, `* bugfix`.

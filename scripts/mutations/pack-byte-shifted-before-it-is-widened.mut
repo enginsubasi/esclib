@@ -1,0 +1,26 @@
+# what: A byte is shifted sixteen places before it is widened, which on a part with a 16 bit int shifts it out of the type altogether.
+#
+# On every host here the byte is promoted to a 32 bit int and the shift is
+# harmless, so Pack_Test passes with this in place. With a 16 bit int it is a
+# shift past the width of the type, which gcc reports, and scripts/int16.sh
+# fails on the warning.
+#
+# Applied by scripts/mutate.sh, which requires the FIND block to match
+# exactly once and the named test to fail because of it.
+FILE src/pack/pack.c
+TEST scripts/int16.sh
+--- FIND
+uint32_t packGetU32be ( const uint8_t* const buffer, uint32_t index )
+{
+    uint32_t retVal = 0;
+
+    retVal = ( ( uint32_t ) buffer[ index ] ) << 24;
+    retVal = retVal | ( ( ( uint32_t ) buffer[ index + 1u ] ) << 16 );
+--- REPLACE
+uint32_t packGetU32be ( const uint8_t* const buffer, uint32_t index )
+{
+    uint32_t retVal = 0;
+
+    retVal = ( ( uint32_t ) buffer[ index ] ) << 24;
+    retVal = retVal | ( buffer[ index + 1u ] << 16 );
+--- END
